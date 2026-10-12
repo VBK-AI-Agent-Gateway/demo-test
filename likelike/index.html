@@ -3,405 +3,574 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>连连看</title>
+<title>连连看 · 进阶版</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 16px;
-    color: #fff;
+    background: linear-gradient(135deg, #141e30 0%, #243b55 100%);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 14px; color: #fff;
   }
-  h1 { font-size: 28px; margin-bottom: 8px; text-shadow: 0 2px 8px rgba(0,0,0,.3); }
-  .hud {
-    display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; justify-content: center;
-    font-size: 15px;
-  }
-  .hud span {
-    background: rgba(255,255,255,.18); padding: 6px 14px; border-radius: 20px;
-    backdrop-filter: blur(4px);
-  }
-  .btns { display: flex; gap: 10px; margin-bottom: 14px; }
+  h1 { font-size: 26px; margin-bottom: 6px; text-shadow: 0 2px 12px rgba(80,200,255,.5); }
+  .hud { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; justify-content: center; font-size: 14px; }
+  .hud span { background: rgba(255,255,255,.12); padding: 6px 13px; border-radius: 18px; border: 1px solid rgba(255,255,255,.15); }
+  .hud b { color: #7fe7ff; }
+  .btns { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; justify-content: center; }
   button {
-    border: none; cursor: pointer; font-size: 15px; padding: 8px 18px;
-    border-radius: 20px; background: #fff; color: #764ba2; font-weight: bold;
+    border: none; cursor: pointer; font-size: 14px; padding: 8px 16px;
+    border-radius: 18px; background: #7fe7ff; color: #08263a; font-weight: bold;
     transition: transform .1s;
   }
-  button:hover { transform: scale(1.05); }
-  button.secondary { background: rgba(255,255,255,.25); color: #fff; }
+  button:hover { transform: scale(1.06); }
+  button:disabled { opacity: .35; cursor: not-allowed; }
+  button.secondary { background: rgba(255,255,255,.2); color: #fff; }
+  button.danger { background: #ff7e7e; color: #4a0000; }
   #boardWrap {
-    position: relative;
-    background: rgba(255,255,255,.15);
-    border-radius: 14px;
-    padding: 10px;
-    box-shadow: 0 8px 32px rgba(0,0,0,.25);
+    position: relative; background: rgba(0,0,0,.35); border-radius: 14px; padding: 10px;
+    border: 1px solid rgba(127,231,255,.25); box-shadow: 0 8px 32px rgba(0,0,0,.5);
   }
   #board { position: relative; }
   .tile {
-    position: absolute;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 26px;
-    background: #fff;
-    border-radius: 8px;
-    cursor: pointer;
-    user-select: none;
-    box-shadow: 0 2px 5px rgba(0,0,0,.2);
-    transition: transform .08s, opacity .25s;
+    position: absolute; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(145deg, #2b3d54, #1d2a3c);
+    border-radius: 8px; cursor: pointer; user-select: none;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 2px 5px rgba(0,0,0,.4);
+    transition: transform .08s, opacity .3s, box-shadow .15s;
+    font-size: 26px; line-height: 1;
   }
-  .tile:hover { transform: scale(1.06); z-index: 5; }
-  .tile.selected {
-    outline: 3px solid #ffd54f;
-    background: #fff8e1;
-    transform: scale(1.06);
-    z-index: 5;
+  .tile:hover { transform: scale(1.07); z-index: 5; }
+  .tile.selected { outline: 3px solid #ffd54f; transform: scale(1.07); z-index: 6; }
+  .tile.hinted { outline: 3px solid #ff8a65; z-index: 6; }
+  .tile.removing { opacity: 0; transform: scale(.3) rotate(20deg); }
+  .tile.locked {
+    background: repeating-linear-gradient(45deg, #3a4454 0 6px, #2a3242 6px 12px);
+    cursor: not-allowed;
   }
-  .tile.removing { opacity: 0; transform: scale(.4); }
-  #linkLayer {
-    position: absolute; left: 10px; top: 10px;
-    pointer-events: none; z-index: 20;
-  }
+  .tile.ice { background: linear-gradient(145deg, #bfe9ff, #7fc4ea); color: #08263a; }
+  .tile.bonus { animation: pulse 1s infinite; border: 2px solid #ffd54f; }
+  @keyframes pulse { 0%,100%{ box-shadow: 0 0 4px #ffd54f; } 50%{ box-shadow: 0 0 16px #ffd54f; } }
+  .tile .icon { position:absolute; top:2px; right:4px; font-size:11px; }
+  #linkLayer { position: absolute; left: 10px; top: 10px; pointer-events: none; z-index: 20; }
   #linkLayer polyline {
     fill: none; stroke: #ffe082; stroke-width: 4;
     stroke-linejoin: round; stroke-linecap: round;
     filter: drop-shadow(0 0 6px #ffd54f);
   }
+  #effects { position: absolute; inset: 0; pointer-events: none; z-index: 40; overflow: hidden; }
+  .float { position: absolute; font-weight: bold; font-size: 18px; text-shadow: 0 2px 6px #000; animation: floatUp 1s forwards; }
+  @keyframes floatUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-50px); } }
   .overlay {
-    position: absolute; inset: 0;
-    background: rgba(40,20,70,.85);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    border-radius: 14px; gap: 16px; z-index: 30; text-align: center;
-    padding: 20px;
+    position: absolute; inset: 0; background: rgba(5,15,30,.92);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border-radius: 14px; gap: 14px; z-index: 50; text-align: center; padding: 20px;
   }
   .overlay.hidden { display: none; }
-  .overlay h2 { font-size: 34px; }
-  .overlay p { font-size: 17px; opacity: .9; }
-  .hint { margin-top: 10px; font-size: 13px; opacity: .8; }
-  @media (max-width: 600px) {
-    .tile { font-size: 18px; }
-    h1 { font-size: 22px; }
+  .overlay h2 { font-size: 32px; color: #7fe7ff; }
+  .overlay p { font-size: 15px; opacity: .92; line-height: 1.7; }
+  .level-diff { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .level-diff button { font-size: 16px; padding: 12px 22px; }
+  .hint { margin-top: 10px; font-size: 12px; opacity: .75; text-align:center; max-width: 640px; line-height:1.6; }
+  #comboBar {
+    position:absolute; top:-34px; left:50%; transform:translateX(-50%);
+    font-size:16px; font-weight:bold; color:#ffd54f; text-shadow:0 0 10px #ff9800;
+    opacity:0; transition:opacity .2s; white-space:nowrap;
   }
+  #comboBar.show { opacity:1; }
+  @media (max-width: 640px) { .tile { font-size: 18px !important; } h1 { font-size: 20px; } }
 </style>
 </head>
 <body>
-<h1>🀄 连连看</h1>
+<h1>🀄 连连看 · 进阶版</h1>
 <div class="hud">
-  <span>⏱ 时间: <b id="time">60</b>s</span>
+  <span>⭐ 关卡: <b id="level">1</b></span>
+  <span>⏱ 时间: <b id="time">90</b>s</span>
   <span>🎯 得分: <b id="score">0</b></span>
+  <span>🔥 连击: <b id="combo">x1</b></span>
   <span>🧩 剩余: <b id="left">0</b></span>
-  <span>❤️ 提示: <b id="hints">3</b></span>
+  <span>❤️ 提示: <b id="hints">5</b></span>
+  <span>💣 炸弹: <b id="bombs">1</b></span>
+  <span>🔀 洗牌: <b id="shuffles">2</b></span>
 </div>
 <div class="btns">
   <button id="btnHint">💡 提示</button>
   <button id="btnShuffle">🔀 洗牌</button>
-  <button id="btnRestart" class="secondary">🔄 重开</button>
+  <button id="btnBomb" class="danger">💣 炸弹模式</button>
+  <button id="btnRestart" class="secondary">🔄 重开本局</button>
 </div>
 <div id="boardWrap">
+  <div id="comboBar"></div>
   <div id="board"></div>
   <svg id="linkLayer"></svg>
+  <div id="effects"></div>
   <div class="overlay" id="overlay">
-    <h2 id="ovTitle">连连看</h2>
-    <p id="ovText">在 60 秒内消除所有方块！<br>两个相同方块可以用不超过 2 个折点的线连通即可消除。</p>
+    <h2 id="ovTitle">连连看 · 进阶版</h2>
+    <p id="ovText">
+      经典 0/1/2 拐点连通消除 × 全新机制：<br>
+      🧊 冰块障碍 · ✨ 奖励方块 · 🔒 锁块 · 🔥 连击 combo · 💣 炸弹 · 🎚 多关卡递增难度<br>
+      消除冰块相邻的方块可击碎冰块；奖励方块 +50；3 秒内连续消除触发连击加成！
+    </p>
+    <div class="level-diff" id="diffRow">
+      <button data-diff="easy" style="background:#7dff9e">🟢 简单</button>
+      <button data-diff="normal" style="background:#ffd54f">🟡 普通</button>
+      <button data-diff="hard" style="background:#ff7e7e">🔴 困难</button>
+    </div>
     <button id="btnStart">▶ 开始游戏</button>
   </div>
 </div>
-<div class="hint">规则：点选两个相同图案的方块，若它们能用最多两个拐点的折线连通，即可消除。</div>
+<div class="hint">
+  图例：🧊 冰块（无法直接选中，消除其相邻方块 2 次击碎）· ✨ 奖励块 (+50) · 🔒 锁块（挡住路径，用💣炸掉）· 🔥 3 秒内连续消除连击翻倍
+</div>
 
 <script>
-const EMOJIS = ['🍎','🍌','🍇','🍊','🍓','🍉','🍒','🥝','🍑','🍍','🥕','🌽','🌰','🍆','🥑','🥦'];
-const COLS = 10, ROWS = 8, PAD = 1;          // PAD 为四周虚拟空格，便于边缘绕行
-const TILE = 48, GAP = 6;
-const W = COLS + PAD * 2, H = ROWS + PAD * 2;
-const START_TIME = 60;
+const EMOJIS = ['🍎','🍌','🍇','🍊','🍓','🍉','🍒','🥝','🍑','🍍','🥕','🌽','🌰','🍆','🥑','🥦','🍄','🌶'];
+const DIFFS = {
+  easy:   { cols: 8,  rows: 6,  time: 120, ice: 0.08, bonus: 0.05, lock: 0,    hints: 8, bombs: 3, shuffles: 4 },
+  normal: { cols: 10, rows: 8,  time: 100, ice: 0.12, bonus: 0.05, lock: 0.04, hints: 5, bombs: 2, shuffles: 3 },
+  hard:   { cols: 12, rows: 9,  time: 90,  ice: 0.16, bonus: 0.05, lock: 0.07, hints: 3, bombs: 1, shuffles: 2 },
+};
+const TILE = 46, GAP = 6, PAD = 1;
+const COMBO_WINDOW = 3000;
 
-let grid = [];      // grid[r][c] = emoji 或 null
-let selected = null; // 虚拟网格坐标 {r,c}
-let score = 0, timeLeft = START_TIME, hints = 3;
-let timer = null, running = false;
+let diff = 'normal', cfg = DIFFS[diff];
+let COLS, ROWS, W, H;
+let grid = [];         // grid[r][c] = {v, type:'normal'|'bonus'|'lock', removed}
+let iceCells = [];     // {r,c,hp} 冰块覆盖在格子上
+let selected = null;
+let score=0, combo=1, lastMatchTime=0;
+let timeLeft=90, level=1, hints=5, bombs=1, shuffles=2;
+let timer=null, running=false, bombMode=false;
 
 const boardEl = document.getElementById('board');
 const svg = document.getElementById('linkLayer');
 const overlay = document.getElementById('overlay');
+const effectsEl = document.getElementById('effects');
+const comboBar = document.getElementById('comboBar');
 
-function px(c) { return (c - PAD) * (TILE + GAP); }
+function px(c){ return (c-PAD)*(TILE+GAP); }
+function shuffleArr(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
-function newGame() {
+function setupDiff(d){
+  diff=d; cfg=DIFFS[d];
+  COLS=cfg.cols; ROWS=cfg.rows;
+  W=COLS+PAD*2; H=ROWS+PAD*2;
+  level=1;
+  newLevel();
+}
+
+function iceAt(r,c){ return iceCells.find(i=>i.r===r&&i.c===c); }
+
+function newLevel(){
   clearInterval(timer);
-  running = false;
-  selected = null;
-  score = 0;
-  hints = 3;
-  timeLeft = START_TIME;
-  const total = COLS * ROWS;
-  const pairs = total / 2;
-  let pool = [];
-  for (let i = 0; i < pairs; i++) pool.push(EMOJIS[i % EMOJIS.length]);
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
+  running=false; selected=null; bombMode=false;
+  combo=1; lastMatchTime=0;
+  timeLeft = cfg.time + (level-1)*5;
+  hints = cfg.hints; bombs = cfg.bombs; shuffles = cfg.shuffles;
+
+  const total = COLS*ROWS;
+  const pairs = Math.floor(total/2);
+  let pool=[];
+  for(let i=0;i<pairs;i++) pool.push(EMOJIS[i % EMOJIS.length]);
+  shuffleArr(pool);
+
   grid = [];
-  let k = 0;
-  for (let r = 0; r < ROWS; r++) {
+  let k=0;
+  const lockRatio = Math.min(cfg.lock + (level-1)*0.01, 0.15);
+  const bonusRatio = Math.min(cfg.bonus + (level-1)*0.005, 0.1);
+  // 先决定锁块位置（成对替换以保持偶数可消数：锁块直接不参与，占格即可，剩格数需偶数）
+  const lockCount = Math.floor(total * lockRatio);
+  const lockSet = new Set();
+  const cellsIdx = shuffleArr([...Array(total).keys()]);
+  for(let i=0;i<lockCount;i++) lockSet.add(cellsIdx[i]);
+  // 保证剩余可消格为偶数
+  if((total - lockCount) % 2 !== 0) lockSet.delete(cellsIdx[lockCount]);
+
+  for(let r=0;r<ROWS;r++){
     grid.push([]);
-    for (let c = 0; c < COLS; c++) grid[r].push(pool[k++]);
+    for(let c=0;c<COLS;c++){
+      const flat = r*COLS+c;
+      if(lockSet.has(flat)){
+        grid[r].push({ v:'🔒', type:'lock', removed:false });
+      } else {
+        let type='normal';
+        if(Math.random()<bonusRatio) type='bonus';
+        grid[r].push({ v: pool[k++], type, removed:false });
+      }
+    }
   }
+  // 冰块：覆盖在普通格上，不能直接选，消除相邻普通块两次击碎
+  iceCells=[];
+  const iceRatio = Math.min(cfg.ice + (level-1)*0.015, 0.25);
+  const iceCount = Math.floor((total - lockCount) * iceRatio);
+  const candidates = [];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+    if(grid[r][c].type!=='lock') candidates.push({r,c});
+  shuffleArr(candidates);
+  for(let i=0;i<iceCount && i<candidates.length;i++) iceCells.push({ r:candidates[i].r, c:candidates[i].c, hp:2 });
+
   updateHUD();
   render();
 }
 
-function updateHUD() {
+function updateHUD(){
+  document.getElementById('level').textContent = level;
   document.getElementById('time').textContent = timeLeft;
   document.getElementById('score').textContent = score;
-  let left = 0;
-  grid.forEach(row => row.forEach(v => { if (v) left++; }));
+  document.getElementById('combo').textContent = 'x' + combo;
+  let left=0;
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(!grid[r][c].removed && grid[r][c].type!=='lock') left++;
   document.getElementById('left').textContent = left;
   document.getElementById('hints').textContent = hints;
+  document.getElementById('bombs').textContent = bombs;
+  document.getElementById('shuffles').textContent = shuffles;
 }
 
-function render() {
-  boardEl.innerHTML = '';
-  boardEl.style.width = (COLS * (TILE + GAP) - GAP) + 'px';
-  boardEl.style.height = (ROWS * (TILE + GAP) - GAP) + 'px';
+function render(){
+  boardEl.innerHTML='';
+  boardEl.style.width = (COLS*(TILE+GAP)-GAP)+'px';
+  boardEl.style.height = (ROWS*(TILE+GAP)-GAP)+'px';
   svg.setAttribute('width', boardEl.style.width);
   svg.setAttribute('height', boardEl.style.height);
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const v = grid[r][c];
-      if (!v) continue;
-      const el = document.createElement('div');
-      el.className = 'tile';
-      el.textContent = v;
-      el.style.left = px(c + PAD) + 'px';
-      el.style.top = px(r + PAD) + 'px';
-      el.style.width = TILE + 'px';
-      el.style.height = TILE + 'px';
-      el.dataset.r = r;
-      el.dataset.c = c;
-      if (selected && selected.r === r + PAD && selected.c === c + PAD) el.classList.add('selected');
-      el.addEventListener('click', () => onTile(r, c));
-      boardEl.appendChild(el);
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const cell = grid[r][c];
+    const iced = iceAt(r,c);
+    if(cell.removed && !iced) continue;
+    const el = document.createElement('div');
+    el.className='tile';
+    if(iced){
+      el.classList.add('ice');
+      el.textContent = '🧊';
+      el.title = '冰块 HP:' + iced.hp;
+      const badge = document.createElement('span');
+      badge.className='icon'; badge.textContent = iced.hp;
+      el.appendChild(badge);
+    } else if(cell.type==='lock'){
+      el.classList.add('locked');
+      el.textContent = '🔒';
+    } else {
+      el.textContent = cell.v;
+      if(cell.type==='bonus'){
+        el.classList.add('bonus');
+        const s = document.createElement('span');
+        s.className='icon'; s.textContent='✨';
+        el.appendChild(s);
+      }
+      el.addEventListener('click', ()=>onTile(r,c));
     }
+    el.style.left = px(c+PAD)+'px';
+    el.style.top = px(r+PAD)+'px';
+    el.style.width = TILE+'px';
+    el.style.height = TILE+'px';
+    if(selected && selected.r===r && selected.c===c) el.classList.add('selected');
+    boardEl.appendChild(el);
   }
 }
 
-function inside(r, c) { return r >= 0 && r < H && c >= 0 && c < W; }
-function get(r, c) {
-  if (r < 0 || r >= H || c < 0 || c >= W) return undefined;
-  if (r === 0 || r === H - 1 || c === 0 || c === W - 1) return null; // 虚拟空边
-  return grid[r - PAD][c - PAD];
+function cellAt(r,c){
+  if(r<0||r>=ROWS||c<0||c>=COLS) return null;
+  return grid[r][c];
 }
-
-function same(p, q) { return p.r === q.r && p.c === q.c; }
-function isEmptyLine(p, q) {
-  if (p.r === q.r) {
-    const [s, e] = p.c < q.c ? [p.c + 1, q.c - 1] : [q.c + 1, p.c - 1];
-    for (let c = s; c <= e; c++) if (get(p.r, c)) return false;
+// 虚拟网格 get（含 PAD 空边）
+function get(vr,vc){
+  if(vr<0||vr>=H||vc<0||vc>=W) return undefined;
+  if(vr===0||vr===H-1||vc===0||vc===W-1) return null;
+  const r=vr-PAD, c=vc-PAD;
+  const cell = grid[r][c];
+  if(cell.removed && !iceAt(r,c)) return null;
+  if(cell.type==='lock') return cell; // 锁块挡路
+  if(iceAt(r,c)) return cell;         // 冰块挡路
+  return null;                          // 空或可通行（选中两端除外）
+}
+function passable(vr,vc,a,b){
+  // 路径中间点：必须 get 为 null（空地）
+  if(a && a.r===vr && a.c===vc) return true;
+  if(b && b.r===vr && b.c===vc) return true;
+  return get(vr,vc)===null;
+}
+function same(p,q){ return p.r===q.r && p.c===q.c; }
+function lineEmpty(p,q,a,b){
+  if(p.r===q.r){
+    const [s,e] = p.c<q.c ? [p.c+1,q.c-1] : [q.c+1,p.c-1];
+    for(let c=s;c<=e;c++) if(!passable(p.r,c,a,b)) return false;
     return true;
   }
-  if (p.c === q.c) {
-    const [s, e] = p.r < q.r ? [p.r + 1, q.r - 1] : [q.r + 1, p.r - 1];
-    for (let r = s; r <= e; r++) if (get(r, p.c)) return false;
+  if(p.c===q.c){
+    const [s,e] = p.r<q.r ? [p.r+1,q.r-1] : [q.r+1,p.r-1];
+    for(let r=s;r<=e;r++) if(!passable(r,p.c,a,b)) return false;
     return true;
   }
   return false;
 }
-
-// 返回路径点数组（含两端）或 null；坐标为虚拟网格坐标
-function findPath(a, b) {
-  // 直连（0 拐点）
-  if (isEmptyLine(a, b)) return [a, b];
-  // 1 个拐点
-  const c1 = { r: a.r, c: b.c };
-  if (!same(c1, a) && !same(c1, b) && isEmptyLine(a, c1) && isEmptyLine(c1, b)) return [a, c1, b];
-  const c2 = { r: b.r, c: a.c };
-  if (!same(c2, a) && !same(c2, b) && isEmptyLine(a, c2) && isEmptyLine(c2, b)) return [a, c2, b];
-  // 2 个拐点：枚举穿过 a 行 / a 列 / b 行 / b 列的中转线
-  const candRows = [a.r, b.r];
-  const candCols = [a.c, b.c];
-  for (const r of candRows) {
-    const m1 = { r, c: a.c }, m2 = { r, c: b.c };
-    if (isEmptyLine(a, m1) && isEmptyLine(m1, m2) && isEmptyLine(m2, b) && r !== a.r && r !== b.r)
-      return [a, m1, m2, b];
-    if (r === a.r || r === b.r) {
-      // 沿同一行走到另一端列再折
-      const m = { r, c: r === a.r ? b.c : b.c };
-      if (isEmptyLine(a, { r, c: a.c === b.c ? a.c : b.c === a.c ? a.c : b.c })) {}
-    }
+function simplify(path){
+  const res=[path[0]];
+  for(let i=1;i<path.length-1;i++){
+    const p=res[res.length-1], q=path[i], n=path[i+1];
+    if((p.r===q.r&&q.r===n.r)||(p.c===q.c&&q.c===n.c)) continue;
+    res.push(q);
   }
-  for (const c of candCols) {
-    const m1 = { r: a.r, c }, m2 = { r: b.r, c };
-    if (isEmptyLine(a, m1) && isEmptyLine(m1, m2) && isEmptyLine(m2, b) && c !== a.c && c !== b.c)
-      return [a, m1, m2, b];
+  res.push(path[path.length-1]);
+  return res;
+}
+function findPath(a,b){
+  if(lineEmpty(a,b,a,b)) return [a,b];
+  const c1={r:a.r,c:b.c};
+  if(!same(c1,a)&&!same(c1,b)&&lineEmpty(a,c1,a,b)&&lineEmpty(c1,b,a,b)) return [a,c1,b];
+  const c2={r:b.r,c:a.c};
+  if(!same(c2,a)&&!same(c2,b)&&lineEmpty(a,c2,a,b)&&lineEmpty(c2,b,a,b)) return [a,c2,b];
+  for(let r=0;r<H;r++){
+    const m1={r,c:a.c}, m2={r,c:b.c};
+    if(lineEmpty(a,m1,a,b)&&lineEmpty(m1,m2,a,b)&&lineEmpty(m2,b,a,b))
+      return simplify([a,m1,m2,b]);
   }
-  // 通用兜底：枚举所有行列（保证完备）
-  for (let r = 0; r < H; r++) {
-    const m1 = { r, c: a.c }, m2 = { r, c: b.c };
-    if (isEmptyLine(a, m1) && isEmptyLine(m1, m2) && isEmptyLine(m2, b))
-      return simplify([a, m1, m2, b]);
-  }
-  for (let c = 0; c < W; c++) {
-    const m1 = { r: a.r, c }, m2 = { r: b.r, c };
-    if (isEmptyLine(a, m1) && isEmptyLine(m1, m2) && isEmptyLine(m2, b))
-      return simplify([a, m1, m2, b]);
+  for(let c=0;c<W;c++){
+    const m1={r:a.r,c}, m2={r:b.r,c};
+    if(lineEmpty(a,m1,a,b)&&lineEmpty(m1,m2,a,b)&&lineEmpty(m2,b,a,b))
+      return simplify([a,m1,m2,b]);
   }
   return null;
 }
 
-// 去掉共线冗余点
-function simplify(path) {
-  const out = [path[0]];
-  for (let i = 1; i < path.length; i++) {
-    out.push(path[i]);
-  }
-  const res = [out[0]];
-  for (let i = 1; i < out.length - 1; i++) {
-    const p = res[res.length - 1], q = out[i], n = out[i + 1];
-    if ((p.r === q.r && q.r === n.r) || (p.c === q.c && q.c === n.c)) continue;
-    res.push(q);
-  }
-  res.push(out[out.length - 1]);
-  return res;
-}
+function onTile(r,c){
+  if(!running) return;
+  const cell = grid[r][c];
+  if(cell.removed || cell.type==='lock') return;
 
-function onTile(r, c) {
-  if (!running) return;
-  if (!selected) {
-    selected = { r: r + PAD, c: c + PAD };
-    render();
-    return;
+  if(bombMode){
+    if(bombs<=0){ bombMode=false; updateBombBtn(); return; }
+    bombs--;
+    bombMode=false; updateBombBtn();
+    // 炸掉此格 + 找同图案最近的一格一起炸（或仅炸此格+相邻）
+    cell.removed=true;
+    // 同图案任意一格陪葬
+    let victim=null;
+    outer: for(let rr=0;rr<ROWS;rr++) for(let cc=0;cc<COLS;cc++){
+      const o=grid[rr][cc];
+      if(!o.removed && o.type!=='lock' && !(rr===r&&cc===c) && o.v===cell.v){ victim={r:rr,c:cc}; break outer; }
+    }
+    if(victim) grid[victim.r][victim.c].removed=true;
+    damageIceAround(r,c);
+    if(victim) damageIceAround(victim.r,victim.c);
+    addScore(20, r, c, '💣');
+    render(); updateHUD(); checkWin(); return;
   }
-  if (selected.r === r + PAD && selected.c === c + PAD) {
-    selected = null; render(); return;
-  }
-  const a = selected;
-  const b = { r: r + PAD, c: c + PAD };
-  if (grid[a.r - PAD][a.c - PAD] === grid[r][c]) {
-    const path = findPath(a, b);
-    if (path) {
+
+  if(!selected){ selected={r,c}; render(); return; }
+  if(selected.r===r && selected.c===c){ selected=null; render(); return; }
+
+  const a=selected, b={r,c};
+  const ca=grid[a.r][a.c], cb=grid[b.r][b.c];
+  if(!ca.removed && !cb.removed && ca.type!=='lock' && cb.type!=='lock' && ca.v===cb.v){
+    const path = findPath({r:a.r+PAD,c:a.c+PAD},{r:b.r+PAD,c:b.c+PAD});
+    if(path){
       drawPath(path);
-      const t1 = tileAt(a.r - PAD, a.c - PAD);
-      const t2 = tileAt(r, c);
-      [t1, t2].forEach(t => t && t.classList.add('removing'));
-      setTimeout(() => {
-        grid[a.r - PAD][a.c - PAD] = null;
-        grid[r][c] = null;
-        score += 10;
-        selected = null;
-        render();
-        updateHUD();
-        checkWin();
-      }, 220);
+      const t1=tileAt(a.r,a.c), t2=tileAt(b.r,b.c);
+      [t1,t2].forEach(t=>t&&t.classList.add('removing'));
+      setTimeout(()=>{
+        ca.removed=true; cb.removed=true;
+        let gain=10;
+        if(ca.type==='bonus'||cb.type==='bonus') gain+=50;
+        // 连击
+        const now=Date.now();
+        if(now-lastMatchTime < COMBO_WINDOW){ combo=Math.min(combo+1,9); } else combo=1;
+        lastMatchTime=now;
+        gain *= combo;
+        damageIceAround(a.r,a.c);
+        damageIceAround(b.r,b.c);
+        addScore(gain, b.r, b.c, '+'+gain);
+        showCombo();
+        selected=null;
+        render(); updateHUD(); checkWin();
+      },220);
       return;
     }
   }
-  selected = { r: r + PAD, c: c + PAD };
+  selected={r,c};
   render();
 }
 
-function tileAt(r, c) {
-  return boardEl.querySelector('.tile[data-r="' + r + '"][data-c="' + c + '"]');
-}
-
-function drawPath(path) {
-  const pts = path.map(p => {
-    const x = px(p.c) + TILE / 2;
-    const y = px(p.r) + TILE / 2;
-    return x + ',' + y;
-  }).join(' ');
-  const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-  poly.setAttribute('points', pts);
-  svg.appendChild(poly);
-  setTimeout(() => poly.remove(), 400);
-}
-
-function anyPair() {
-  const pos = {};
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-    const v = grid[r][c];
-    if (!v) continue;
-    (pos[v] = pos[v] || []).push({ r: r + PAD, c: c + PAD });
+function damageIceAround(r,c){
+  const around=[[r-1,c],[r+1,c],[r,c-1],[r,c+1]];
+  const broken=[];
+  for(const [rr,cc] of around){
+    const ice=iceAt(rr,cc);
+    if(ice){
+      ice.hp--;
+      if(ice.hp<=0){ broken.push(ice); }
+    }
   }
-  for (const k in pos) {
-    const arr = pos[k];
-    for (let i = 0; i < arr.length; i++)
-      for (let j = i + 1; j < arr.length; j++)
-        if (findPath(arr[i], arr[j])) return [arr[i], arr[j]];
+  if(broken.length){
+    iceCells = iceCells.filter(i=>!broken.includes(i));
+    addScore(30*broken.length, r, c, '🧊+30');
+  }
+}
+
+function tileAt(r,c){
+  // 简单方案：按坐标取
+  const els = boardEl.querySelectorAll('.tile');
+  for(const el of els){
+    if(parseFloat(el.style.left)===px(c+PAD) && parseFloat(el.style.top)===px(r+PAD)) return el;
   }
   return null;
 }
 
-function shuffle() {
-  const vals = [];
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (grid[r][c]) vals.push(grid[r][c]);
-  for (let i = vals.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [vals[i], vals[j]] = [vals[j], vals[i]];
+function drawPath(path){
+  const pts = path.map(p=> (px(p.c)+TILE/2)+','+(px(p.r)+TILE/2)).join(' ');
+  const poly=document.createElementNS('http://www.w3.org/2000/svg','polyline');
+  poly.setAttribute('points',pts);
+  svg.appendChild(poly);
+  setTimeout(()=>poly.remove(),400);
+}
+
+function addScore(gain,r,c,label){
+  score+=gain;
+  const f=document.createElement('div');
+  f.className='float';
+  f.textContent = label!==undefined ? label : ('+'+gain);
+  f.style.left = px(c+PAD)+'px';
+  f.style.top = px(r+PAD)+'px';
+  effectsEl.appendChild(f);
+  setTimeout(()=>f.remove(),1000);
+}
+
+function showCombo(){
+  if(combo>1){
+    comboBar.textContent='🔥 连击 x'+combo+'!';
+    comboBar.classList.add('show');
+    clearTimeout(comboBar._t);
+    comboBar._t=setTimeout(()=>comboBar.classList.remove('show'),1500);
   }
-  let k = 0;
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (grid[r][c]) grid[r][c] = vals[k++];
-  selected = null;
+}
+
+function anyPair(){
+  const pos={};
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const cell=grid[r][c];
+    if(cell.removed||cell.type==='lock') continue;
+    if(iceAt(r,c)) continue;
+    (pos[cell.v]=pos[cell.v]||[]).push({r:r+PAD,c:c+PAD});
+  }
+  for(const k in pos){
+    const arr=pos[k];
+    for(let i=0;i<arr.length;i++)
+      for(let j=i+1;j<arr.length;j++)
+        if(findPath(arr[i],arr[j])) return [arr[i],arr[j]];
+  }
+  return null;
+}
+
+function shuffleBoard(){
+  // 只洗普通/奖励块的图案
+  const vals=[];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const cell=grid[r][c];
+    if(!cell.removed && cell.type!=='lock') vals.push(cell.v);
+  }
+  shuffleArr(vals);
+  let k=0;
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const cell=grid[r][c];
+    if(!cell.removed && cell.type!=='lock') cell.v=vals[k++];
+  }
+  selected=null;
   render();
+  if(!anyPair()) shuffleBoard();
 }
 
-function checkWin() {
-  const left = grid.flat().filter(Boolean).length;
-  if (left === 0) endGame(true);
+function checkWin(){
+  let left=0;
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+    if(!grid[r][c].removed && grid[r][c].type!=='lock') left++;
+  if(left===0) nextLevel();
 }
 
-function endGame(win) {
-  running = false;
+function nextLevel(){
+  running=false;
+  clearInterval(timer);
+  level++;
+  const timeBonus = timeLeft*2;
+  score += timeBonus;
+  overlay.classList.remove('hidden');
+  document.getElementById('ovTitle').textContent='🎉 第 '+(level-1)+' 关通过！';
+  document.getElementById('ovText').innerHTML =
+    '时间奖励 +'+timeBonus+'<br>当前总分：<b>'+score+'</b><br>下一关：棋盘更大、冰块更多！';
+  document.getElementById('btnStart').textContent='▶ 下一关';
+}
+
+function endGame(){
+  running=false;
   clearInterval(timer);
   overlay.classList.remove('hidden');
-  document.getElementById('ovTitle').textContent = win ? '🎉 你赢了！' : '⏰ 时间到！';
-  const bonus = win ? timeLeft * 2 : 0;
-  document.getElementById('ovText').innerHTML =
-    '最终得分：<b>' + (score + bonus) + '</b>' + (win ? '（含时间奖励 ' + bonus + '）' : '') + '<br>再来一局？';
-  document.getElementById('btnStart').textContent = '▶ 再玩一次';
-  score += bonus;
+  document.getElementById('ovTitle').textContent='⏰ 时间到！';
+  document.getElementById('ovText').innerHTML='最终得分：<b>'+score+'</b><br>到达第 '+level+' 关';
+  document.getElementById('btnStart').textContent='▶ 再玩一次';
 }
 
-function start() {
-  newGame();
-  overlay.classList.add('hidden');
-  running = true;
-  timer = setInterval(() => {
+function startTimer(){
+  clearInterval(timer);
+  timer=setInterval(()=>{
     timeLeft--;
-    document.getElementById('time').textContent = timeLeft;
-    if (timeLeft <= 0) endGame(false);
-  }, 1000);
-  if (!anyPair()) shuffle();
+    document.getElementById('time').textContent=timeLeft;
+    // combo 超时重置
+    if(Date.now()-lastMatchTime > COMBO_WINDOW && combo>1){ combo=1; updateHUD(); }
+    if(timeLeft<=0) endGame();
+  },1000);
 }
 
-document.getElementById('btnStart').addEventListener('click', start);
-document.getElementById('btnRestart').addEventListener('click', () => {
-  overlay.classList.remove('hidden');
-  document.getElementById('ovTitle').textContent = '连连看';
-  document.getElementById('ovText').innerHTML = '准备好了吗？<br>60 秒内消除全部方块。';
-  document.getElementById('btnStart').textContent = '▶ 开始游戏';
-  newGame();
-});
-document.getElementById('btnShuffle').addEventListener('click', () => { if (running) shuffle(); });
-document.getElementById('btnHint').addEventListener('click', () => {
-  if (!running || hints <= 0) return;
-  const p = anyPair();
-  if (!p) { shuffle(); return; }
-  hints--;
+function updateBombBtn(){
+  const btn=document.getElementById('btnBomb');
+  btn.textContent = bombMode ? '💣 点一个格子引爆' : '💣 炸弹模式';
+  btn.style.opacity = (bombs>0 && running) ? 1 : .4;
+}
+
+function start(){
+  overlay.classList.add('hidden');
+  running=true;
+  if(!anyPair()) shuffleBoard();
+  startTimer();
   updateHUD();
-  selected = null;
-  render();
-  const t1 = tileAt(p[0].r - PAD, p[0].c - PAD);
-  const t2 = tileAt(p[1].r - PAD, p[1].c - PAD);
-  [t1, t2].forEach(t => t && (t.style.outline = '3px solid #ff8a65'));
-  drawPath(findPath(p[0], p[1]));
-  setTimeout(() => [t1, t2].forEach(t => t && (t.style.outline = '')), 1200);
+  updateBombBtn();
+}
+
+document.querySelectorAll('#diffRow button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#diffRow button').forEach(x=>x.style.outline='none');
+    b.style.outline='3px solid #fff';
+    setupDiff(b.dataset.diff);
+  });
+});
+document.getElementById('btnStart').addEventListener('click', start);
+document.getElementById('btnRestart').addEventListener('click', ()=>{
+  overlay.classList.remove('hidden');
+  document.getElementById('ovTitle').textContent='连连看 · 进阶版';
+  document.getElementById('ovText').innerHTML='重新开始当前难度，从第 1 关开始。';
+  document.getElementById('btnStart').textContent='▶ 开始游戏';
+  level=1; score=0;
+  newLevel();
+});
+document.getElementById('btnHint').addEventListener('click',()=>{
+  if(!running||hints<=0) return;
+  const p=anyPair();
+  if(!p){ shuffleBoard(); return; }
+  hints--; updateHUD();
+  selected=null; render();
+  const t1=tileAt(p[0].r-PAD,p[0].c-PAD), t2=tileAt(p[1].r-PAD,p[1].c-PAD);
+  [t1,t2].forEach(t=>t&&t.classList.add('hinted'));
+  drawPath(findPath(p[0],p[1]));
+  setTimeout(()=>[t1,t2].forEach(t=>t&&t.classList.remove('hinted')),1500);
+});
+document.getElementById('btnShuffle').addEventListener('click',()=>{
+  if(!running||shuffles<=0) return;
+  shuffles--; updateHUD(); shuffleBoard();
+});
+document.getElementById('btnBomb').addEventListener('click',()=>{
+  if(!running||bombs<=0) return;
+  bombMode=!bombMode;
+  updateBombBtn();
 });
 
-newGame();
+// 初始化默认难度
+document.querySelector('#diffRow button[data-diff="normal"]').style.outline='3px solid #fff';
+setupDiff('normal');
 </script>
 </body>
 </html>
