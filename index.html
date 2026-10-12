@@ -355,7 +355,8 @@ const COURSES = {
           {t:'choice', q:'“星期一”的日语是？', en:'Monday', options:['げつようび','かようび','もくようび','にちようび'], a:0, ex:'月曜日(げつようび) = 星期一'},
           {t:'listen', audio:'sanjuu go fun', q:'你听到了什么？', options:['さんじゅうごふん','さんじゅうごじ','さんじゅうじ','にじゅうごふん'], a:0, ex:'35分 = さんじゅうごふん'},
           {t:'match', q:'配对数字', pairs:[['いち','One'],['に','Two'],['さん','Three'],['よん','Four']], ex:'基础数字 1-4'},
-          {t:'build', q:'把 “明天见” 翻译成日语（罗马音）', en:'See you tomorrow', answer:'ashita mata ne', words:['ashita','mata','ne','kyou','matamata'], ex:'明日またね = 明天见'}
+          {t:'build', q:'把 “明天见” 翻译成日语（罗马音）', en:'See you tomorrow', answer:'ashita mata ne', words:['ashita','mata','ne','kyou','matamata'], ex:'明日またね = 明天见'},
+          {t:'choice', q:'“现在是三点”日语怎么说？', jp:'さんじ です', en:'It is three o\'clock', options:['It is three o\'clock','It is three days','The third thing','Three o\'clock is fun'], a:0, ex:'〜じ = ……点钟'}
         ]},
         { id:'ja5', title:'食物与饮料', icon:'🍣', items:[
           {t:'choice', q:'“我喜欢吃寿司”用日语怎么说？', en:'I like eating sushi', options:['すしが たべる のが すき です','すしは おおい です','すしを つかいます','すしに いきます'], a:0, ex:'〜がすきです = 喜欢……'},
@@ -364,7 +365,8 @@ const COURSES = {
           {t:'choice', q:'在餐厅点餐时会听到：', en:'What would you like?', options:['なにを いれます か','いくら ですか','おいしい ですか','ごめん ください ですか'], a:0, ex:'なにを入れますか = 要点什么呢？'},
           {t:'match', q:'配对食物', pairs:[['すし','Sushi'],['らーめん','Ramen'],['みず','Water'],['おちゃ','Tea']], ex:'餐厅必备词'},
           {t:'listen', audio:'sushi o kudasai', q:'你听到了什么？', options:['すしを ください','すしを たべます','すしは おいしい','すしに いきます'], a:0, ex:'すしをください = 请给我寿司'},
-          {t:'build', q:'把 “很贵” 翻译成日语（罗马音）', en:'It is expensive', answer:'takai desu', words:['takai','desu','yasui','oishii'], ex:'高い(たかい) = 贵'}
+          {t:'build', q:'把 “很贵” 翻译成日语（罗马音）', en:'It is expensive', answer:'takai desu', words:['takai','desu','yasui','oishii'], ex:'高い(たかい) = 贵'},
+          {t:'choice', q:'“我饿了”日语怎么说？', en:'I am hungry', options:['おなかが すいて います','のどが かわいて います','たなか です','おなかが いっぱい です'], a:0, ex:'お腹が空く = 肚子饿；のどがかわく = 口渴'}
         ]},
         { id:'ja6', title:'方位与出行', icon:'🚃', items:[
           {t:'choice', q:'“车站在哪里？”日语怎么说？', en:'Where is the station?', options:['えきは どこに あります か','えきは なに ですか','えきに いきます か','えきは おおきい ですか'], a:0, ex:'〜はどこにありますか = ……在哪里？'},
@@ -373,7 +375,8 @@ const COURSES = {
           {t:'choice', q:'“一起去吧”用日语怎么说？', en:"Let's go together", options:['いっしょに いきましょう','ひとりで いきます','いそぎます','やすみましょう'], a:0, ex:'〜ましょう = 让我们……'},
           {t:'match', q:'配对出行词', pairs:[['えき','Station'],['でんしゃ','Train'],['ひだり','Left'],['みぎ','Right']], ex:'问路必备'},
           {t:'listen', audio:'koko wa doko desu ka', q:'你听到了什么？', options:['ここは どこ ですか','ここは なん ですか','そこは どこ ですか','これは だれ ですか'], a:0, ex:'ここはどこですか = 这里是哪里？'},
-          {t:'build', q:'把 “很远” 翻译成日语（罗马音）', en:'It is far', answer:'tooi desu', words:['tooi','desu','chikai','takai','arimasu'], ex:'遠い(とおい) = 远'}
+          {t:'build', q:'把 “很远” 翻译成日语（罗马音）', en:'It is far', answer:'tooi desu', words:['tooi','desu','chikai','takai','arimasu'], ex:'遠い(とおい) = 远'},
+          {t:'choice', q:'“直走”用日语怎么说？', en:'Go straight', options:['まっすぐ いって ください','ひだりに まがって','みぎに とまれ','やすんで ください'], a:0, ex:'まっすぐ行ってください = 请直走（问路常用）'}
         ]}
       ]},
       { title:'第 3 单元：生活场景', icon:'🗻', lessons:[
@@ -384,7 +387,8 @@ const COURSES = {
           {t:'choice', q:'“我买了”用日语怎么说？', en:"I'll buy it", options:['かいます','かけます','たべます','いきます'], a:0, ex:'買う(かう)=买'},
           {t:'match', q:'配对购物词', pairs:[['いくら','How much'],['やすい','Cheap'],['たかい','Expensive'],['かいもの','Shopping']], ex:'逛街必备'},
           {t:'listen', audio:'kore o kudasai', q:'你听到了什么？', options:['これを ください','これを かいます','これは いくら','これは たかい'], a:0, ex:'これをください = 请给我这个'},
-          {t:'build', q:'把 “用信用卡” 翻译成日语（罗马音）', en:'By credit card', answer:'kuredo kaado de', words:['kuredo','kaado','de','genkin','okane'], ex:'クレジットカードで = 用信用卡'}
+          {t:'build', q:'把 “用信用卡” 翻译成日语（罗马音）', en:'By credit card', answer:'kuredo kaado de', words:['kuredo','kaado','de','genkin','okane'], ex:'クレジットカードで = 用信用卡'},
+          {t:'choice', q:'“可以试穿吗？”日语怎么说？', en:'May I try this on?', options:['きても いい ですか','かって もいい ですか','たべて もいい ですか','みて ください'], a:0, ex:'〜てもいいですか = 可以……吗？'}
         ]},
         { id:'ja8', title:'天气', icon:'🌤️', items:[
           {t:'choice', q:'“今天天气怎么样？”日语怎么说？', en:'How is the weather today?', options:['きょうは てんきが いい ですか','きょうは なんじ ですか','きょうは どこ ですか','きょうは だれ ですか'], a:0, ex:'てんき = 天气'},
@@ -393,7 +397,8 @@ const COURSES = {
           {t:'choice', q:'“下雪”的日语是？', en:'It snows', options:['ゆきが ふります','あめが ふります','かぜが ふきます','はれます'], a:0, ex:'雪がふります = 下雪'},
           {t:'match', q:'配对天气词', pairs:[['てんき','Weather'],['あめ','Rain'],['ゆき','Snow'],['はれ','Clear sky']], ex:'看天气预报用'},
           {t:'listen', audio:'kyou wa hare desu', q:'你听到了什么？', options:['きょうは はれ です','きょうは あめ です','きょうは ゆき です','きょうは くもり です'], a:0, ex:'今日は晴れです = 今天晴天'},
-          {t:'build', q:'把 “刮风了” 翻译成英语', jp:'かぜが ふいて います', answer:'its windy', words:['its','windy','raining','snowing','sunny'], ex:'風がふいています = 刮着风'}
+          {t:'build', q:'把 “刮风了” 翻译成英语', jp:'かぜが ふいて います', answer:'its windy', words:['its','windy','raining','snowing','sunny'], ex:'風がふいています = 刮着风'},
+          {t:'choice', q:'“明天会下雨”日语怎么说？', en:'It will rain tomorrow', options:['あした あめが ふります','きのう あめが ふった','いま あめが ふっています','あめは やみました'], a:0, ex:'明日(あした)=明天；现在进行~ています'}
         ]},
         { id:'ja9', title:'心情感受', icon:'😊', items:[
           {t:'choice', q:'“很开心”用日语怎么说？', en:'I am happy', options:['たのしい です','かなしい です','つかれ です','おおきい です'], a:0, ex:'楽しい(たのしい)=开心'},
@@ -402,7 +407,40 @@ const COURSES = {
           {t:'choice', q:'“我明白了”用日语怎么说？', en:'I see / I understand', options:['わかりました','ききました','みました','いきました'], a:0, ex:'わかりました = 明白了'},
           {t:'match', q:'配对心情词', pairs:[['うれしい','Happy'],['かなしい','Sad'],['おこった','Angry'],['げんき','Energetic']], ex:'表达情绪'},
           {t:'listen', audio:'tanoshii ne', q:'你听到了什么？', options:['たのしい ね','かなしい ね','つかれた ね','かわいい ね'], a:0, ex:'楽しいね = 很开心呢'},
-          {t:'build', q:'把 “我喜欢你” 翻译成日语（罗马音）', en:'I like you', answer:'suki desu', words:['suki','desu','kirai','ai','anata'], ex:'好きです = 喜欢你'}
+          {t:'build', q:'把 “我喜欢你” 翻译成日语（罗马音）', en:'I like you', answer:'suki desu', words:['suki','desu','kirai','ai','anata'], ex:'好きです = 喜欢你'},
+          {t:'choice', q:'“加油！”的日语应援说法是？', en:'Go for it! / You can do it!', options:['がんばって','おつかれさま','おめでとう','いただきます'], a:0, ex:'頑張って！= 加油！（为别人打气）'}
+        ]}
+      ]},
+      { title:'第 4 单元：进阶会话', icon:'⛩️', lessons:[
+        { id:'ja10', title:'动词变形', icon:'⚙️', items:[
+          {t:'choice', q:'“食べます（吃）”的否定形是？', en:'do not eat', options:['たべません','たべます','たべたい','たべさせます'], a:0, ex:'〜ません = 不做……（礼貌否定）'},
+          {t:'choice', q:'“飲みます（喝）”换成过去式是？', en:'drank', options:['のみました','のみません','のもう','のんでいる'], a:0, ex:'〜ました = ……了（礼貌过去式）'},
+          {t:'build', q:'把 “我不喝咖啡” 翻译成日语（罗马音）', en:'I do not drink coffee', answer:'koohi wa nomimasen', words:['koohi','wa','nomimasen','nomimasu','tabemasen'], ex:'コーヒーは飲みません = 我不喝咖啡'},
+          {t:'choice', q:'“きます（来）”的ます形是？', en:'come (polite)', options:['きます','きます','こない','きました'], a:0, ex:'来ます(きます) 来ます形不加 e，直接 き+ます'},
+          {t:'match', q:'配对动词', pairs:[['たべる','Eat'],['のむ','Drink'],['みる','See'],['はしる','Run']], ex:'三个代表性的动词原形'},
+          {t:'listen', audio:'eigo o hanashimasu', q:'你听到了什么？', options:['えいごを はなします','えいごを つかいます','えいごを たべます','えいごを のみます'], a:0, ex:'英語を話します = 说英语'},
+          {t:'build', q:'把 “我昨天看了电影” 翻译成英语（用过去式）', jp:'きのう えいがを みました', answer:'i watched a movie yesterday', words:['i','watched','a','movie','yesterday','watch'], ex:'〜ました = 过去式'},
+          {t:'choice', q:'“想去”的日语（希望助动词）是？', en:'want to go', options:['いきたい','いきます','いって','いきたかった'], a:0, ex:'〜たい = 想要……（たい形）'}
+        ]},
+        { id:'ja11', title:'语法句型', icon:'📖', items:[
+          {t:'choice', q:'“私は水を飲みます” 的宾语助词是？', en:'the object particle is…', options:['を (o)','に (ni)','で (de)','へ (e)'], a:0, ex:'を = 宾语标记（水を = 把水）'},
+          {t:'choice', q:'“在哪里做？”的 “在（地点）”用哪个助词？', en:'at / in (place)', options:['で (de)','に (ni)','を (o)','の (no)'], a:0, ex:'で = 动作发生的场所（えきで まつ = 在车站等）'},
+          {t:'build', q:'把 “用日语说话” 翻译成日语（罗马音）', en:'Speak in Japanese', answer:'nihongo de hanasu', words:['nihongo','de','hanasu','hanashimasu','ni'], ex:'〜で = 用……手段'},
+          {t:'choice', q:'“学校へ行きます” 中 へ 的意思？', en:'to (direction)', options:['to（去向）','at（所在）','from（起点）','and（和）'], a:0, ex:'へ = 方向助词（学校へ = 去学校方向）'},
+          {t:'match', q:'配对助词', pairs:[['は','Topic marker'],['が','Subject marker'],['を','Object marker'],['で','At / by means']], ex:'四大基础助词'},
+          {t:'listen', audio:'watashi wa nihon ni ikimasu', q:'你听到了什么？', options:['わたしは にほんに いきます','わたしは にほんで いきます','わたしは にほんを いきます','わたしは にほんが いきます'], a:0, ex:'日本に = 去（到）日本（に=目的地）'},
+          {t:'build', q:'把 “这是我的书” 翻译成日语（罗马音）', en:'This is my book', answer:'kore wa watashi no hon desu', words:['kore','wa','watashi','no','hon','desu'], ex:'〜の〜 = 我的……（所有格）'},
+          {t:'choice', q:'“是猫”用日语怎么说？（简体）', en:'(It) is a cat', options:['ねこだ','ねこです','ねこを','ねこに'], a:0, ex:'〜だ = 简体的 “是”（口语/朋友间）'}
+        ]},
+        { id:'ja12', title:'旅行实用句', icon:'🧳', items:[
+          {t:'choice', q:'“酒店在哪里？”日语怎么说？', en:'Where is the hotel?', options:['ほてるは どこですか','ほてるは なにですか','ほてるに いきますか','ほてるは たかいですか'], a:0, ex:'ホテルはどこですか = 酒店在哪？'},
+          {t:'choice', q:'“请帮我叫出租车”用日语怎么说？', en:'Please call a taxi', options:['たくしーを よんで ください','たくしーを たべて ください','たくしーは どこですか','たくしーに ありがとう'], a:0, ex:'〜を呼んでください = 请帮我叫……'},
+          {t:'build', q:'把 “洗手间在哪里？” 翻译成英语', jp:'トイレは どこですか', answer:'where is the restroom', words:['where','is','the','restroom','toilet'], ex:'トイレ = 洗手间（外来语 toilet）'},
+          {t:'choice', q:'“多少钱（礼貌）”在收银台怎么说？', en:'How much is it altogether?', options:['いくらに なりますか','なにを いれますか','けっこうです','おいしいです'], a:0, ex:'いくらになりますか = 一共多少钱？'},
+          {t:'match', q:'配对旅行词', pairs:[['ホテル','Hotel'],['トイレ','Restroom'],['きっぷ','Ticket'],['みち','Street / Road']], ex:'外来语+和语混合的旅行词汇'},
+          {t:'listen', audio:'eki wa doko desu ka', q:'你听到了什么？', options:['えきは どこですか','えきは なんですか','えきに いきますか','えきで あるきます'], a:0, ex:'駅はどこですか = 车站在哪？'},
+          {t:'build', q:'把 “请稍等一下” 翻译成日语（罗马音）', en:'Please wait a moment', answer:'chotto matte kudasai', words:['chotto','matte','kudasai','matte','kudasai'], ex:'ちょっと待ってください = 稍等一下'},
+          {t:'choice', q:'“救命！”紧急时喊的日语是？', en:'Help!', options:['たすけて！','ありがとう！','おはよう！','ごめんね！'], a:0, ex:'助けて！= 救命！（紧急呼救）'}
         ]}
       ]}
     ]
@@ -412,7 +450,7 @@ const COURSES = {
     units: [
       { title:'Unit 1: First words', icon:'💬', lessons:[
         { id:'en1', title:'Greetings', icon:'👋', items:[
-          {t:'choice', q:'“你好”的英文是？', en:'Hello', jp:'你好', options:['Hello','Goodbye','Thanks','Yes'], a:0, ex:'Hello = 你好'},
+          {t:'choice', q:'“你好”的英文是？', jp:'你好', options:['Hello','Goodbye','Thanks','Yes'], a:0, ex:'Hello = 你好'},
           {t:'choice', q:'选出 “Thank you” 的意思', en:'Thank you', options:['谢谢你','对不起','再见','请'], a:0, ex:'Thank you = 谢谢你'},
           {t:'build', q:'把 “早上好” 翻译成英语', jp:'早上好', answer:'good morning', words:['good','morning','night','evening','goodby'], ex:'Good morning = 早上好'},
           {t:'listen', audio:'nice to meet you', q:'你听到了什么？', options:['nice to meet you','nice to see you','good to know you','glad to meet you'], a:0, ex:'Nice to meet you = 很高兴认识你'},
@@ -467,6 +505,70 @@ const COURSES = {
           {t:'match', q:'配对颜色', pairs:[['red','红色'],['blue','蓝色'],['green','绿色'],['black','黑色']], ex:'基础颜色'},
           {t:'choice', q:'“白色”的英文是？', jp:'白色', options:['white','black','brown','gray'], a:0, ex:'white = 白色'},
           {t:'build', q:'把 “我喜欢粉色” 翻译成英语', jp:'我喜欢粉色', answer:'i like pink', words:['i','like','pink','love','color'], ex:'I like pink. = 我喜欢粉色。'}
+        ]}
+      ]},
+      { title:'Unit 3: Actions & Grammar', icon:'🏃', lessons:[
+        { id:'en7', title:'Daily verbs', icon:'⚙️', items:[
+          {t:'choice', q:'“吃”的英文是？', jp:'吃', options:['eat','drink','sleep','run'], a:0, ex:'eat = 吃'},
+          {t:'choice', q:'“睡觉”用英语怎么说？', jp:'睡觉', options:['sleep','run','swim','read'], a:0, ex:'sleep = 睡觉'},
+          {t:'build', q:'把 “我每天跑步” 翻译成英语', jp:'我每天跑步', answer:'i run every day', words:['i','run','every','day','walk'], ex:'I run every day. = 我每天跑步。'},
+          {t:'listen', audio:'i go to school by bus', q:'你听到了什么？', options:['i go to school by bus','i go to school by bike','i went to school by bus','we go to school by bus'], a:0, ex:'I go to school by bus. = 我坐公交上学。'},
+          {t:'match', q:'配对动词', pairs:[['read','读'],['write','写'],['swim','游泳'],['cook','做饭']], ex:'日常动作动词'},
+          {t:'choice', q:'“我正在看书”的时态是？', en:'I am reading a book.', options:['现在进行时 be+doing','一般过去时','现在完成时','过去将来时'], a:0, ex:'am reading = 现在进行时（正在……）'},
+          {t:'build', q:'把 “他会说日语” 翻译成英语', jp:'他会说日语', answer:'he can speak japanese', words:['he','can','speak','japanese','she','english'], ex:'can = 能够/会'},
+          {t:'choice', q:'“必须去”用哪个情态动词？', en:'must go', options:['must','may','might','could'], a:0, ex:'must = 必须（语气强烈）'}
+        ]},
+        { id:'en8', title:'Tenses', icon:'📅', items:[
+          {t:'choice', q:'“我昨天去了公园” 用什么时态？', en:'I went to the park yesterday.', options:['一般过去时','一般现在时','将来时','进行时'], a:0, ex:'went / yesterday = 一般过去时'},
+          {t:'choice', q:'“go”的过去式是？', en:'go (past)', options:['went','goed','gone','going'], a:0, ex:'go → went 是不规则变化'},
+          {t:'build', q:'把 “我明天要考试” 翻译成英语', jp:'我明天要考试', answer:'i have an exam tomorrow', words:['i','have','an','exam','tomorrow','test'], ex:'tomorrow 标志将来时间'},
+          {t:'listen', audio:'i have finished my homework', q:'你听到了什么？', options:['i have finished my homework','i had finish my homework','i finish my homework','i am finish my homework'], a:0, ex:'have finished = 现在完成时（已经完成）'},
+          {t:'match', q:'配对时态', pairs:[['do','一般现在时'],['did','一般过去时'],['doing','现在进行时'],['done','过去分词']], ex:'动词的四种形态'},
+          {t:'choice', q:'“eat”的过去分词是？', en:'eat (past participle)', options:['eaten','eated','eating','ate'], a:0, ex:'eat → ate → eaten'},
+          {t:'build', q:'把 “我已经吃过饭了” 翻译成英语', jp:'我已经吃过饭了', answer:'i have eaten', words:['i','have','eaten','ate','eating'], ex:'have eaten = 已经吃了（现在完成时）'},
+          {t:'choice', q:'“will” 后面接什么形式？', en:'will + …', options:['动词原形','动词过去式','to+动词','doing'], a:0, ex:'will + do：will go / will eat（不加 to）'}
+        ]},
+        { id:'en9', title:'Prepositions & questions', icon:'❓', items:[
+          {t:'choice', q:'“在……上”用哪个介词？', en:'on the table', options:['on','in','at','of'], a:0, ex:'on = 在……表面'},
+          {t:'choice', q:'“在……里”用哪个介词？', en:'in the box', options:['in','on','to','for'], a:0, ex:'in = 在……内部'},
+          {t:'build', q:'把 “书在桌子上” 翻译成英语', jp:'书在桌子上', answer:'the book is on the table', words:['the','book','is','on','table','in'], ex:'on the table = 在桌子上'},
+          {t:'listen', audio:'where do you live', q:'你听到了什么？', options:['where do you live','where do you love','what do you live','where did you live'], a:0, ex:'Where do you live? = 你住在哪里？'},
+          {t:'match', q:'配对疑问词', pairs:[['What','什么'],['Where','哪里'],['When','什么时候'],['Who','谁']], ex:'四大疑问词'},
+          {t:'choice', q:'“你叫什么名字？”英语怎么问？', en:'What is your name?', options:['What is your name?','How old are you?','Where are you?','Who are you?'], a:0, ex:'What is your name? = 你叫什么名字？'},
+          {t:'build', q:'把 “为什么迟到了？” 翻译成英语', jp:'为什么迟到了？', answer:'why are you late', words:['why','are','you','late','how','when'], ex:'Why are you late? = 为什么迟到？'},
+          {t:'choice', q:'“和朋友”用哪个介词短语？', en:'with friends', options:['with friends','at friends','on friends','of friends'], a:0, ex:'with = 和……一起'}
+        ]}
+      ]},
+      { title:'Unit 4: Real-world English', icon:'🌍', lessons:[
+        { id:'en10', title:'Travel', icon:'✈️', items:[
+          {t:'choice', q:'“机场”用英语怎么说？', jp:'机场', options:['airport','station','harbor','market'], a:0, ex:'airport = 机场'},
+          {t:'choice', q:'“我想订一张票”怎么表达？', en:'I want to book a ticket.', options:['I want to book a ticket.','I want to eat a ticket.','I want to throw a ticket.','I want a ticket to fly.'], a:0, ex:'book a ticket = 订票'},
+          {t:'build', q:'把 “洗手间在哪里？” 翻译成英语', jp:'洗手间在哪里？', answer:'where is the restroom', words:['where','is','the','restroom','bathroom'], ex:'restroom / bathroom = 洗手间'},
+          {t:'listen', audio:'the flight is delayed', q:'你听到了什么？', options:['the flight is delayed','the fight is delayed','the flight is delighted','the light is delayed'], a:0, ex:'The flight is delayed. = 航班延误了。'},
+          {t:'match', q:'配对旅行词', pairs:[['passport','护照'],['ticket','车票'],['hotel','酒店'],['luggage','行李']], ex:'旅行必备五词'},
+          {t:'choice', q:'“办理登机手续”用英语说？', en:'check in', options:['check in','check out','sign up','give up'], a:0, ex:'check in = 办理登机/入住'},
+          {t:'build', q:'把 “单程还是往返？” 翻译成英语', jp:'单程还是往返？', answer:'one way or round trip', words:['one','way','or','round','trip'], ex:'one way = 单程；round trip = 往返'},
+          {t:'choice', q:'“海关”用英语怎么说？', jp:'海关', options:['customs','customer','coast','cost'], a:0, ex:'customs = 海关（注意和 customer 顾客区分）'}
+        ]},
+        { id:'en11', title:'Shopping & dining', icon:'🛒', items:[
+          {t:'choice', q:'“这个多少钱？”英语怎么问？', en:'How much is this?', options:['How much is this?','How many is this?','What is this much?','How long is this?'], a:0, ex:'How much + 不可数/价格'},
+          {t:'choice', q:'“太贵了！”用英语怎么说？', en:"It's too expensive!", options:["It's too expensive!",'It is too cheap.','How much money!','Very expensive you!'], a:0, ex:"It's too expensive! = 太贵了！"},
+          {t:'build', q:'把 “我想买这件衬衫” 翻译成英语', jp:'我想买这件衬衫', answer:'i want to buy this shirt', words:['i','want','to','buy','this','shirt'], ex:'want to do = 想要做……'},
+          {t:'listen', audio:'i would like a cup of coffee', q:'你听到了什么？', options:['i would like a cup of coffee','i would like a cut of coffee','i would like a cap of coffee','i would like to coffee'], a:0, ex:"I'd like... = 我想要……（点餐礼貌用语)"},
+          {t:'match', q:'配对餐厅词', pairs:[['menu','菜单'],['waiter','服务员'],['bill','账单'],['delicious','美味的']], ex:'餐厅场景四件套'},
+          {t:'choice', q:'“结账”用英语怎么说？', en:'The bill, please.', options:['The bill, please.','The menu, please.','More food, please.','Wait a menu.'], a:0, ex:'The bill, please. = 请结账'},
+          {t:'build', q:'把 “我没有零钱” 翻译成英语', jp:'我没有零钱', answer:'i dont have change', words:['i','dont','have','change','money','small'], ex:'change = 零钱（名词）'},
+          {t:'choice', q:'“打折”用英语怎么说？', en:'on sale / discount', options:['on sale / discount','for sale only','out of sale','no sale'], a:0, ex:'on sale = 打折促销；discount = 折扣'}
+        ]},
+        { id:'en12', title:'Small talk', icon:'☕', items:[
+          {t:'choice', q:'“天气怎么样？”英语怎么问？', en:"How's the weather?", options:["How's the weather?",'How old is the weather?','Where is the weather?','What weather you?'], a:0, ex:"How's the weather? = 天气怎么样？"},
+          {t:'choice', q:'“我来自中国”用英语怎么说？', en:"I'm from China.", options:["I'm from China.",'I come China now.','China is me.','I from at China.'], a:0, ex:"I'm from... = 我来自……"},
+          {t:'build', q:'把 “你周末过得怎么样？” 翻译成英语', jp:'你周末过得怎么样？', answer:'how was your weekend', words:['how','was','your','weekend','is','holiday'], ex:'How was your weekend? = 周末过得如何？（万能寒暄）'},
+          {t:'listen', audio:'what do you do for fun', q:'你听到了什么？', options:['what do you do for fun','what do you do for food','what did you do for fun','why do you do for fun'], a:0, ex:'What do you do for fun? = 你平时有什么爱好？'},
+          {t:'match', q:'配对闲聊话题', pairs:[['weather','天气'],['hobby','爱好'],['job','工作'],['movie','电影']], ex:'small talk 四大安全话题'},
+          {t:'choice', q:'“听起来不错”用英语怎么说？', en:'Sounds great!', options:['Sounds great!','Looks great!','Smells great!','Feels great!'], a:0, ex:'Sounds great! = 听起来很棒！'},
+          {t:'build', q:'把 “保持联系” 翻译成英语', jp:'保持联系', answer:'keep in touch', words:['keep','in','touch','stay','contact'], ex:'Keep in touch! = 保持联系！'},
+          {t:'choice', q:'“一路顺风”送行时说？', en:'Have a safe trip!', options:['Have a safe trip!','Have a safe slip!','Take a safe soup!','Go safe home.'], a:0, ex:'Have a safe trip! = 一路平安！'}
         ]}
       ]}
     ]
