@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>祖玛 Zuma - 网页游戏</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #1a1208;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 100vh; color: #f0d9a0;
+}
+h1 { margin: 14px 0 4px; font-size: 28px; text-shadow: 0 2px 8px #000; letter-spacing: 4px; }
+#hud {
+  display: flex; gap: 24px; margin: 8px 0; font-size: 15px;
+  background: rgba(0,0,0,.5); padding: 8px 22px; border-radius: 24px; border: 1px solid #6b5423;
+}
+#hud b { color: #ffd75e; }
+canvas {
+  border: 4px solid #6b5423; border-radius: 8px;
+  background: #0d0906; box-shadow: 0 0 40px rgba(255,180,40,.15);
+  cursor: crosshair;
+  max-width: 100%; height: auto;
+}
+#tip { margin: 8px; font-size: 13px; color: #b89a5e; text-align:center; }
+#overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.82);
+  display: flex; align-items: center; justify-content: center; flex-direction: column;
+  z-index: 10; text-shadow: 0 2px 6px #000;
+}
+#overlay h2 { font-size: 46px; color: #ffd75e; margin-bottom: 14px; }
+#overlay p { font-size: 18px; margin-bottom: 22px; text-align: center; line-height: 1.7; }
+#overlay button {
+  font-size: 20px; padding: 12px 46px; cursor: pointer;
+  background: linear-gradient(#f5c542, #c8891a); color: #3a2504;
+  border: none; border-radius: 30px; font-weight: bold; letter-spacing: 3px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.5);
+}
+#overlay button:hover { transform: scale(1.05); }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<h1>祖玛 ZUMA</h1>
+<div id="hud">
+  <span>得分 <b id="score">0</b></span>
+  <span>生命 <b id="lives">3</b></span>
+  <span>关卡 <b id="level">1</b></span>
+  <span>下一球 <b id="nextColor">●</b></span>
+</div>
+<canvas id="game" width="960" height="640"></canvas>
+<div id="tip">鼠标瞄准 · 点击/空格发射 · 匹配 3 个及以上同色球消除 · 连击加分 · P 暂停</div>
+<div id="overlay">
+  <h2 id="ovTitle">祖玛 ZUMA</h2>
+  <p id="ovText">阻止彩色球链滚入洞口！<br>匹配 3 个同色球消除它们，清空所有球过关。</p>
+  <button id="ovBtn">开始游戏</button>
+</div>
+
+<script>
+"use strict";
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+const COLORS = ['#e0453a','#3fa7e0','#f2c53d','#4cb963','#9a5fd0','#ee7ab8'];
+
+// ---------- 路径 ----------
+function buildPath() {
+  const raw = [
+    [-40, 320],
+    [120, 120], [340, 70], [560, 120], [680, 300], [600, 480], [400, 540],
+    [200, 470], [130, 320], [200, 180], [380, 150], [530, 230],
+    [540, 380], [420, 440], [300, 380], [310, 270],
+    [430, 240], [640, 200], [810, 280], [850, 430], [740, 540],
+    [560, 570], [800, 585], [910, 605]
+  ];
+  // Catmull-Rom 平滑采样
+  const sm = [];
+  for (let i=0; i<raw.length-1; i++) {
+    const p0=raw[Math.max(0,i-1)], p1=raw[i], p2=raw[i+1], p3=raw[Math.min(raw.length-1,i+2)];
+    for (let t=0; t<1; t+=1/16) {
+      const t2=t*t, t3=t2*t;
+      const x=0.5*((2*p1[0])+(-p0[0]+p2[0])*t+(2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*t2+(-p0[0]+3*p1[0]-3*p2[0]+p3[0])*t3);
+      const y=0.5*((2*p1[1])+(-p0[1]+p2[1])*t+(2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*t2+(-p0[1]+3*p1[1]-3*p2[1]+p3[1])*t3);
+      sm.push([x,y]);
+    }
+  }
+  sm.push(raw[raw.length-1]);
+  const cum=[0];
+  for (let i=1; i<sm.length; i++) cum.push(cum[i-1]+Math.hypot(sm[i][0]-sm[i-1][0], sm[i][1]-sm[i-1][1]));
+  return {pts:sm, cum, total:cum[cum.length-1]};
+}
+const path = buildPath();
+
+function posAt(s) {
+  if (s<=0) return {x:path.pts[0][0], y:path.pts[0][1]};
+  if (s>=path.total) { const p=path.pts[path.pts.length-1]; return {x:p[0], y:p[1]}; }
+  let lo=0, hi=path.cum.length-1;
+  while (lo<hi-1) { const mid=(lo+hi)>>1; if (path.cum[mid]<=s) lo=mid; else hi=mid; }
+  const t=(s-path.cum[lo])/(path.cum[lo+1]-path.cum[lo]);
+  return {x:path.pts[lo][0]+(path.pts[lo+1][0]-path.pts[lo][0])*t,
+          y:path.pts[lo][1]+(path.pts[lo+1][1]-path.pts[lo][1])*t};
+}
+
+// ---------- 状态 ----------
+const R = 19;
+const D = R*2;
+let balls = [];        // {s, color} 按 s 升序，尾部 s 小，头部 s 大（朝洞）
+let bullets = [];
+let frog = {x:480, y:330, ang:0};
+let current = 0, nextC = 0;
+let score=0, lives=3, level=1, chain=0;
+let state='menu';
+let speed = 26;
+let spawnLeft = 0;
+let spawnTimer = 0;
+let holeS = path.total;
+let lastT = 0;
+let effects = [];
+
+function randC(n){ return Math.floor(Math.random()*n); }
+function colorsInPlay(){ return Math.min(4 + level, COLORS.length); }
+
+function initLevel() {
+  balls = []; bullets = []; effects = []; chain = 0;
+  spawnLeft = 18 + level*6;
+  spawnTimer = 0;
+  speed = 24 + level*4;
+  current = randC(colorsInPlay());
+  nextC = randC(colorsInPlay());
+}
+function resetGame() {
+  score=0; lives=3; level=1;
+  initLevel();
+  state='play';
+  document.getElementById('overlay').classList.add('hidden');
+  updateHUD();
+}
+
+function spawnBall() {
+  if (!balls.length) { balls.push({s:R, color:randC(colorsInPlay())}); spawnLeft--; return; }
+  const minS = balls.reduce((m,b)=>Math.min(m,b.s), Infinity);
+  if (minS >= D - 1) {
+    balls.push({s:0, color:randC(colorsInPlay())});
+    spawnLeft--;
+  }
+}
+
+function burst(x, y, color, big) {
+  effects.push({x, y, t:0, color, big:!!big});
+}
+
+function checkMatchAt(idx) {
+  if (idx<0 || idx>=balls.length) return false;
+  const c = balls[idx].color;
+  let a=idx, b=idx;
+  while (a>0 && balls[a-1].color===c) a--;
+  while (b<balls.length-1 && balls[b+1].color===c) b++;
+  const n = b-a+1;
+  if (n>=3) {
+    for (let k=a; k<=b; k++) { const p=posAt(balls[k].s); burst(p.x, p.y, COLORS[c]); }
+    score += 10*n + (n>3 ? (n-3)*15 : 0);
+    chain++;
+    if (chain>1) score += (chain-1)*20;
+    balls.splice(a, n);
+    // 级联检查：消除点两侧颜色相同且 >=3
+    setTimeout(()=>{ if (state==='play') cascadeAt(a); }, 70);
+    return true;
+  }
+  return false;
+}
+function cascadeAt(idx) {
+  if (idx<0 || idx>=balls.length) return;
+  const c = balls[idx].color;
+  let a=idx, b=idx;
+  while (a>0 && balls[a-1].color===c) a--;
+  while (b<balls.length-1 && balls[b+1].color===c) b++;
+  const n = b-a+1;
+  if (n>=3) {
+    for (let k=a; k<=b; k++) { const p=posAt(balls[k].s); burst(p.x, p.y, COLORS[balls[k].color]); }
+    score += 10*n;
+    chain++;
+    balls.splice(a, n);
+    setTimeout(()=>{ if (state==='play') cascadeAt(a); }, 70);
+  }
+}
+
+function insertBall(hitIdx, s, color) {
+  const nb = {s, color};
+  balls.push(nb);
+  balls.sort((x,y)=>x.s-y.s);
+  const ni = balls.indexOf(nb);
+  // 向头部推挤
+  for (let i=ni; i<balls.length-1; i++) {
+    if (balls[i+1].s < balls[i].s + D) balls[i+1].s = balls[i].s + D;
+  }
+  // 向尾部推挤
+  for (let i=ni; i>0; i--) {
+    if (balls[i-1].s > balls[i].s - D) balls[i-1].s = balls[i].s - D;
+  }
+  // 尾部 < 0 则整体前移
+  if (balls[0].s < R) { const off = R - balls[0].s; for (const b of balls) b.s += off; }
+  if (!checkMatchAt(ni)) chain = 0;
+}
+
+function shoot() {
+  if (state!=='play') return;
+  bullets.push({x:frog.x, y:frog.y, vx:Math.cos(frog.ang)*780, vy:Math.sin(frog.ang)*780, color:current});
+  current = nextC; nextC = randC(colorsInPlay());
+  updateHUD();
+}
+
+function hitChain(bul) {
+  let best=-1, bd=1e9;
+  for (let i=0; i<balls.length; i++) {
+    const p = posAt(balls[i].s);
+    const d = Math.hypot(p.x-bul.x, p.y-bul.y);
+    if (d < R+7 && d<bd) { bd=d; best=i; }
+  }
+  return best;
+}
+
+// ---------- 更新 ----------
+function update(dt) {
+  if (state!=='play') return;
+
+  // 链推进
+  if (balls.length) {
+    const head = balls[balls.length-1].s;
+    const enterOK = spawnLeft<=0 || (head + speed*dt + D <= holeS);
+    if (enterOK) for (const b of balls) b.s += speed*dt;
+  }
+
+  // 生成
+  spawnTimer -= dt;
+  if (spawnLeft>0 && spawnTimer<=0) { spawnBall(); spawnTimer = 0.42; }
+
+  // 间距（头部在末尾）
+  for (let i=balls.length-1; i>0; i--) {
+    if (balls[i].s - D > balls[i-1].s) balls[i-1].s = balls[i].s - D;
+  }
+  if (balls.length && balls[0].s < 0) { const off=-balls[0].s; for(const b of balls) b.s+=off; }
+
+  // 洞判定
+  if (balls.length && balls[balls.length-1].s >= holeS - R*0.4) {
+    lives--;
+    burst(900, 595, '#ff5030', true);
+    balls = balls.filter(b=>b.s < holeS - D*5);
+    chain = 0;
+    updateHUD();
+    if (lives<=0) { gameOver(); return; }
+  }
+
+  // 子弹
+  for (let i=bullets.length-1; i>=0; i--) {
+    const b = bullets[i];
+    b.x += b.vx*dt; b.y += b.vy*dt;
+    if (b.x<-30||b.x>W+30||b.y<-30||b.y>H+30) { bullets.splice(i,1); continue; }
+    const hi = hitChain(b);
+    if (hi>=0) {
+      const hp = posAt(balls[hi].s);
+      // 根据击中方位决定插入头部侧还是尾部侧
+      const rel = (b.vx*(hp.x-posAt(holeS).x) + b.vy*(hp.y-posAt(holeS).y));
+      // 简化：比较子弹与球前进方向的点积，前进方向为路径切线
+      const ahead = balls[hi].s;
+      let s = ahead + D/2;
+      if (hi < balls.length-1 && balls[hi+1].s - ahead >= D) s = ahead + D/2;
+      else if (hi > 0 && ahead - balls[hi-1].s >= D) s = ahead - D/2;
+      else s = ahead + D/2;
+      bullets.splice(i,1);
+      insertBall(hi, Math.max(R, Math.min(holeS-D, s)), b.color);
+    }
+  }
+
+  // 特效
+  for (let i=effects.length-1; i>=0; i--) {
+    effects[i].t += dt;
+    if (effects[i].t>0.5) effects.splice(i,1);
+  }
+
+  // 胜利
+  if (spawnLeft<=0 && balls.length===0 && bullets.length===0) {
+    level++;
+    state='win';
+    showOverlay('第 '+(level-1)+' 关完成！', '清空所有球！<br>准备进入第 '+level+' 关', '下一关');
+    return;
+  }
+  updateHUD();
+}
+
+function gameOver() {
+  state='over';
+  showOverlay('游戏结束', '最终得分：<b style="color:#ffd75e">'+score+'</b><br>到达第 '+level+' 关', '重新开始');
+}
+
+// ---------- 渲染 ----------
+function drawPath() {
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.beginPath();
+  ctx.moveTo(path.pts[0][0], path.pts[0][1]);
+  for (let i=1;i<path.pts.length;i++) ctx.lineTo(path.pts[i][0], path.pts[i][1]);
+  ctx.lineWidth = 50; ctx.strokeStyle = '#241a0d'; ctx.stroke();
+  ctx.lineWidth = 42; ctx.strokeStyle = '#3a2c15'; ctx.stroke();
+  // 洞
+  const hole = posAt(holeS);
+  const g = ctx.createRadialGradient(hole.x-8, hole.y-8, 4, hole.x, hole.y, 38);
+  g.addColorStop(0, '#000'); g.addColorStop(1, '#241a0d');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(hole.x, hole.y, 36, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#6b5423'; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle='#6b5423'; ctx.font='13px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('危 险', hole.x, hole.y+4);
+}
+
+function drawBall(x,y,col) {
+  const g = ctx.createRadialGradient(x-6, y-7, 3, x, y, R);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.28, col);
+  g.addColorStop(1, shade(col, -45));
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth=2; ctx.stroke();
+}
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1),16);
+  let r=(n>>16)+amt, g=((n>>8)&255)+amt, b=(n&255)+amt;
+  r=Math.max(0,Math.min(255,r)); g=Math.max(0,Math.min(255,g)); b=Math.max(0,Math.min(255,b));
+  return '#'+((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');
+}
+function drawBalls() {
+  for (let i=balls.length-1; i>=0; i--) {
+    const p = posAt(balls[i].s);
+    drawBall(p.x, p.y, COLORS[balls[i].color]);
+  }
+}
+
+function drawFrog() {
+  ctx.save();
+  ctx.translate(frog.x, frog.y);
+  const bg = ctx.createRadialGradient(-8,-10,4, 0,0, 30);
+  bg.addColorStop(0,'#8ee06a'); bg.addColorStop(1,'#2f7a2a');
+  ctx.fillStyle=bg;
+  ctx.beginPath(); ctx.arc(0,0,30,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#1c4a18'; ctx.lineWidth=3; ctx.stroke();
+  for (const sx of [-1,1]) {
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.ellipse(sx*12, -14, 9, 11, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle='#111';
+    ctx.beginPath(); ctx.arc(sx*12 + Math.cos(frog.ang)*4, -14 + Math.sin(frog.ang)*4, 4.5, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.rotate(frog.ang);
+  ctx.fillStyle='#5a3b1a';
+  ctx.fillRect(6, -7, 36, 14);
+  ctx.strokeStyle='#3a2510'; ctx.lineWidth=2; ctx.strokeRect(6,-7,36,14);
+  ctx.restore();
+  drawBall(frog.x + Math.cos(frog.ang)*44, frog.y + Math.sin(frog.ang)*44, COLORS[current]);
+}
+
+function drawEffects() {
+  for (const e of effects) {
+    const k = e.t/0.5;
+    ctx.globalAlpha = 1-k;
+    ctx.strokeStyle = e.color;
+    ctx.lineWidth = 5*(1-k)+1;
+    ctx.beginPath(); ctx.arc(e.x, e.y, 12 + k*(e.big?70:38), 0, Math.PI*2); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function render() {
+  ctx.fillStyle='#0d0906'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(107,84,35,.07)';
+  for (let y=0; y<H; y+=32) for (let x=((y/32)%2)*16; x<W; x+=32) {
+    ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI*2); ctx.fill();
+  }
+  drawPath();
+  drawEffects();
+  drawBalls();
+  for (const b of bullets) drawBall(b.x, b.y, COLORS[b.color]);
+  drawFrog();
+
+  if (state==='play') {
+    ctx.strokeStyle='rgba(255,255,255,.14)'; ctx.lineWidth=2;
+    ctx.setLineDash([6,10]);
+    ctx.beginPath();
+    ctx.moveTo(frog.x, frog.y);
+    ctx.lineTo(frog.x + Math.cos(frog.ang)*1000, frog.y + Math.sin(frog.ang)*1000);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+// ---------- HUD / UI ----------
+function updateHUD() {
+  document.getElementById('score').textContent = score;
+  document.getElementById('lives').textContent = lives;
+  document.getElementById('level').textContent = level;
+  const nc = document.getElementById('nextColor');
+  nc.textContent = '●'; nc.style.color = COLORS[nextC];
+}
+function showOverlay(title, html, btn) {
+  document.getElementById('ovTitle').textContent = title;
+  document.getElementById('ovText').innerHTML = html;
+  document.getElementById('ovBtn').textContent = btn;
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+// ---------- 事件 ----------
+cv.addEventListener('mousemove', e=>{
+  const r = cv.getBoundingClientRect();
+  const mx = (e.clientX-r.left)*(W/r.width);
+  const my = (e.clientY-r.top)*(H/r.height);
+  frog.ang = Math.atan2(my-frog.y, mx-frog.x);
+});
+cv.addEventListener('click', ()=>{ if (state==='play') shoot(); });
+cv.addEventListener('touchstart', e=>{
+  e.preventDefault();
+  const r = cv.getBoundingClientRect();
+  const t = e.touches[0];
+  const mx = (t.clientX-r.left)*(W/r.width);
+  const my = (t.clientY-r.top)*(H/r.height);
+  frog.ang = Math.atan2(my-frog.y, mx-frog.x);
+  if (state==='play') shoot();
+}, {passive:false});
+cv.addEventListener('touchmove', e=>{
+  e.preventDefault();
+  const r = cv.getBoundingClientRect();
+  const t = e.touches[0];
+  const mx = (t.clientX-r.left)*(W/r.width);
+  const my = (t.clientY-r.top)*(H/r.height);
+  frog.ang = Math.atan2(my-frog.y, mx-frog.x);
+}, {passive:false});
+window.addEventListener('keydown', e=>{
+  if (e.code==='Space') { e.preventDefault(); if(state==='play') shoot(); }
+  if (e.code==='KeyP') togglePause();
+});
+function togglePause() {
+  if (state==='play') {
+    state='pause';
+    showOverlay('暂停', '按 P 或点击按钮继续', '继续');
+  } else if (state==='pause') {
+    state='play';
+    document.getElementById('overlay').classList.add('hidden');
+  }
+}
+document.getElementById('ovBtn').addEventListener('click', ()=>{
+  if (state==='pause') { togglePause(); return; }
+  resetGame();
+});
+
+// ---------- 主循环 ----------
+function loop(t) {
+  const dt = Math.min(0.05, ((t-lastT)/1000) || 0);
+  lastT = t;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+initLevel();
+updateHUD();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
