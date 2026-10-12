@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nihongo 日语学习</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #ff9a9e 0%, #fecfef 50%, #a18cd1 100%);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+    color: #2d2a4a;
+  }
+  .container { max-width: 920px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 22px; }
+  h1 { font-size: 44px; color: #fff; text-shadow: 3px 3px 0 rgba(0,0,0,0.15); letter-spacing: 4px; }
+  .sub { color: rgba(255,255,255,0.92); margin-top: 6px; font-size: 15px; }
+
+  .stats {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    background: rgba(255,255,255,0.65);
+    border-radius: 14px;
+    padding: 8px 18px;
+    text-align: center;
+    backdrop-filter: blur(6px);
+    min-width: 90px;
+  }
+  .stat .v { font-size: 24px; font-weight: 800; color: #6c5ce7; }
+  .stat .l { font-size: 12px; color: #6b6390; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; justify-content: center; }
+  .tab {
+    background: rgba(255,255,255,0.55);
+    border: none;
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #4a3f6b;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(6px);
+  }
+  .tab:hover { transform: translateY(-2px); background: rgba(255,255,255,0.8); }
+  .tab.active { background: #6c5ce7; color: #fff; box-shadow: 0 6px 18px rgba(108,92,231,0.4); }
+
+  .card {
+    background: rgba(255,255,255,0.94);
+    border-radius: 20px;
+    padding: 26px;
+    box-shadow: 0 12px 40px rgba(80,60,150,0.2);
+    display: none;
+  }
+  .card.active { display: block; animation: fadeUp 0.3s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px);} to { opacity:1; transform: translateY(0);} }
+
+  .card h2 { font-size: 22px; margin-bottom: 6px; color: #3d3566; }
+  .card .desc { color: #7a729e; font-size: 14px; margin-bottom: 18px; }
+
+  /* 假名表 */
+  .kana-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 8px; }
+  .kana-cell {
+    background: #f3f0ff;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 8px 4px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .kana-cell:hover { border-color: #6c5ce7; transform: translateY(-3px); box-shadow: 0 6px 14px rgba(108,92,231,0.3); }
+  .kana-cell.mastered { background: #e6fff0; border-color: #2ecc71; }
+  .kana-cell .big { font-size: 30px; font-weight: 700; color: #2d2a4a; }
+  .kana-cell .romaji { font-size: 12px; color: #8880b0; margin-top: 2px; }
+  .kana-cell .freq { font-size: 10px; color: #b3accd; }
+
+  .kana-mode { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .chip {
+    background: #ede9fe;
+    border: none;
+    border-radius: 20px;
+    padding: 7px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #5b4fc7;
+    cursor: pointer;
+  }
+  .chip.active { background: #6c5ce7; color: #fff; }
+
+  /* 学习卡 */
+  .flash-wrap { text-align: center; }
+  .flash-card {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 22px;
+    padding: 40px 20px;
+    color: #fff;
+    min-height: 240px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.2s;
+    position: relative;
+  }
+  .flash-card:active { transform: scale(0.98); }
+  .flash-face .word { font-size: 72px; font-weight: 800; line-height: 1.1; }
+  .flash-face .extra { font-size: 22px; margin-top: 10px; opacity: 0.95; }
+  .flash-face .hint { font-size: 14px; margin-top: 18px; opacity: 0.7; }
+  .flash-back { display: none; }
+  .flash-card.flipped .flash-front { display: none; }
+  .flash-card.flipped .flash-back { display: flex; flex-direction: column; align-items: center; }
+
+  .flash-nav { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+  .btn {
+    background: #6c5ce7;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 26px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: #5a4bd1; transform: translateY(-2px); }
+  .btn.ghost { background: #ede9fe; color: #5b4fc7; }
+  .btn.ghost:hover { background: #ddd6fe; }
+  .btn.green { background: #2ecc71; }
+  .btn.green:hover { background: #27ae60; }
+  .btn.red { background: #ff7675; }
+  .btn.red:hover { background: #e05a5a; }
+
+  .progress-bar { background: #ede9fe; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 16px; }
+  .progress-bar .fill { height: 100%; background: linear-gradient(90deg, #6c5ce7, #a29bfe); transition: width 0.3s; }
+
+  /* 测验 */
+  .quiz-q { text-align: center; margin-bottom: 18px; }
+  .quiz-q .prompt { font-size: 46px; font-weight: 800; color: #3d3566; margin-bottom: 6px; }
+  .quiz-q .type { color: #8880b0; font-size: 14px; }
+  .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .choice {
+    background: #f3f0ff;
+    border: 2px solid #e4dcff;
+    border-radius: 14px;
+    padding: 16px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #3d3566;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .choice:hover:not(:disabled) { border-color: #6c5ce7; transform: translateY(-3px); }
+  .choice:disabled { cursor: default; }
+  .choice.correct { background: #e6fff0; border-color: #2ecc71; color: #27ae60; }
+  .choice.wrong { background: #ffecec; border-color: #ff7675; color: #e05a5a; }
+  .quiz-feedback { text-align: center; margin-top: 16px; font-weight: 700; min-height: 24px; }
+  .quiz-feedback.ok { color: #27ae60; }
+  .quiz-feedback.ng { color: #e05a5a; }
+  .quiz-score { display: flex; gap: 16px; justify-content: center; margin-bottom: 14px; color: #6b6390; font-size: 14px; }
+  .quiz-score b { color: #6c5ce7; font-size: 20px; }
+
+  /* 词库 */
+  .word-list { max-height: 460px; overflow-y: auto; border: 1px solid #ede9fe; border-radius: 12px; }
+  .word-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f0ff;
+    transition: background 0.15s;
+  }
+  .word-row:hover { background: #faf8ff; }
+  .word-row .jp { font-size: 22px; font-weight: 700; color: #2d2a4a; min-width: 100px; }
+  .word-row .kana { color: #8880b0; font-size: 14px; min-width: 90px; }
+  .word-row .cn { color: #4a4470; flex: 1; }
+  .word-row .level { font-size: 11px; background: #ede9fe; color: #5b4fc7; padding: 3px 9px; border-radius: 12px; }
+  .word-search { width: 100%; padding: 12px 16px; border: 2px solid #ede9fe; border-radius: 12px; font-size: 15px; margin-bottom: 12px; outline: none; }
+  .word-search:focus { border-color: #6c5ce7; }
+
+  /* 每日复习统计 */
+  .review-summary { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+  .rev-box { background: #f3f0ff; border-radius: 14px; padding: 14px 22px; text-align: center; min-width: 120px; }
+  .rev-box .n { font-size: 28px; font-weight: 800; color: #6c5ce7; }
+  .rev-box .t { font-size: 13px; color: #7a729e; }
+
+  .center { text-align: center; }
+  .mt { margin-top: 16px; }
+  .badge {
+    display: inline-block;
+    background: #fff3bf;
+    color: #b8860b;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>日本語 Nihongo</h1>
+    <div class="sub">五十音 · 单词记忆 · 快速测验 · 进度追踪</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="v" id="statMastered">0</div><div class="l">已掌握假名</div></div>
+    <div class="stat"><div class="v" id="statWords">0</div><div class="l">已学单词</div></div>
+    <div class="stat"><div class="v" id="statQuizBest">0</div><div class="l">测验最佳</div></div>
+    <div class="stat"><div class="v" id="statStreak">0</div><div class="l">连续天数</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="kana">五十音图</button>
+    <button class="tab" data-tab="flash">单词卡片</button>
+    <button class="tab" data-tab="quiz">快速测验</button>
+    <button class="tab" data-tab="words">词库浏览</button>
+    <button class="tab" data-tab="review">我的进度</button>
+  </div>
+
+  <!-- 五十音 -->
+  <div class="card active" id="card-kana">
+    <h2>五十音图表</h2>
+    <div class="desc">点击假名朗读（浏览器语音）并自动标记为已掌握。绿框 = 已掌握。</div>
+    <div class="kana-mode">
+      <button class="chip active" data-kset="hiragana">平假名 あ行</button>
+      <button class="chip" data-kset="katakana">片假名 ア行</button>
+      <button class="chip" data-kset="dakuten">浊音/拗音</button>
+      <button class="chip" data-kset="yoon">拗音组合</button>
+    </div>
+    <div class="kana-grid" id="kanaGrid"></div>
+  </div>
+
+  <!-- 单词卡片 -->
+  <div class="card" id="card-flash">
+    <h2>单词卡片 <span class="badge" id="flashMode">平假名+含义</span></h2>
+    <div class="desc">点击卡片翻面查看答案，用「认识 / 不认识」记录掌握情况。</div>
+    <div class="kana-mode" id="flashLevelFilter">
+      <button class="chip active" data-fl="all">全部</button>
+      <button class="chip" data-fl="N5">N5</button>
+      <button class="chip" data-fl="N4">N4</button>
+      <button class="chip" data-fl="N3">N3</button>
+    </div>
+    <div class="flash-wrap">
+      <div class="flash-card" id="flashCard">
+        <div class="flash-front flash-face">
+          <div class="word" id="flashFront">加载中…</div>
+          <div class="extra" id="flashFrontKana"></div>
+          <div class="hint">点击卡片翻面</div>
+        </div>
+        <div class="flash-back flash-face">
+          <div class="word" id="flashBackWord" style="font-size:56px"></div>
+          <div class="extra" id="flashBackKana"></div>
+          <div class="extra" id="flashBackCn" style="font-size:26px"></div>
+          <div class="hint" id="flashBackRomaji"></div>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="fill" id="flashProg"></div></div>
+      <div class="flash-nav">
+        <button class="btn ghost" id="flashPrev">← 上一张</button>
+        <button class="btn ghost" id="flashFlip">翻面</button>
+        <button class="btn red" id="flashNo">✗ 不认识</button>
+        <button class="btn green" id="flashYes">✓ 认识</button>
+        <button class="btn" id="flashNext">下一张 →</button>
+      </div>
+      <div class="center mt" style="color:#7a729e;font-size:13px">
+        卡片 <span id="flashIdx">1</span>/<span id="flashTotal">0</span> · 已掌握 <span id="flashMastered">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 测验 -->
+  <div class="card" id="card-quiz">
+    <h2>快速测验</h2>
+    <div class="desc">10 道题，看假名选中文 / 看中文选假名，随机混合。</div>
+    <div class="kana-mode">
+      <button class="chip active" data-qz="mixed">混合模式</button>
+      <button class="chip" data-qz="kana2cn">假名→中文</button>
+      <button class="chip" data-qz="cn2kana">中文→假名</button>
+      <button class="chip" data-qz="kana2romaji">假名→罗马音</button>
+    </div>
+    <div class="quiz-score">
+      <span>得分 <b id="quizScore">0</b></span>
+      <span>连对 <b id="quizStreak">0</b></span>
+      <span>进度 <b id="quizProg">0/10</b></span>
+    </div>
+    <div class="quiz-q">
+      <div class="prompt" id="quizPrompt">—</div>
+      <div class="type" id="quizType">点击开始</div>
+    </div>
+    <div class="choices" id="quizChoices"></div>
+    <div class="quiz-feedback" id="quizFeedback"></div>
+    <div class="center mt">
+      <button class="btn" id="quizStart">开始测验</button>
+    </div>
+  </div>
+
+  <!-- 词库 -->
+  <div class="card" id="card-words">
+    <h2>词库浏览</h2>
+    <div class="desc">内置常用日语词汇，支持搜索（日文/假名/中文/罗马音）。</div>
+    <input class="word-search" id="wordSearch" placeholder="🔍 搜索：如 猫、neko、たべる…">
+    <div class="word-list" id="wordList"></div>
+  </div>
+
+  <!-- 进度 -->
+  <div class="card" id="card-review">
+    <h2>我的进度</h2>
+    <div class="desc">数据保存在本机浏览器 localStorage 中。</div>
+    <div class="review-summary">
+      <div class="rev-box"><div class="n" id="revKana">0/46</div><div class="t">假名掌握</div></div>
+      <div class="rev-box"><div class="n" id="revWords">0</div><div class="t">单词已掌握</div></div>
+      <div class="rev-box"><div class="n" id="revQuiz">0</div><div class="t">测验最佳分</div></div>
+      <div class="rev-box"><div class="n" id="revDays">0</div><div class="t">学习天数</div></div>
+    </div>
+    <div class="center mt">
+      <button class="btn red" id="resetAll">清除全部学习记录</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== 数据 ==========
+const HIRAGANA = [
+  ["あ","a"],["い","i"],["う","u"],["え","e"],["お","o"],
+  ["か","ka"],["き","ki"],["く","ku"],["け","ke"],["こ","ko"],
+  ["さ","sa"],["し","shi"],["す","su"],["せ","se"],["そ","so"],
+  ["た","ta"],["ち","chi"],["つ","tsu"],["て","te"],["と","to"],
+  ["な","na"],["に","ni"],["ぬ","nu"],["ね","ne"],["の","no"],
+  ["は","ha"],["ひ","hi"],["ふ","fu"],["へ","he"],["ほ","ho"],
+  ["ま","ma"],["み","mi"],["む","mu"],["め","me"],["も","mo"],
+  ["や","ya"],["ゆ","yu"],["よ","yo"],
+  ["ら","ra"],["り","ri"],["る","ru"],["れ","re"],["ろ","ro"],
+  ["わ","wa"],["を","wo"],["ん","n"]
+];
+const KATAKANA = [
+  ["ア","a"],["イ","i"],["ウ","u"],["エ","e"],["オ","o"],
+  ["カ","ka"],["キ","ki"],["ク","ku"],["ケ","ke"],["コ","ko"],
+  ["サ","sa"],["シ","shi"],["ス","su"],["セ","se"],["ソ","so"],
+  ["タ","ta"],["チ","chi"],["ツ","tsu"],["テ","te"],["ト","to"],
+  ["ナ","na"],["ニ","ni"],["ヌ","nu"],["ネ","ne"],["ノ","no"],
+  ["ハ","ha"],["ヒ","hi"],["フ","fu"],["ヘ","he"],["ホ","ho"],
+  ["マ","ma"],["ミ","mi"],["ム","mu"],["メ","me"],["モ","mo"],
+  ["ヤ","ya"],["ユ","yu"],["ヨ","yo"],
+  ["ラ","ra"],["リ","ri"],["ル","ru"],["レ","re"],["ロ","ro"],
+  ["ワ","wa"],["ヲ","wo"],["ン","n"]
+];
+const DAKUTEN = [
+  ["が","ga"],["ぎ","gi"],["ぐ","gu"],["げ","ge"],["ご","go"],
+  ["ざ","za"],["じ","ji"],["ず","zu"],["ぜ","ze"],["ぞ","zo"],
+  ["だ","da"],["ぢ","ji"],["づ","zu"],["で","de"],["ど","do"],
+  ["ば","ba"],["び","bi"],["ぶ","bu"],["べ","be"],["ぼ","bo"],
+  ["ぱ","pa"],["ぴ","pi"],["ぷ","pu"],["ぺ","pe"],["ぽ","po"]
+];
+const YOON = [
+  ["きゃ","kya"],["きゅ","kyu"],["きょ","kyo"],
+  ["しゃ","sha"],["しゅ","shu"],["しょ","sho"],
+  ["ちゃ","cha"],["ちゅ","chu"],["ちょ","cho"],
+  ["にゃ","nya"],["にゅ","nyu"],["にょ","nyo"],
+  ["ひゃ","hya"],["ひゅ","hyu"],["ひょ","hyo"],
+  ["みゃ","mya"],["みゅ","myu"],["みょ","myo"],
+  ["りゃ","rya"],["りゅ","ryu"],["りょ","ryo"],
+  ["ぎゃ","gya"],["ぎゅ","gyu"],["ぎょ","gyo"],
+  ["じゃ","ja"],["じゅ","ju"],["じょ","jo"],
+  ["びゃ","bya"],["びゅ","byu"],["びょ","byo"],
+  ["ぴゃ","pya"],["ぴゅ","pyu"],["ぴょ","pyo"]
+];
+const KANA_SETS = { hiragana: HIRAGANA, katakana: KATAKANA, dakuten: DAKUTEN, yoon: YOON };
+
+const WORDS = [
+  {jp:"猫",kana:"ねこ",romaji:"neko",cn:"猫",lv:"N5"},
+  {jp:"犬",kana:"いぬ",romaji:"inu",cn:"狗",lv:"N5"},
+  {jp:"水",kana:"みず",romaji:"mizu",cn:"水",lv:"N5"},
+  {jp:"火",kana:"ひ",romaji:"hi",cn:"火",lv:"N5"},
+  {jp:"山",kana:"やま",romaji:"yama",cn:"山",lv:"N5"},
+  {jp:"川",kana:"かわ",romaji:"kawa",cn:"河",lv:"N5"},
+  {jp:"空",kana:"そら",romaji:"sora",cn:"天空",lv:"N5"},
+  {jp:"本",kana:"ほん",romaji:"hon",cn:"书",lv:"N5"},
+  {jp:"学",kana:"まな",romaji:"mana",cn:"学习（词根）",lv:"N5"},
+  {jp:"食べる",kana:"たべる",romaji:"taberu",cn:"吃",lv:"N5"},
+  {jp:"飲む",kana:"のむ",romaji:"nomu",cn:"喝",lv:"N5"},
+  {jp:"見る",kana:"みる",romaji:"miru",cn:"看",lv:"N5"},
+  {jp:"聞く",kana:"きく",romaji:"kiku",cn:"听；问",lv:"N5"},
+  {jp:"話す",kana:"はなす",romaji:"hanasu",cn:"说",lv:"N5"},
+  {jp:"行く",kana:"いく",romaji:"iku",cn:"去",lv:"N5"},
+  {jp:"来る",kana:"くる",romaji:"kuru",cn:"来",lv:"N5"},
+  {jp:"する",kana:"する",romaji:"suru",cn:"做",lv:"N5"},
+  {jp:"見る",kana:"みる",romaji:"miru",cn:"看",lv:"N5"},
+  {jp:"今日",kana:"きょう",romaji:"kyou",cn:"今天",lv:"N5"},
+  {jp:"明日",kana:"あした",romaji:"ashita",cn:"明天",lv:"N5"},
+  {jp:"昨日",kana:"きのう",romaji:"kinou",cn:"昨天",lv:"N5"},
+  {jp:"朝",kana:"あさ",romaji:"asa",cn:"早上",lv:"N5"},
+  {jp:"昼",kana:"ひる",romaji:"hiru",cn:"中午",lv:"N5"},
+  {jp:"夜",kana:"よる",romaji:"yoru",cn:"夜晚",lv:"N5"},
+  {jp:"時間",kana:"じかん",romaji:"jikan",cn:"时间",lv:"N5"},
+  {jp:"人",kana:"ひと",romaji:"hito",cn:"人",lv:"N5"},
+  {jp:"私",kana:"わたし",romaji:"watashi",cn:"我",lv:"N5"},
+  {jp:"あなた",kana:"あなた",romaji:"anata",cn:"你",lv:"N5"},
+  {jp:"友達",kana:"ともだち",romaji:"tomodachi",cn:"朋友",lv:"N5"},
+  {jp:"先生",kana:"せんせい",romaji:"sensei",cn:"老师",lv:"N5"},
+  {jp:"学生",kana:"がくせい",romaji:"gakusei",cn:"学生",lv:"N5"},
+  {jp:"学校",kana:"がっこう",romaji:"gakkou",cn:"学校",lv:"N5"},
+  {jp:"大学",kana:"だいがく",romaji:"daigaku",cn:"大学",lv:"N5"},
+  {jp:"電車",kana:"でんしゃ",romaji:"densha",cn:"电车",lv:"N5"},
+  {jp:"駅",kana:"えき",romaji:"eki",cn:"车站",lv:"N5"},
+  {jp:"飛行機",kana:"ひこうき",romaji:"hikouki",cn:"飞机",lv:"N5"},
+  {jp:"車",kana:"くるま",romaji:"kuruma",cn:"汽车",lv:"N5"},
+  {jp:"自転車",kana:"じてんしゃ",romaji:"jitensha",cn:"自行车",lv:"N5"},
+  {jp:"道",kana:"みち",romaji:"michi",cn:"路",lv:"N5"},
+  {jp:"町",kana:"まち",romaji:"machi",cn:"城镇",lv:"N5"},
+  {jp:"国",kana:"くに",romaji:"kuni",cn:"国家",lv:"N5"},
+  {jp:"世界",kana:"せかい",romaji:"sekai",cn:"世界",lv:"N5"},
+  {jp:"大きい",kana:"おおきい",romaji:"ookii",cn:"大的",lv:"N5"},
+  {jp:"小さい",kana:"ちいさい",romaji:"chiisai",cn:"小的",lv:"N5"},
+  {jp:"新しい",kana:"あたらしい",romaji:"atarashii",cn:"新的",lv:"N5"},
+  {jp:"古い",kana:"ふるい",romaji:"furui",cn:"旧的",lv:"N5"},
+  {jp:"高い",kana:"たかい",romaji:"takai",cn:"高的；贵的",lv:"N5"},
+  {jp:"安い",kana:"やすい",romaji:"yasui",cn:"便宜的",lv:"N5"},
+  {jp:"良い",kana:"いい",romaji:"ii",cn:"好的",lv:"N5"},
+  {jp:"悪い",kana:"わるい",romaji:"warui",cn:"坏的",lv:"N5"},
+  {jp:"多い",kana:"おおい",romaji:"ooi",cn:"多的",lv:"N5"},
+  {jp:"少ない",kana:"すくない",romaji:"sukunai",cn:"少的",lv:"N5"},
+  {jp:"楽しい",kana:"たのしい",romaji:"tanoshii",cn:"快乐的",lv:"N4"},
+  {jp:"難しい",kana:"むずかしい",romaji:"muzukashii",cn:"难的",lv:"N4"},
+  {jp:"易しい",kana:"やさしい",romaji:"yasashii",cn:"容易的；温柔的",lv:"N4"},
+  {jp:"面白い",kana:"おもしろい",romaji:"omoshiroi",cn:"有趣的",lv:"N4"},
+  {jp:"忙しい",kana:"いそがしい",romaji:"isogashii",cn:"忙碌的",lv:"N4"},
+  {jp:"寒い",kana:"さむい",romaji:"samui",cn:"寒冷的",lv:"N4"},
+  {jp:"暑い",kana:"あつい",romaji:"atsui",cn:"炎热的",lv:"N4"},
+  {jp:"暖かい",kana:"あたたかい",romaji:"atatakai",cn:"温暖的",lv:"N4"},
+  {jp:"涼しい",kana:"すずしい",romaji:"suzushii",cn:"凉爽的",lv:"N4"},
+  {jp:"嬉しい",kana:"うれしい",romaji:"ureshii",cn:"高兴的",lv:"N4"},
+  {jp:"悲しい",kana:"かなしい",romaji:"kanashii",cn:"悲伤的",lv:"N4"},
+  {jp:"怒る",kana:"おこる",romaji:"okoru",cn:"生气",lv:"N4"},
+  {jp:"笑う",kana:"わらう",romaji:"warau",cn:"笑",lv:"N4"},
+  {jp:"泣く",kana:"なく",romaji:"naku",cn:"哭",lv:"N4"},
+  {jp:"走る",kana:"はしる",romaji:"hashiru",cn:"跑",lv:"N4"},
+  {jp:"歩く",kana:"あるく",romaji:"aruku",cn:"走",lv:"N4"},
+  {jp:"泳ぐ",kana:"およぐ",romaji:"oyogu",cn:"游泳",lv:"N4"},
+  {jp:"飛ぶ",kana:"とぶ",romaji:"tobu",cn:"飞",lv:"N4"},
+  {jp:"座る",kana:"すわる",romaji:"suwaru",cn:"坐",lv:"N4"},
+  {jp:"立つ",kana:"たつ",romaji:"tatsu",cn:"站",lv:"N4"},
+  {jp:"寝る",kana:"ねる",romaji:"neru",cn:"睡觉",lv:"N4"},
+  {jp:"起きる",kana:"おきる",romaji:"okiru",cn:"起床",lv:"N4"},
+  {jp:"作る",kana:"つくる",romaji:"tsukuru",cn:"做；制造",lv:"N4"},
+  {jp:"買う",kana:"かう",romaji:"kau",cn:"买",lv:"N4"},
+  {jp:"売る",kana:"うる",romaji:"uru",cn:"卖",lv:"N4"},
+  {jp:"書く",kana:"かく",romaji:"kaku",cn:"写",lv:"N4"},
+  {jp:"読む",kana:"よむ",romaji:"yomu",cn:"读",lv:"N4"},
+  {jp:"働く",kana:"はたらく",romaji:"hataraku",cn:"工作",lv:"N4"},
+  {jp:"休む",kana:"やすむ",romaji:"yasumu",cn:"休息",lv:"N4"},
+  {jp:"待つ",kana:"まつ",romaji:"matsu",cn:"等待",lv:"N4"},
+  {jp:"思う",kana:"おもう",romaji:"omou",cn:"想；认为",lv:"N4"},
+  {jp:"分かる",kana:"わかる",romaji:"wakaru",cn:"明白",lv:"N4"},
+  {jp:"忘れる",kana:"わすれる",romaji:"wasureru",cn:"忘记",lv:"N4"},
+  {jp:"覚える",kana:"おぼえる",romaji:"oboeru",cn:"记住",lv:"N4"},
+  {jp:"勉強",kana:"べんきょう",romaji:"benkyou",cn:"学习",lv:"N4"},
+  {jp:"練習",kana:"れんしゅう",romaji:"renshuu",cn:"练习",lv:"N4"},
+  {jp:"宿題",kana:"しゅくだい",romaji:"shukudai",cn:"作业",lv:"N4"},
+  {jp:"試験",kana:"しけん",romaji:"shiken",cn:"考试",lv:"N4"},
+  {jp:"質問",kana:"しつもん",romaji:"shitsumon",cn:"问题",lv:"N4"},
+  {jp:"答える",kana:"こたえる",romaji:"kotaeru",cn:"回答",lv:"N4"},
+  {jp:"教える",kana:"おしえる",romaji:"oshieru",cn:"教",lv:"N4"},
+  {jp:"習う",kana:"ならう",romaji:"narau",cn:"学；跟…学",lv:"N4"},
+  {jp:"始める",kana:"はじめる",romaji:"hajimeru",cn:"开始",lv:"N4"},
+  {jp:"終わる",kana:"おわる",romaji:"owaru",cn:"结束",lv:"N4"},
+  {jp:"続ける",kana:"つづける",romaji:"tsuzukeru",cn:"继续",lv:"N4"},
+  {jp:"止める",kana:"とめる",romaji:"tomeru",cn:"停止",lv:"N4"},
+  {jp:"返す",kana:"かえす",romaji:"kaesu",cn:"归还",lv:"N3"},
+  {jp:"出かける",kana:"でかける",romaji:"dekakeru",cn:"出门",lv:"N3"},
+  {jp:"戻る",kana:"もどる",romaji:"modoru",cn:"返回",lv:"N3"},
+  {jp:"届く",kana:"とどく",romaji:"todoku",cn:"送到",lv:"N3"},
+  {jp:"届ける",kana:"とどける",romaji:"todokeru",cn:"送达",lv:"N3"},
+  {jp:"集める",kana:"あつめる",romaji:"atsumeru",cn:"收集",lv:"N3"},
+  {jp:"選ぶ",kana:"えらぶ",romaji:"erabu",cn:"选择",lv:"N3"},
+  {jp:"決める",kana:"きめる",romaji:"kimeru",cn:"决定",lv:"N3"},
+  {jp:"変わる",kana:"かわる",romaji:"kawaru",cn:"变化",lv:"N3"},
+  {jp:"変える",kana:"かえる",romaji:"kaeru",cn:"改变",lv:"N3"},
+  {jp:"増える",kana:"ふえる",romaji:"fueru",cn:"增加",lv:"N3"},
+  {jp:"減る",kana:"へる",romaji:"heru",cn:"减少",lv:"N3"},
+  {jp:"広い",kana:"ひろい",romaji:"hiroi",cn:"宽阔的",lv:"N3"},
+  {jp:"狭い",kana:"せまい",romaji:"semai",cn:"狭窄的",lv:"N3"},
+  {jp:"速い",kana:"はやい",romaji:"hayai",cn:"快的",lv:"N3"},
+  {jp:"遅い",kana:"おそい",romaji:"osoi",cn:"慢的",lv:"N3"},
+  {jp:"強い",kana:"つよい",romaji:"tsuyoi",cn:"强的",lv:"N3"},
+  {jp:"弱い",kana:"よわい",romaji:"yowai",cn:"弱的",lv:"N3"},
+  {jp:"重い",kana:"おもい",romaji:"omoi",cn:"重的",lv:"N3"},
+  {jp:"軽い",kana:"かるい",romaji:"karui",cn:"轻的",lv:"N3"},
+  {jp:"厚い",kana:"あつい",romaji:"atsui",cn:"厚的",lv:"N3"},
+  {jp:"薄い",kana:"うすい",romaji:"usui",cn:"薄的",lv:"N3"},
+  {jp:"深い",kana:"ふかい",romaji:"fukai",cn:"深的",lv:"N3"},
+  {jp:"浅い",kana:"あさい",romaji:"asai",cn:"浅的",lv:"N3"},
+  {jp:"長生き",kana:"ながいき",romaji:"nagaiki",cn:"长寿",lv:"N3"},
+  {jp:"直す",kana:"なおす",romaji:"naosu",cn:"修理；改正",lv:"N3"},
+  {jp:"助ける",kana:"たすける",romaji:"tasukeru",cn:"帮助",lv:"N3"},
+  {jp:"借りる",kana:"かりる",romaji:"kariru",cn:"借入",lv:"N3"},
+  {jp:"貸す",kana:"かす",romaji:"kasu",cn:"借出",lv:"N3"},
+  {jp:"渡す",kana:"わたす",romaji:"watasu",cn:"交给",lv:"N3"},
+  {jp:"渡る",kana:"わたる",romaji:"wataru",cn:"穿过",lv:"N3"},
+  {jp:"向かう",kana:"むかう",romaji:"mukau",cn:"朝向",lv:"N3"},
+  {jp:"向け",kana:"むけ",romaji:"muke",cn:"面向",lv:"N3"},
+  {jp:"頼む",kana:"たのむ",romaji:"tanomu",cn:"请求",lv:"N3"},
+  {jp:"諦める",kana:"あきらめる",romaji:"akirameru",cn:"放弃",lv:"N3"},
+  {jp:"続ける",kana:"つづける",romaji:"tsuzukeru",cn:"继续",lv:"N3"},
+  {jp:"間に合う",kana:"まにあう",romaji:"maniau",cn:"来得及",lv:"N3"},
+  {jp:"迷う",kana:"まよう",romaji:"mayou",cn:"迷路；犹豫",lv:"N3"},
+  {jp:"慣れる",kana:"なれる",romaji:"nareru",cn:"习惯",lv:"N3"},
+  {jp:"馴染む",kana:"なじむ",romaji:"najimu",cn:"融入",lv:"N3"},
+  {jp:"鍛える",kana:"きたえる",romaji:"kitaeru",cn:"锻炼",lv:"N3"},
+  {jp:"整える",kana:"ととのえる",romaji:"totonoeru",cn:"整理",lv:"N3"},
+  {jp:"備える",kana:"そなえる",romaji:"sonaeru",cn:"准备",lv:"N3"},
+  {jp:"満たす",kana:"満たす",romaji:"mitasu",cn:"满足",lv:"N3"}
+];
+
+// ========== 存储 ==========
+const KEY = "nihongo_v1";
+let store = { masteredKana: [], masteredWords: [], quizBest: 0, days: {}, streak: 0, lastDay: "" };
+try { const s = localStorage.getItem(KEY); if (s) store = Object.assign(store, JSON.parse(s)); } catch(e){}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e){} }
+
+function todayStr() { const d = new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
+function markToday() {
+  const t = todayStr();
+  if (!store.days[t]) {
+    store.days[t] = 1;
+    // streak
+    const y = new Date(); y.setDate(y.getDate()-1);
+    const yStr = y.getFullYear()+"-"+(y.getMonth()+1)+"-"+y.getDate();
+    store.streak = (store.lastDay === yStr) ? store.streak + 1 : 1;
+    store.lastDay = t;
+    save();
+  }
+}
+markToday();
+
+// ========== 语音 ==========
+let voices = [];
+function loadVoices() { voices = window.speechSynthesis ? speechSynthesis.getVoices() : []; }
+if (window.speechSynthesis) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "ja-JP";
+  const v = voices.find(v => /ja/i.test(v.lang));
+  if (v) u.voice = v;
+  u.rate = 0.9;
+  speechSynthesis.speak(u);
+}
+
+// ========== Tabs ==========
+document.querySelectorAll(".tab").forEach(t => {
+  t.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+    document.querySelectorAll(".card").forEach(x => x.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById("card-"+t.dataset.tab).classList.add("active");
+  });
+});
+
+// ========== Kana ==========
+let curKSet = "hiragana";
+function renderKana() {
+  const list = KANA_SETS[curKSet];
+  const grid = document.getElementById("kanaGrid");
+  grid.innerHTML = "";
+  list.forEach(([k, r]) => {
+    const c = document.createElement("div");
+    c.className = "kana-cell" + (store.masteredKana.includes(k) ? " mastered" : "");
+    c.innerHTML = '<div class="big">'+k+'</div><div class="romaji">'+r+'</div>';
+    c.addEventListener("click", () => {
+      speak(k);
+      if (!store.masteredKana.includes(k)) {
+        store.masteredKana.push(k);
+        save();
+        c.classList.add("mastered");
+        updateStats();
+      }
+    });
+    grid.appendChild(c);
+  });
+}
+document.querySelectorAll(".chip[data-kset]").forEach(ch => {
+  ch.addEventListener("click", () => {
+    document.querySelectorAll(".chip[data-kset]").forEach(x => x.classList.remove("active"));
+    ch.classList.add("active");
+    curKSet = ch.dataset.kset;
+    renderKana();
+  });
+});
+
+// ========== Flashcards ==========
+let flFilter = "all";
+let flDeck = [];
+let flIdx = 0;
+function buildDeck() {
+  flDeck = WORDS.filter(w => flFilter === "all" || w.lv === flFilter);
+  flIdx = 0;
+  renderFlash();
+}
+function renderFlash() {
+  const total = flDeck.length;
+  document.getElementById("flashTotal").textContent = total;
+  document.getElementById("flashIdx").textContent = total ? flIdx+1 : 0;
+  document.getElementById("flashMastered").textContent =
+    flDeck.filter(w => store.masteredWords.includes(w.jp+w.kana)).length;
+  if (!total) return;
+  const w = flDeck[flIdx];
+  const card = document.getElementById("flashCard");
+  card.classList.remove("flipped");
+  document.getElementById("flashFront").textContent = w.jp;
+  document.getElementById("flashFrontKana").textContent = w.kana;
+  document.getElementById("flashBackWord").textContent = w.jp;
+  document.getElementById("flashBackKana").textContent = w.kana + "（" + w.romaji + "）";
+  document.getElementById("flashBackCn").textContent = w.cn;
+  document.getElementById("flashBackRomaji").textContent = w.lv;
+  document.getElementById("flashProg").style.width = ((flIdx+1)/total*100)+"%";
+}
+document.getElementById("flashCard").addEventListener("click", () => {
+  document.getElementById("flashCard").classList.toggle("flipped");
+  if (flDeck[flIdx]) speak(flDeck[flIdx].jp);
+});
+document.getElementById("flashFlip").addEventListener("click", () => {
+  document.getElementById("flashCard").classList.toggle("flipped");
+});
+document.getElementById("flashNext").addEventListener("click", () => {
+  if (flDeck.length) { flIdx = (flIdx+1) % flDeck.length; renderFlash(); }
+});
+document.getElementById("flashPrev").addEventListener("click", () => {
+  if (flDeck.length) { flIdx = (flIdx-1+flDeck.length) % flDeck.length; renderFlash(); }
+});
+document.getElementById("flashYes").addEventListener("click", () => {
+  const w = flDeck[flIdx]; if (!w) return;
+  const id = w.jp + w.kana;
+  if (!store.masteredWords.includes(id)) { store.masteredWords.push(id); save(); }
+  markToday(); updateStats();
+  flIdx = (flIdx+1) % flDeck.length; renderFlash();
+});
+document.getElementById("flashNo").addEventListener("click", () => {
+  const w = flDeck[flIdx]; if (!w) return;
+  const id = w.jp + w.kana;
+  const i = store.masteredWords.indexOf(id);
+  if (i >= 0) { store.masteredWords.splice(i,1); save(); }
+  updateStats();
+  flIdx = (flIdx+1) % flDeck.length; renderFlash();
+});
+document.querySelectorAll(".chip[data-fl]").forEach(ch => {
+  ch.addEventListener("click", () => {
+    document.querySelectorAll(".chip[data-fl]").forEach(x => x.classList.remove("active"));
+    ch.classList.add("active");
+    flFilter = ch.dataset.fl;
+    buildDeck();
+  });
+});
+
+// ========== Quiz ==========
+const QUIZ_LEN = 10;
+let qMode = "mixed", qList = [], qIdx = 0, qScore = 0, qStreak = 0, qRunning = false;
+document.querySelectorAll(".chip[data-qz]").forEach(ch => {
+  ch.addEventListener("click", () => {
+    document.querySelectorAll(".chip[data-qz]").forEach(x => x.classList.remove("active"));
+    ch.classList.add("active");
+    qMode = ch.dataset.qz;
+    if (qRunning) startQuiz();
+  });
+});
+function shuffle(a) { a = a.slice(); for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function startQuiz() {
+  qRunning = true; qIdx = 0; qScore = 0; qStreak = 0;
+  qList = shuffle(WORDS).slice(0, QUIZ_LEN);
+  document.getElementById("quizStart").textContent = "重新开始";
+  nextQ();
+}
+function nextQ() {
+  const fb = document.getElementById("quizFeedback");
+  fb.textContent = ""; fb.className = "quiz-feedback";
+  document.getElementById("quizScore").textContent = qScore;
+  document.getElementById("quizStreak").textContent = qStreak;
+  document.getElementById("quizProg").textContent = qIdx+"/"+QUIZ_LEN;
+  if (qIdx >= QUIZ_LEN) {
+    endQuiz(); return;
+  }
+  const w = qList[qIdx];
+  let mode = qMode;
+  if (mode === "mixed") {
+    const r = Math.random();
+    mode = r < 0.4 ? "kana2cn" : (r < 0.7 ? "cn2kana" : "kana2romaji");
+  }
+  const promptEl = document.getElementById("quizPrompt");
+  const typeEl = document.getElementById("quizType");
+  let correct, prompt, typeText;
+  if (mode === "kana2cn") {
+    prompt = w.kana; correct = w.cn;
+    typeText = "这个假名/词是什么意思？";
+    promptEl.textContent = prompt;
+  } else if (mode === "cn2kana") {
+    prompt = w.cn; correct = w.kana;
+    typeText = "「"+w.cn+"」用日语怎么说？";
+    promptEl.textContent = prompt;
+  } else {
+    prompt = w.kana; correct = w.romaji;
+    typeText = "这个假名的罗马音是？";
+    promptEl.textContent = prompt;
+  }
+  typeEl.textContent = typeText;
+  speak(w.jp);
+
+  // build choices
+  const pool = WORDS.filter(x => x !== w);
+  let opts = [correct];
+  const usedVals = new Set([correct]);
+  // gather plausible distractors based on mode
+  let candidates;
+  if (mode === "kana2cn") candidates = shuffle(pool).map(x => x.cn);
+  else if (mode === "cn2kana") candidates = shuffle(pool).map(x => x.kana);
+  else candidates = shuffle(pool).map(x => x.romaji);
+  for (const c of candidates) {
+    if (opts.length >= 4) break;
+    if (!usedVals.has(c)) { usedVals.add(c); opts.push(c); }
+  }
+  opts = shuffle(opts);
+  const ch = document.getElementById("quizChoices");
+  ch.innerHTML = "";
+  opts.forEach(o => {
+    const b = document.createElement("button");
+    b.className = "choice"; b.textContent = o;
+    b.addEventListener("click", () => answer(b, o, correct));
+    ch.appendChild(b);
+  });
+}
+function answer(btn, val, correct) {
+  document.querySelectorAll(".choice").forEach(b => b.disabled = true);
+  const fb = document.getElementById("quizFeedback");
+  if (val === correct) {
+    btn.classList.add("correct");
+    qScore += 10; qStreak++;
+    fb.textContent = "✓ 答对了！"; fb.className = "quiz-feedback ok";
+    markToday();
+  } else {
+    btn.classList.add("wrong");
+    document.querySelectorAll(".choice").forEach(b => {
+      if (b.textContent === correct) b.classList.add("correct");
+    });
+    qStreak = 0;
+    fb.textContent = "✗ 正确答案：" + correct; fb.className = "quiz-feedback ng";
+  }
+  document.getElementById("quizScore").textContent = qScore;
+  document.getElementById("quizStreak").textContent = qStreak;
+  setTimeout(() => { qIdx++; nextQ(); }, 900);
+}
+function endQuiz() {
+  qRunning = false;
+  if (qScore > store.quizBest) { store.quizBest = qScore; save(); }
+  updateStats();
+  document.getElementById("quizPrompt").textContent = "🎉 完成！";
+  document.getElementById("quizType").textContent = "得分 "+qScore+" · 最佳 "+store.quizBest;
+  const ch = document.getElementById("quizChoices"); ch.innerHTML = "";
+  const fb = document.getElementById("quizFeedback");
+  fb.textContent = qScore >= 70 ? "太棒了！继续加油 💪" : (qScore >= 40 ? "还不错，再练练 ✨" : "多复习卡片再来一次 📚");
+  fb.className = "quiz-feedback ok";
+  document.getElementById("quizProg").textContent = QUIZ_LEN+"/"+QUIZ_LEN;
+  document.getElementById("quizStart").textContent = "再来一局";
+}
+document.getElementById("quizStart").addEventListener("click", startQuiz);
+
+// ========== Word list ==========
+function renderWords(filter) {
+  const list = document.getElementById("wordList");
+  list.innerHTML = "";
+  const f = (filter||"").toLowerCase();
+  const rows = WORDS.filter(w => !f ||
+    w.jp.includes(filter) || w.kana.includes(filter) ||
+    w.cn.includes(filter) || w.romaji.toLowerCase().includes(f) ||
+    w.lv.toLowerCase() === f);
+  rows.forEach(w => {
+    const r = document.createElement("div");
+    r.className = "word-row";
+    const mastered = store.masteredWords.includes(w.jp+w.kana);
+    r.innerHTML = '<div class="jp">'+w.jp+'</div>' +
+      '<div class="kana">'+w.kana+'<br>'+w.romaji+'</div>' +
+      '<div class="cn">'+w.cn+(mastered?' <span style="color:#2ecc71">✓已掌握</span>':'')+'</div>' +
+      '<div class="level">'+w.lv+'</div>';
+    r.addEventListener("click", () => speak(w.jp));
+    list.appendChild(r);
+  });
+  if (!rows.length) list.innerHTML = '<div style="padding:24px;text-align:center;color:#aaa">没有匹配的单词</div>';
+}
+document.getElementById("wordSearch").addEventListener("input", e => renderWords(e.target.value));
+
+// ========== Stats ==========
+function updateStats() {
+  const allKana = HIRAGANA.concat(KATAKANA, DAKUTEN);
+  const mk = new Set(store.masteredKana);
+  const totalKana = allKana.length;
+  const masteredCount = allKana.filter(([k]) => mk.has(k)).length;
+  document.getElementById("statMastered").textContent = masteredCount;
+  document.getElementById("statWords").textContent = store.masteredWords.length;
+  document.getElementById("statQuizBest").textContent = store.quizBest;
+  document.getElementById("statStreak").textContent = store.streak;
+  document.getElementById("revKana").textContent = masteredCount+"/"+totalKana;
+  document.getElementById("revWords").textContent = store.masteredWords.length;
+  document.getElementById("revQuiz").textContent = store.quizBest;
+  document.getElementById("revDays").textContent = Object.keys(store.days).length;
+}
+document.getElementById("resetAll").addEventListener("click", () => {
+  if (confirm("确定清除所有学习记录？此操作不可恢复。")) {
+    store = { masteredKana: [], masteredWords: [], quizBest: 0, days: {}, streak: 0, lastDay: "" };
+    save(); markToday(); updateStats(); renderKana(); buildDeck(); renderWords("");
+  }
+});
+
+// ========== Init ==========
+renderKana();
+buildDeck();
+renderWords("");
+updateStats();
+</script>
+</body>
+</html>
