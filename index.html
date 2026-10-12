@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LingoBird - 日语 · 英语学习</title>
+<meta name="description" content="像多邻国一样好玩的日语英语学习应用：课程树、每日练习、连胜打卡。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐦</text></svg>">
+<style>
+:root{
+  --green:#58cc02; --green-d:#46a302; --blue:#1cb0f6; --blue-d:#1497db;
+  --red:#ff4b4b; --orange:#ff9600; --yellow:#ffc800;
+  --purple:#ce82ff; --gray:#afafaf; --gray-l:#e5e5e5;
+  --ink:#3c3c3c; --ink-l:#777; --bg:#ffffff; --card:#f7f7f7;
+  --r:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:'Nunito',ui-rounded,'Hiragino Maru Gothic ProN','PingFang SC','Microsoft YaHei',system-ui,sans-serif;
+  background:#d7eefa; color:var(--ink); overflow:hidden;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+.hidden{display:none !important;}
+
+/* ---------- Layout ---------- */
+#app{height:100%;display:flex;flex-direction:column;}
+#topbar{
+  height:56px;flex:0 0 auto;display:flex;align-items:center;gap:14px;
+  padding:0 16px;background:var(--bg);border-bottom:2px solid var(--gray-l);
+  z-index:20;
+}
+#topbar .logo{font-weight:900;font-size:20px;color:var(--green);letter-spacing:-.5px;white-space:nowrap;}
+#topbar .logo span{color:var(--blue);}
+.stat{display:flex;align-items:center;gap:5px;font-weight:800;font-size:15px;color:var(--ink-l);}
+.stat svg{width:24px;height:24px;}
+.spacer{flex:1;}
+
+#main{flex:1;overflow-y:auto;overscroll-behavior:contain;padding-bottom:40px;}
+.screen{max-width:640px;margin:0 auto;padding:16px;}
+
+/* ---------- Buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-weight:800;font-size:16px;letter-spacing:.5px;text-transform:uppercase;
+  padding:14px 22px;border-radius:var(--r);color:#fff;background:var(--green);
+  box-shadow:0 4px 0 var(--green-d);transition:transform .05s,filter .15s;user-select:none;
+}
+.btn:active{transform:translateY(4px);box-shadow:0 0 0 var(--green-d);}
+.btn.blue{background:var(--blue);box-shadow:0 4px 0 var(--blue-d);}
+.btn.blue:active{box-shadow:0 4px 0 var(--blue-d);}
+.btn.red{background:var(--red);box-shadow:0 4px 0 #d33;}
+.btn.red:active{box-shadow:0 4px 0 #d33;}
+.btn.gray{background:var(--gray-l);color:var(--gray);box-shadow:0 4px 0 #ccc;}
+.btn.ghost{background:#fff;color:var(--blue);border:2px solid var(--gray-l);box-shadow:0 4px 0 var(--gray-l);}
+.btn:disabled{filter:grayscale(.6) opacity(.6);pointer-events:none;}
+.btn.block{width:100%;}
+.btn.sm{font-size:13px;padding:9px 14px;border-radius:12px;}
+
+/* ---------- Home / path ---------- */
+.unit-banner{
+  background:var(--green);color:#fff;border-radius:var(--r);padding:16px 18px;
+  box-shadow:0 4px 0 var(--green-d);margin-bottom:20px;position:relative;overflow:hidden;
+}
+.unit-banner h2{font-size:20px;font-weight:900;}
+.unit-banner p{font-size:14px;opacity:.9;margin-top:2px;}
+.unit-banner .deco{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:44px;opacity:.35;}
+.path{display:flex;flex-direction:column;align-items:center;gap:10px;padding-bottom:10px;}
+.node{
+  width:76px;height:68px;border-radius:50%;background:var(--green);
+  box-shadow:0 7px 0 var(--green-d);display:flex;align-items:center;justify-content:center;
+  font-size:30px;color:#fff;position:relative;transition:transform .1s;
+}
+.node:active{transform:translateY(5px);box-shadow:0 2px 0 var(--green-d);}
+.node.locked{background:var(--gray-l);box-shadow:0 7px 0 #c9c9c9;color:#b9b9b9;cursor:not-allowed;}
+.node.done{background:var(--yellow);box-shadow:0 7px 0 #d9a800;}
+.node .ring{position:absolute;inset:-8px;border:3px solid var(--green);border-radius:50%;opacity:.25;}
+.node.done .ring{border-color:var(--yellow);}
+.node-label{font-size:13px;font-weight:800;color:var(--ink-l);text-align:center;margin-top:-6px;}
+.zig{width:4px;height:26px;background:var(--gray-l);border-radius:4px;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes nudge{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.07)}}
+.path .row{display:flex;flex-direction:column;align-items:center;}
+.path .off1{transform:translateX(-60px);} .path .off2{transform:translateX(60px);}
+.path .node:not(.locked):not(.done){animation:bounce 2s infinite;}
+.nudge{animation:nudge 1.6s infinite !important;}
+
+/* ---------- Lesson header ---------- */
+#lesson-top{display:flex;align-items:center;gap:12px;padding:14px 16px 6px;max-width:640px;margin:0 auto;}
+#close-btn{font-size:24px;color:var(--gray);font-weight:900;padding:4px 8px;}
+#bar-wrap{flex:1;height:16px;background:var(--gray-l);border-radius:10px;overflow:hidden;}
+#bar{height:100%;width:0;background:var(--green);border-radius:10px;transition:width .3s;}
+#hearts{display:flex;align-items:center;gap:4px;font-weight:900;color:var(--red);font-size:16px;}
+#q-area{max-width:560px;margin:0 auto;padding:18px 16px 10px;flex:1;overflow-y:auto;}
+.prompt{font-size:22px;font-weight:900;margin-bottom:16px;line-height:1.3;}
+.jpcard{
+  background:var(--card);border:2px solid var(--gray-l);border-radius:var(--r);
+  padding:18px;font-size:30px;font-weight:900;text-align:center;margin-bottom:16px;position:relative;cursor:pointer;
+}
+.jpcard .romaji{font-size:16px;color:var(--ink-l);font-weight:700;margin-top:6px;text-transform:none;}
+.hint{font-size:14px;color:var(--ink-l);margin-top:14px;}
+
+/* choices */
+.choices{display:flex;flex-direction:column;gap:12px;}
+.choice{
+  text-align:left;background:#fff;border:2px solid var(--gray-l);border-bottom-width:4px;
+  border-radius:var(--r);padding:15px 16px;font-size:17px;font-weight:700;color:var(--ink);
+  display:flex;gap:12px;align-items:center;transition:.1s;
+}
+.choice .key{
+  flex:0 0 26px;height:26px;border:2px solid var(--gray-l);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--gray);font-weight:800;
+}
+.choice.sel{background:#ddf4ff;border-color:var(--blue);color:var(--blue-d);}
+.choice.sel .key{border-color:var(--blue);color:var(--blue);}
+.choice.ok{background:#d7ffb8;border-color:var(--green);color:var(--green-d);}
+.choice.bad{background:#ffdfe0;border-color:var(--red);color:var(--red);}
+#bank{
+  min-height:64px;border:2px solid var(--gray-l);border-radius:14px;padding:8px;margin-bottom:16px;
+  display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;background:#fff;
+}
+.wordbank{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+.chip{
+  background:#fff;border:2px solid var(--gray-l);border-bottom-width:4px;border-radius:14px;
+  padding:14px 16px;font-size:18px;font-weight:800;text-align:center;transition:.1s;
+}
+.chip.sel{background:#ddf4ff;border-color:var(--blue);color:var(--blue-d);}
+.chip.used{opacity:.3;pointer-events:none;}
+
+/* listen */
+#audio-btn{
+  width:110px;height:110px;background:var(--blue);border-radius:20px;color:#fff;
+  display:flex;align-items:center;justify-content:center;margin:10px auto 14px;
+  box-shadow:0 5px 0 var(--blue-d);
+}
+#audio-btn:active{transform:translateY(4px);box-shadow:none;}
+
+/* match grid */
+#match{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:480px;margin:0 auto;}
+.mtile{
+  background:#fff;border:2px solid var(--gray-l);border-bottom-width:4px;border-radius:14px;
+  padding:14px 8px;font-size:17px;font-weight:800;min-height:60px;transition:.12s;
+}
+.mtile.sel{background:#ddf4ff;border-color:var(--blue);color:var(--blue-d);}
+.mtile.done{background:#d7ffb8;border-color:var(--green);color:var(--green-d);opacity:.7;border-bottom-width:2px;}
+.mtile.miss{background:#ffdfe0;border-color:var(--red);color:var(--red);animation:shake .3s;}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* ---------- Footer / check ---------- */
+#footer{flex:0 0 auto;background:#fff;border-top:2px solid var(--gray-l);transition:background .2s;padding:14px 16px;}
+#footer.ok{background:#d7ffb8;border-color:var(--green);}
+#footer.bad{background:#ffdfe0;border-color:var(--red);}
+#footer-in{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:14px;}
+#verdict{flex:1;font-weight:900;font-size:18px;display:none;align-items:center;gap:10px;}
+#verdict .ic{font-size:34px;}
+#verdict .ex{display:block;font-size:14px;font-weight:700;color:var(--ink-l);margin-top:3px;}
+#check-btn{min-width:140px;}
+
+/* lesson end */
+.end-screen{max-width:520px;margin:30px auto;text-align:center;padding:20px;}
+.end-screen .big{font-size:76px;animation:pop .5s;}
+@keyframes pop{0%{transform:scale(0)}80%{transform:scale(1.15)}100%{transform:scale(1)}}
+.end-screen h1{font-size:30px;font-weight:900;color:var(--orange);margin:10px 0 22px;}
+.rewards{display:flex;gap:12px;justify-content:center;margin-bottom:26px;flex-wrap:wrap;}
+.reward{background:var(--card);border-radius:var(--r);padding:14px 20px;min-width:110px;}
+.reward .t{font-size:13px;font-weight:800;color:var(--ink-l);text-transform:uppercase;}
+.reward .v{font-size:24px;font-weight:900;display:flex;align-items:center;gap:6px;justify-content:center;margin-top:4px;}
+.reward .v.y{color:var(--orange);} .reward .v.p{color:var(--purple);}
+
+/* ---------- Learn tab ---------- */
+.lang-tabs{display:flex;gap:10px;margin-bottom:16px;}
+.lang-tab{
+  flex:1;padding:14px;border-radius:var(--r);background:#fff;border:2px solid var(--gray-l);
+  font-weight:900;font-size:16px;color:var(--ink-l);display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 3px 0 var(--gray-l);
+}
+.lang-tab.on{background:#ddf4ff;border-color:var(--blue);color:var(--blue-d);box-shadow:0 3px 0 var(--blue);}
+.course-hero{
+  display:flex;gap:14px;align-items:center;background:#fff;border:2px solid var(--gray-l);
+  border-radius:var(--r);padding:16px;margin-bottom:18px;
+}
+.course-hero .flag{font-size:44px;}
+.course-hero h3{font-size:19px;font-weight:900;}
+.course-hero p{font-size:14px;color:var(--ink-l);font-weight:700;margin-top:2px;}
+
+/* section grid (practice) */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.tile{
+  background:#fff;border:2px solid var(--gray-l);border-bottom-width:5px;border-radius:var(--r);
+  padding:18px 14px;text-align:left;transition:.1s;
+}
+.tile:active{transform:translateY(3px);border-bottom-width:2px;}
+.tile .ic{font-size:32px;}
+.tile h4{font-size:17px;font-weight:900;margin-top:8px;}
+.tile p{font-size:13px;color:var(--ink-l);font-weight:700;margin-top:2px;}
+.tile.g{border-color:#a4e57a;} .tile.b{border-color:#8ed4fb;} .tile.o{border-color:#ffcf7f;}
+.tile.p{border-color:#e3b3ff;} .tile.r{border-color:#ffa5a5;}
+
+/* leaderboard / profile */
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin:20px 0;}
+.pod{width:88px;text-align:center;}
+.pod .ava{
+  width:56px;height:56px;border-radius:50%;background:var(--blue);margin:0 auto 6px;
+  display:flex;align-items:center;justify-content:center;font-size:28px;border:3px solid #fff;
+  box-shadow:0 3px 0 var(--blue-d);
+}
+.pod .nm{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pod .xp{font-size:12px;color:var(--ink-l);font-weight:800;}
+.pod .box{background:var(--yellow);border-radius:10px 10px 0 0;margin-top:6px;padding:8px 0;font-weight:900;color:#7a5c00;}
+.pod.p1 .box{height:74px;background:linear-gradient(#ffd94d,#ffb300);color:#7a5000;}
+.pod.p2 .box{height:52px;background:#d9d9d9;color:#666;}
+.pod.p3 .box{height:38px;background:#e8a86a;color:#7a4a1a;}
+.rank-row{
+  display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;
+  border-bottom:2px solid var(--gray-l);font-weight:800;
+}
+.rank-row .pos{width:26px;color:var(--ink-l);font-weight:900;}
+.rank-row .ava{width:38px;height:38px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:20px;}
+.rank-row.me{border:2px solid var(--yellow);background:#fffbe8;}
+.rank-row .xp{margin-left:auto;color:var(--orange);font-weight:900;}
+
+.profile-head{display:flex;align-items:center;gap:16px;background:#fff;border:2px solid var(--gray-l);border-radius:var(--r);padding:18px;margin-bottom:16px;}
+.profile-head .ava{
+  width:74px;height:74px;border-radius:50%;background:var(--purple);display:flex;align-items:center;
+  justify-content:center;font-size:40px;border:4px solid #fff;box-shadow:0 4px 0 #a568d6;
+}
+.profile-head h3{font-size:22px;font-weight:900;}
+.profile-head p{color:var(--ink-l);font-weight:700;font-size:14px;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.stat-card{background:#fff;border:2px solid var(--gray-l);border-radius:var(--r);padding:14px;display:flex;gap:10px;align-items:center;}
+.stat-card .ic{font-size:30px;}
+.stat-card .n{font-size:20px;font-weight:900;}
+.stat-card .l{font-size:12px;color:var(--ink-l);font-weight:800;text-transform:uppercase;}
+.ach{display:flex;gap:12px;align-items:center;background:#fff;border:2px solid var(--gray-l);border-radius:14px;padding:12px 14px;margin-top:10px;}
+.ach .ic{font-size:30px;}
+.ach.off{opacity:.45;filter:grayscale(1);}
+.ach h5{font-size:15px;font-weight:900;}
+.ach p{font-size:13px;color:var(--ink-l);font-weight:700;}
+
+/* bottom nav */
+#nav{
+  flex:0 0 auto;height:64px;background:#fff;border-top:2px solid var(--gray-l);
+  display:flex;justify-content:center;gap:6px;padding:0 8px;z-index:20;
+}
+.nav-i{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  font-size:11px;font-weight:800;color:var(--gray);padding:6px 12px;border-radius:12px;border:2px solid transparent;min-width:64px;
+}
+.nav-i svg{width:26px;height:26px;}
+.nav-i.on{color:var(--blue);background:#ddf4ff;border-color:#84d8ff;}
+.nav-i.on.green{color:var(--green);background:#eaffdd;border-color:#a4e57a;}
+.nav-i.on.orange{color:var(--orange);background:#fff3e0;border-color:#ffd699;}
+
+/* modal + toast */
+#modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;
+}
+.modal{background:#fff;border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;animation:pop .25s;}
+.modal h3{font-size:22px;font-weight:900;margin-bottom:8px;}
+.modal p{color:var(--ink-l);font-weight:700;margin-bottom:18px;font-size:15px;line-height:1.5;}
+#toast{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);
+  background:var(--ink);color:#fff;padding:10px 20px;border-radius:30px;font-weight:800;font-size:14px;
+  opacity:0;transition:.25s;z-index:60;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.25);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+@media(max-width:520px){
+  .stat.hide-sm{display:none;}
+  .prompt{font-size:19px;}
+  .tiles{gap:10px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="logo">Lingo<span>Bird</span></div>
+    <div class="stat" title="连胜"><svg viewBox="0 0 24 24" fill="#ff9600"><path d="M12 2C9 6 6 7 6 12a6 6 0 0012 0c0-2-1-3.5-2-5-.5 2-1.5 3-3 3.5C13.5 8 13 5 12 2z"/></svg><span id="st-streak">0</span></div>
+    <div class="stat hide-sm" title="经验"><svg viewBox="0 0 24 24" fill="#ffc800"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg><span id="st-xp">0</span></div>
+    <div class="stat" title="红心"><svg viewBox="0 0 24 24" fill="#ff4b4b"><path d="M12 21s-8-4.7-8-11a4.6 4.6 0 018-3 4.6 4.6 0 018 3c0 6.3-8 11-8 11z"/></svg><span id="st-hearts">5</span></div>
+    <div class="spacer"></div>
+    <div class="stat hide-sm" title="宝石"><svg viewBox="0 0 24 24" fill="#1cb0f6"><path d="M6 3h12l4 6-10 12L2 9l4-6zm0 0l6 6 6-6M2 9h20M12 21L8 9l4-6 4 6-4 12z"/></svg><span id="st-gems">0</span></div>
+  </header>
+
+  <main id="main"></main>
+
+  <nav id="nav">
+    <button class="nav-i on green" data-tab="learn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      学习
+    </button>
+    <button class="nav-i" data-tab="practice">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      练习
+    </button>
+    <button class="nav-i" data-tab="board">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4z"/><path d="M17 5h3v2a3 3 0 01-3 3M7 5H4v2a3 3 0 003 3"/></svg>
+      排行榜
+    </button>
+    <button class="nav-i" data-tab="profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      我的
+    </button>
+  </nav>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ================= Data ================= */
+const COURSES = {
+  ja: {
+    id:'ja', name:'日语', flag:'🇯🇵', greeting:'こんにちは',
+    units: [
+      { title:'第 1 单元：打招呼', icon:'👋', lessons:[
+        { id:'ja1', title:'你好', icon:'👋', items:[
+          {t:'choice', q:'选出“你好”的日语说法', jp:'こんにちは', en:'Hello', options:['こんにちは','さようなら','ありがとう','ごめん'], a:0, ex:'こんにちは (konnichiwa) = Hello'},
+          {t:'choice', q:'“早上好”用日语怎么说？', en:'Good morning', options:['おはよう','こんばんは','はい','いってきます'], a:0, ex:'おはよう (ohayou) = Good morning'},
+          {t:'choice', q:'选择正确的翻译', jp:'こんばんは', en:'Good evening', options:['Good evening','Good night','Good afternoon','Goodbye'], a:0, ex:'こんばんは (konbanwa) = Good evening'},
+          {t:'build', q:'把日语 “晚安” 翻译成英语', jp:'おやすみなさい', answer:'good night', words:['good','night','morning','evening'], ex:'おやすみなさい = good night'},
+          {t:'listen', audio:'ohayou gozaimasu', q:'你听到了什么？', options:['おはようございます','こんにちは','ありがとう','おやすみなさい'], a:0, ex:'おはようございます = Good morning (polite)'},
+          {t:'choice', q:'“再见”用日语怎么说？', en:'Goodbye', options:['さようなら','こんにちは','はい','いいえ'], a:0, ex:'さようなら (sayounara) = Goodbye'},
+          {t:'match', q:'配对以下词语', pairs:[['こんにちは','Hello'],['ありがとう','Thank you'],['はい','Yes'],['いいえ','No']], ex:'这些都是最基础的日常用语'},
+          {t:'build', q:'把 “谢谢” 翻译成日语', en:'Thank you', answer:'arigatou', words:['arigatou','konnichiwa','sumimasen','gomen'], ex:'谢谢 = ありがとう (arigatou)'},
+          {t:'choice', q:'选择正确的翻译', jp:'すみません', en:'Excuse me / Sorry', options:['Excuse me / Sorry','Thank you','Please','Welcome'], a:0, ex:'すみません (sumimasen) = Excuse me / Sorry'},
+          {t:'listen', audio:'sayounara', q:'你听到了什么？', options:['さようなら','こんにちは','こんばんは','ありがとう'], a:0, ex:'さようなら = Goodbye'}
+        ]},
+        { id:'ja2', title:'自我介绍', icon:'🙋', items:[
+          {t:'choice', q:'“我叫小明”用日语怎么说？', en:'My name is Xiao Ming', options:['わたしは しょうめい です','これは ほんです','げんき ですか','にほんご です'], a:0, ex:'わたしは〜です = 我是…… / 我叫……'},
+          {t:'build', q:'把 “我是学生” 翻译成日语（罗马音）', en:'I am a student', answer:'watashi wa gakusei desu', words:['watashi','wa','gakusei','desu','kawaii','sensei'], ex:'わたしは学生です = I am a student'},
+          {t:'choice', q:'“请多关照”用日语怎么说？', en:'Nice to meet you', options:['どうぞ よろしく おねがいします','はじめまして','ありがとう ございます','しつれい します'], a:0, ex:'どうぞよろしくお願いします是介绍后的常用寒暄'},
+          {t:'choice', q:'选择正确的翻译', jp:'にほんご を べんきょう します', en:'I study Japanese', options:['I study Japanese','I like Japanese','I speak Japanese','Japanese is easy'], a:0, ex:'〜をべんきょうします = 学习……'},
+          {t:'match', q:'配对以下词语', pairs:[['わたし','I'],['がくせい','student'],['せんせい','teacher'],['ともだち','friend']], ex:'自我介绍的高频词'},
+          {t:'listen', audio:'hajimemashite', q:'你听到了什么？', options:['はじめまして','どうもありがとうございます','はじめましてではありません','よろしく'], a:0, ex:'はじめまして = 初次见面'},
+          {t:'build', q:'把 “我是中国人” 翻译成日语（罗马音）', en:'I am Chinese', answer:'watashi wa chuugokujin desu', words:['watashi','wa','chuugokujin','desu','nihonjin','eigo'], ex:'わたしは中国人です'},
+          {t:'choice', q:'“你是哪国人？”的日语是？', en:'What country are you from?', options:['どちらの くじ ですか','なに を しています か','いつ に いきます か','どこ に あります か'], a:0, ex:'どちらの国ですか = 您是哪国人？'}
+        ]},
+        { id:'ja3', title:'日常寒暄', icon:'💬', items:[
+          {t:'choice', q:'吃饭前常说的一句话是？', en:"Let's eat! (before a meal)", options:['いただきます','ごちそうさま','いってらっしゃい','ただいま'], a:0, ex:'いただきます = 我开动了'},
+          {t:'choice', q:'“我回来了”用日语怎么说？', en:"I'm home", options:['ただいま','いってきます','おかえり','いらっしゃい'], a:0, ex:'ただいま = 我回来了（回家时说）'},
+          {t:'build', q:'把 “我出门了” 翻译成英语', jp:'いってきます', answer:'im off now', words:['im','off','now','welcome','home','back'], ex:'いってきます = 我出门了（对家里人说）'},
+          {t:'choice', q:'选择正确的翻译', jp:'おつかれさま でした', en:'Good work / Thanks for your effort', options:['Good work / Thanks for your effort','Excuse me','Please wait','See you tomorrow'], a:0, ex:'お疲れ様でした是下班/放学的万能寒暄'},
+          {t:'match', q:'配对以下词语', pairs:[['いただきます','Bon appétit'],['おかえり','Welcome home'],['いってきます',"I'm heading out"],['おやすみ','Good night']], ex:'家庭场景常用语'},
+          {t:'listen', audio:'gochisousama deshita', q:'你听到了什么？', options:['ごちそうさまでした','いただきます','おつかれさまでした','おめでとうございます'], a:0, ex:'ごちそうさまでした = 多谢款待（饭后说）'},
+          {t:'choice', q:'“辛苦了”用日语怎么说？', en:'Good job / Thank you for your effort', options:['おつかれさま です','おめでとう ございます','こんにちは','すみません'], a:0, ex:'お疲れ様です是职场最常用的话'},
+          {t:'build', q:'把 “生日快乐” 翻译成日语（罗马音）', en:'Happy birthday', answer:'omedetou gozaimasu', words:['omedetou','gozaimasu','kanpai','yoisho','shukufuku'], ex:'おめでとうございます = 生日快乐'}
+        ]}
+      ]},
+      { title:'第 2 单元：基础会话', icon:'🍙', lessons:[
+        { id:'ja4', title:'数字与时间', icon:'🔢', items:[
+          {t:'choice', q:'“一、二、三”的日语是？', en:'One, two, three', options:['いち、に、さん','いち、つ、み','い、に、さ','hitotsu、futatsu、mittsu'], a:0, ex:'いち に さん 是音读数字'},
+          {t:'choice', q:'“今天星期几？”日语怎么说？', en:'What day is it today?', options:['きょう は なん よう び です か','いま なん じ です か','きょう は にほん です か','なに を たべます か'], a:0, ex:'何曜日(なんようび) = 星期几'},
+          {t:'build', q:'把 “现在几点？” 翻译成英语', jp:'いま なん じ ですか', answer:'what time is it now', words:['what','time','is','it','now','day','today'], ex:'いま なん じ ですか = 现在几点？'},
+          {t:'choice', q:'“星期一”的日语是？', en:'Monday', options:['げつようび','かようび','もくようび','にちようび'], a:0, ex:'月曜日(げつようび) = 星期一'},
+          {t:'listen', audio:'sanjuu go fun', q:'你听到了什么？', options:['さんじゅうごふん','さんじゅうごじ','さんじゅうじ','にじゅうごふん'], a:0, ex:'35分 = さんじゅうごふん'},
+          {t:'match', q:'配对数字', pairs:[['いち','One'],['に','Two'],['さん','Three'],['よん','Four']], ex:'基础数字 1-4'},
+          {t:'build', q:'把 “明天见” 翻译成日语（罗马音）', en:'See you tomorrow', answer:'ashita mata ne', words:['ashita','mata','ne','kyou','matamata'], ex:'明日またね = 明天见'}
+        ]},
+        { id:'ja5', title:'食物与饮料', icon:'🍣', items:[
+          {t:'choice', q:'“我喜欢吃寿司”用日语怎么说？', en:'I like eating sushi', options:['すしが たべる のが すき です','すしは おおい です','すしを つかいます','すしに いきます'], a:0, ex:'〜がすきです = 喜欢……'},
+          {t:'build', q:'把 “我要一杯水” 翻译成英语', jp:'みずを ください', answer:'water please', words:['water','please','tea','coffee','give'], ex:'〜をください = 请给我……'},
+          {t:'choice', q:'“好吃”的日语是？', en:'Delicious', options:['おいしい','おもしろい','おおきい','あつい'], a:0, ex:'おいしい = 好吃'},
+          {t:'choice', q:'在餐厅点餐时会听到：', en:'What would you like?', options:['なにを いれます か','いくら ですか','おいしい ですか','ごめん ください ですか'], a:0, ex:'なにを入れますか = 要点什么呢？'},
+          {t:'match', q:'配对食物', pairs:[['すし','Sushi'],['らーめん','Ramen'],['みず','Water'],['おちゃ','Tea']], ex:'餐厅必备词'},
+          {t:'listen', audio:'sushi o kudasai', q:'你听到了什么？', options:['すしを ください','すしを たべます','すしは おいしい','すしに いきます'], a:0, ex:'すしをください = 请给我寿司'},
+          {t:'build', q:'把 “很贵” 翻译成日语（罗马音）', en:'It is expensive', answer:'takai desu', words:['takai','desu','yasui','oishii'], ex:'高い(たかい) = 贵'}
+        ]},
+        { id:'ja6', title:'方位与出行', icon:'🚃', items:[
+          {t:'choice', q:'“车站在哪里？”日语怎么说？', en:'Where is the station?', options:['えきは どこに あります か','えきは なに ですか','えきに いきます か','えきは おおきい ですか'], a:0, ex:'〜はどこにありますか = ……在哪里？'},
+          {t:'choice', q:'“左”的日语是？', en:'Left', options:['ひだり','みぎ','まえ','うしろ'], a:0, ex:'左(ひだり)=左，右(みぎ)=右'},
+          {t:'build', q:'把 “请给我地图” 翻译成英语', jp:'ちずを ください', answer:'map please', words:['map','please','ticket','station','here'], ex:'ちず = 地图'},
+          {t:'choice', q:'“一起去吧”用日语怎么说？', en:"Let's go together", options:['いっしょに いきましょう','ひとりで いきます','いそぎます','やすみましょう'], a:0, ex:'〜ましょう = 让我们……'},
+          {t:'match', q:'配对出行词', pairs:[['えき','Station'],['でんしゃ','Train'],['ひだり','Left'],['みぎ','Right']], ex:'问路必备'},
+          {t:'listen', audio:'koko wa doko desu ka', q:'你听到了什么？', options:['ここは どこ ですか','ここは なん ですか','そこは どこ ですか','これは だれ ですか'], a:0, ex:'ここはどこですか = 这里是哪里？'},
+          {t:'build', q:'把 “很远” 翻译成日语（罗马音）', en:'It is far', answer:'tooi desu', words:['tooi','desu','chikai','takai','arimasu'], ex:'遠い(とおい) = 远'}
+        ]}
+      ]},
+      { title:'第 3 单元：生活场景', icon:'🗻', lessons:[
+        { id:'ja7', title:'购物', icon:'🛍️', items:[
+          {t:'choice', q:'“这个多少钱？”日语怎么说？', en:'How much is this?', options:['これは いくら ですか','これは なに ですか','これは だれの ですか','これは いい ですか'], a:0, ex:'いくら = 多少钱'},
+          {t:'build', q:'把 “太贵了！” 翻译成英语', jp:'たかい です！', answer:'its too expensive', words:['its','too','expensive','cheap','very'], ex:'表达价格惊讶的常用句'},
+          {t:'choice', q:'“便宜”的日语是？', en:'Cheap / Inexpensive', options:['やすい','たかい','おおきい','ちいさい'], a:0, ex:'安い(やすい)=便宜'},
+          {t:'choice', q:'“我买了”用日语怎么说？', en:"I'll buy it", options:['かいます','かけます','たべます','いきます'], a:0, ex:'買う(かう)=买'},
+          {t:'match', q:'配对购物词', pairs:[['いくら','How much'],['やすい','Cheap'],['たかい','Expensive'],['かいもの','Shopping']], ex:'逛街必备'},
+          {t:'listen', audio:'kore o kudasai', q:'你听到了什么？', options:['これを ください','これを かいます','これは いくら','これは たかい'], a:0, ex:'これをください = 请给我这个'},
+          {t:'build', q:'把 “用信用卡” 翻译成日语（罗马音）', en:'By credit card', answer:'kuredo kaado de', words:['kuredo','kaado','de','genkin','okane'], ex:'クレジットカードで = 用信用卡'}
+        ]},
+        { id:'ja8', title:'天气', icon:'🌤️', items:[
+          {t:'choice', q:'“今天天气怎么样？”日语怎么说？', en:'How is the weather today?', options:['きょうは てんきが いい ですか','きょうは なんじ ですか','きょうは どこ ですか','きょうは だれ ですか'], a:0, ex:'てんき = 天气'},
+          {t:'choice', q:'“下雨”的日语是？', en:'It rains', options:['あめが ふります','かぜが ふきます','ゆきが ふります','あめが やみます'], a:0, ex:'雨がふります = 下雨'},
+          {t:'build', q:'把 “很热” 翻译成日语（罗马音）', en:'It is hot', answer:'atsui desu', words:['atsui','desu','samui','nurui','tenki'], ex:'暑い(あつい)=热，寒い(さむい)=冷'},
+          {t:'choice', q:'“下雪”的日语是？', en:'It snows', options:['ゆきが ふります','あめが ふります','かぜが ふきます','はれます'], a:0, ex:'雪がふります = 下雪'},
+          {t:'match', q:'配对天气词', pairs:[['てんき','Weather'],['あめ','Rain'],['ゆき','Snow'],['はれ','Clear sky']], ex:'看天气预报用'},
+          {t:'listen', audio:'kyou wa hare desu', q:'你听到了什么？', options:['きょうは はれ です','きょうは あめ です','きょうは ゆき です','きょうは くもり です'], a:0, ex:'今日は晴れです = 今天晴天'},
+          {t:'build', q:'把 “刮风了” 翻译成英语', jp:'かぜが ふいて います', answer:'its windy', words:['its','windy','raining','snowing','sunny'], ex:'風がふいています = 刮着风'}
+        ]},
+        { id:'ja9', title:'心情感受', icon:'😊', items:[
+          {t:'choice', q:'“很开心”用日语怎么说？', en:'I am happy', options:['たのしい です','かなしい です','つかれ です','おおきい です'], a:0, ex:'楽しい(たのしい)=开心'},
+          {t:'choice', q:'“好可爱！”的日语是？', en:'So cute!', options:['かわいい です','きれい です','すごい です','さむい です'], a:0, ex:'可愛い(かわいい)=可爱'},
+          {t:'build', q:'把 “好累…” 翻译成日语（罗马音）', en:'I am tired', answer:'tsukareta desu', words:['tsukareta','desu','genki','ureshii','samui'], ex:'つかれた = 累了（口语）'},
+          {t:'choice', q:'“我明白了”用日语怎么说？', en:'I see / I understand', options:['わかりました','ききました','みました','いきました'], a:0, ex:'わかりました = 明白了'},
+          {t:'match', q:'配对心情词', pairs:[['うれしい','Happy'],['かなしい','Sad'],['おこった','Angry'],['げんき','Energetic']], ex:'表达情绪'},
+          {t:'listen', audio:'tanoshii ne', q:'你听到了什么？', options:['たのしい ね','かなしい ね','つかれた ね','かわいい ね'], a:0, ex:'楽しいね = 很开心呢'},
+          {t:'build', q:'把 “我喜欢你” 翻译成日语（罗马音）', en:'I like you', answer:'suki desu', words:['suki','desu','kirai','ai','anata'], ex:'好きです = 喜欢你'}
+        ]}
+      ]}
+    ]
+  },
+  en: {
+    id:'en', name:'英语', flag:'🇬🇧', greeting:'Hello!',
+    units: [
+      { title:'Unit 1: First words', icon:'💬', lessons:[
+        { id:'en1', title:'Greetings', icon:'👋', items:[
+          {t:'choice', q:'“你好”的英文是？', en:'Hello', jp:'你好', options:['Hello','Goodbye','Thanks','Yes'], a:0, ex:'Hello = 你好'},
+          {t:'choice', q:'选出 “Thank you” 的意思', en:'Thank you', options:['谢谢你','对不起','再见','请'], a:0, ex:'Thank you = 谢谢你'},
+          {t:'build', q:'把 “早上好” 翻译成英语', jp:'早上好', answer:'good morning', words:['good','morning','night','evening','goodby'], ex:'Good morning = 早上好'},
+          {t:'listen', audio:'nice to meet you', q:'你听到了什么？', options:['nice to meet you','nice to see you','good to know you','glad to meet you'], a:0, ex:'Nice to meet you = 很高兴认识你'},
+          {t:'choice', q:'“晚安”的英文是？', jp:'晚安', options:['Good night','Good evening','Goodbye','Good luck'], a:0, ex:'Good night = 晚安'},
+          {t:'match', q:'配对以下词语', pairs:[['Hello','你好'],['Thanks','谢谢'],['Bye','再见'],['Yes','是']], ex:'最基础的问候'},
+          {t:'build', q:'把 “我叫小明” 翻译成英语', jp:'我叫小明', answer:'my name is xiaoming', words:['my','name','is','xiaoming','me'], ex:'My name is... = 我叫……'},
+          {t:'choice', q:'“不客气”用英语怎么说？', en:"You're welcome", options:["You're welcome",'Never mind',"It's ok",'All right'], a:0, ex:"You're welcome = 不客气"}
+        ]},
+        { id:'en2', title:'Animals', icon:'🐱', items:[
+          {t:'choice', q:'“猫”的英文是？', jp:'猫', options:['cat','dog','bird','fish'], a:0, ex:'cat = 猫'},
+          {t:'choice', q:'“狗”用英语怎么说？', jp:'狗', options:['dog','cat','pig','cow'], a:0, ex:'dog = 狗'},
+          {t:'build', q:'把 “小鸟” 翻译成英语', jp:'小鸟', answer:'bird', words:['bird','cat','dog','duck'], ex:'bird = 鸟'},
+          {t:'listen', audio:'the cat is black', q:'你听到了什么？', options:['the cat is black','the cat is back','the dog is black','a cat is black'], a:0, ex:'The cat is black. = 这只猫是黑色的。'},
+          {t:'match', q:'配对动物', pairs:[['cat','猫'],['dog','狗'],['bird','鸟'],['fish','鱼']], ex:'常见的小动物'},
+          {t:'choice', q:'“兔子”的英文是？', jp:'兔子', options:['rabbit','monkey','tiger','sheep'], a:0, ex:'rabbit = 兔子'},
+          {t:'build', q:'把 “我有一只狗” 翻译成英语', jp:'我有一只狗', answer:'i have a dog', words:['i','have','a','dog','cat','an'], ex:'I have a... = 我有一只……'}
+        ]},
+        { id:'en3', title:'Numbers', icon:'🔢', items:[
+          {t:'choice', q:'“三”的英文是？', jp:'三', options:['three','two','four','five'], a:0, ex:'three = 三'},
+          {t:'choice', q:'“十”用英语怎么说？', jp:'十', options:['ten','nine','eleven','twelve'], a:0, ex:'ten = 十'},
+          {t:'build', q:'把 “七” 翻译成英语', jp:'七', answer:'seven', words:['six','seven','eight','nine'], ex:'seven = 七'},
+          {t:'listen', audio:'i have two books', q:'你听到了什么？', options:['i have two books','i have ten books','i had two books','we have two books'], a:0, ex:'I have two books. = 我有两本书。'},
+          {t:'match', q:'配对数字', pairs:[['one','一'],['five','五'],['ten','十'],['twenty','二十']], ex:'数字 1 / 5 / 10 / 20'},
+          {t:'choice', q:'“一百”的英文是？', jp:'一百', options:['hundred','thousand','dozen','score'], a:0, ex:'hundred = 百'},
+          {t:'build', q:'把 “二十三” 翻译成英语', jp:'二十三', answer:'twenty three', words:['twenty','three','thirty','two'], ex:'23 = twenty-three'}
+        ]}
+      ]},
+      { title:'Unit 2: Everyday life', icon:'🍎', lessons:[
+        { id:'en4', title:'Family', icon:'👪', items:[
+          {t:'choice', q:'“妈妈”的英文是？', jp:'妈妈', options:['mother','father','sister','brother'], a:0, ex:'mother = 妈妈'},
+          {t:'choice', q:'“爸爸”用英语怎么说？', jp:'爸爸', options:['father','mother','uncle','grandpa'], a:0, ex:'father = 爸爸'},
+          {t:'build', q:'把 “我妹妹” 翻译成英语', jp:'我妹妹', answer:'my sister', words:['my','sister','brother','your','family'], ex:'sister = 姐妹'},
+          {t:'listen', audio:'this is my family', q:'你听到了什么？', options:['this is my family','this is my father','those are my family','this is your family'], a:0, ex:'This is my family. = 这是我的家人。'},
+          {t:'match', q:'配对家人', pairs:[['mother','妈妈'],['father','爸爸'],['brother','兄弟'],['grandma','奶奶']], ex:'家庭成员'},
+          {t:'choice', q:'“孩子”的英文是？', jp:'孩子', options:['child','aunt','nephew','cousin'], a:0, ex:'child = 孩子'},
+          {t:'build', q:'把 “家人” 翻译成英语', jp:'家人', answer:'family', words:['family','friend','people','home'], ex:'family = 家庭/家人'}
+        ]},
+        { id:'en5', title:'Food', icon:'🍔', items:[
+          {t:'choice', q:'“面包”的英文是？', jp:'面包', options:['bread','rice','milk','egg'], a:0, ex:'bread = 面包'},
+          {t:'choice', q:'“鸡蛋”用英语怎么说？', jp:'鸡蛋', options:['egg','apple','juice','cake'], a:0, ex:'egg = 鸡蛋'},
+          {t:'build', q:'把 “一杯牛奶” 翻译成英语', jp:'一杯牛奶', answer:'a glass of milk', words:['a','glass','of','milk','water','cup'], ex:'a glass of milk = 一杯牛奶'},
+          {t:'listen', audio:'i like apples', q:'你听到了什么？', options:['i like apples','i like oranges','i take apples','i make apples'], a:0, ex:'I like apples. = 我喜欢苹果。'},
+          {t:'match', q:'配对食物', pairs:[['rice','米饭'],['apple','苹果'],['milk','牛奶'],['noodle','面条']], ex:'日常食物'},
+          {t:'choice', q:'“水”的英文是？', jp:'水', options:['water','juice','tea','soup'], a:0, ex:'water = 水'},
+          {t:'build', q:'把 “我饿了” 翻译成英语', jp:'我饿了', answer:'i am hungry', words:['i','am','hungry','thirsty','feel'], ex:'I am hungry. = 我饿了。'}
+        ]},
+        { id:'en6', title:'Colors', icon:'🎨', items:[
+          {t:'choice', q:'“红色”的英文是？', jp:'红色', options:['red','blue','green','black'], a:0, ex:'red = 红色'},
+          {t:'choice', q:'“黄色”用英语怎么说？', jp:'黄色', options:['yellow','purple','orange','white'], a:0, ex:'yellow = 黄色'},
+          {t:'build', q:'把 “天空是蓝色的” 翻译成英语', jp:'天空是蓝色的', answer:'the sky is blue', words:['the','sky','is','blue','sea','green'], ex:'The sky is blue. = 天空是蓝色的。'},
+          {t:'listen', audio:'the flower is red', q:'你听到了什么？', options:['the flower is red','the flower is read','the floor is red','the flavor is red'], a:0, ex:'The flower is red. = 这朵花是红色的。'},
+          {t:'match', q:'配对颜色', pairs:[['red','红色'],['blue','蓝色'],['green','绿色'],['black','黑色']], ex:'基础颜色'},
+          {t:'choice', q:'“白色”的英文是？', jp:'白色', options:['white','black','brown','gray'], a:0, ex:'white = 白色'},
+          {t:'build', q:'把 “我喜欢粉色” 翻译成英语', jp:'我喜欢粉色', answer:'i like pink', words:['i','like','pink','love','color'], ex:'I like pink. = 我喜欢粉色。'}
+        ]}
+      ]}
+    ]
+  }
+};
+
+const BOT_NAMES = ['さくら','Kenji','Mia','Yuki','Leo','Hana','Tom','Aoi','Max','Nana'];
+const DEFAULT_STATE = {
+  xp:0, gems:150, hearts:5, streak:0, lastPlayed:null,
+  done:{}, course:'ja', totalCorrect:0, totalAnswered:0
+};
+
+let S = load();
+function load(){
+  try{
+    const raw = localStorage.getItem('lingobird');
+    if(raw){ return Object.assign({}, DEFAULT_STATE, JSON.parse(raw)); }
+  }catch(e){}
+  return Object.assign({}, DEFAULT_STATE);
+}
+function save(){ try{ localStorage.setItem('lingobird', JSON.stringify(S)); }catch(e){} }
+function today(){ return new Date().toISOString().slice(0,10); }
+
+/* streak logic */
+function touchStreak(){
+  const t = today();
+  if(S.lastPlayed === t) return;
+  const y = new Date(Date.now() - 864e5).toISOString().slice(0,10);
+  S.streak = (S.lastPlayed === y) ? S.streak + 1 : 1;
+  S.lastPlayed = t; save();
+}
+
+/* ================= Speech ================= */
+function speak(text, slow){
+  try{
+    if(!('speechSynthesis' in window)) return false;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = (S.course === 'ja' && /[^\x00-\x7F]/.test(text)) ? 'ja-JP' : (/[^\x00-\x7F]/.test(text) ? 'zh-CN' : 'en-US');
+    if(slow) u.rate = .6;
+    speechSynthesis.speak(u);
+    return true;
+  }catch(e){ return false; }
+}
+
+/* ================= UI helpers ================= */
+const $ = s => document.querySelector(s);
+const main = document.getElementById('main');
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+function updateStats(){
+  document.getElementById('st-streak').textContent = S.streak;
+  document.getElementById('st-xp').textContent = S.xp;
+  document.getElementById('st-hearts').textContent = S.hearts;
+  document.getElementById('st-gems').textContent = S.gems;
+}
+function beep(ok){
+  try{
+    const ctx = beep.ctx || (beep.ctx = new (window.AudioContext||window.webkitAudioContext)());
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = ok ? 740 : 180;
+    g.gain.setValueAtTime(.06, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + (ok?.25:.4));
+    o.start(); o.stop(ctx.currentTime + (ok?.25:.4));
+  }catch(e){}
+}
+
+/* ================= Router ================= */
+let tab = 'learn';
+function setTab(t){
+  tab = t;
+  document.querySelectorAll('.nav-i').forEach(b=>{
+    b.classList.toggle('on', b.dataset.tab === t);
+    b.classList.toggle('green', b.dataset.tab === 'learn' && t==='learn');
+    b.classList.toggle('orange', b.dataset.tab === 'board' && t==='board');
+  });
+  if(t==='learn') renderLearn(); else if(t==='practice') renderPractice();
+  else if(t==='board') renderBoard(); else renderProfile();
+}
+document.querySelectorAll('.nav-i').forEach(b=> b.onclick = ()=> setTab(b.dataset.tab));
+
+/* ================= Learn tab ================= */
+function lessonUnlocked(courseId, unitIdx, lessonId){
+  const c = COURSES[courseId];
+  for(let u=0; u<unitIdx; u++){
+    for(const l of c.units[u].lessons){ if(!S.done[l.id]) return false; }
+  }
+  for(const l of c.units[unitIdx].lessons){ if(l.id === lessonId) break; if(!S.done[l.id]) return false; }
+  return true;
+}
+function allDone(courseId){
+  return COURSES[courseId].units.every(u=> u.lessons.every(l=> S.done[l.id]));
+}
+function renderLearn(){
+  const c = COURSES[S.course];
+  const total = c.units.reduce((a,u)=>a+u.lessons.length,0);
+  const doneN = c.units.reduce((a,u)=>a+u.lessons.filter(l=>S.done[l.id]).length,0);
+  const coursePct = Math.round(doneN/total*100);
+  let html = '<div class="screen">';
+  html += '<div class="lang-tabs">';
+  for(const id of ['ja','en']){
+    html += `<div class="lang-tab ${S.course===id?'on':''}" onclick="setCourse('${id}')">${COURSES[id].flag} ${COURSES[id].name}</div>`;
+  }
+  html += '</div>';
+  html += `<div class="course-hero"><div class="flag">${c.flag}</div><div><h3>${c.name}课程</h3><p>已完成 ${coursePct}% · ${c.greeting}</p></div></div>`;
+  html += '<div class="path">';
+  let firstOpen = true;
+  c.units.forEach((u,ui)=>{
+    html += `<div class="unit-banner"><h2>${u.title}</h2><p>${u.lessons.length} 节课</p><div class="deco">${u.icon}</div></div>`;
+    u.lessons.forEach((l,li)=>{
+      const done = !!S.done[l.id];
+      const unlocked = lessonUnlocked(S.course, ui, l.id);
+      const cls = done ? 'done' : (unlocked ? '' : 'locked');
+      const nudge = (!done && unlocked && firstOpen) ? 'nudge' : '';
+      if(!done && unlocked) firstOpen = false;
+      const off = li%3===1?'off1':(li%3===2?'off2':'');
+      html += `<div class="row"><div class="node ${cls} ${nudge} ${off}" ${unlocked?`onclick="startLesson('${l.id}')"`:''}>
+        <div class="ring"></div>${done?'⭐':(unlocked?l.icon:'🔒')}</div>
+        <div class="node-label">${l.title}</div></div>`;
+      if(li < u.lessons.length-1) html += '<div class="zig"></div>';
+    });
+  });
+  if(allDone(S.course)) html += '<div class="unit-banner" style="background:var(--purple);box-shadow:0 4px 0 #a568d6;margin-top:14px;"><h2>🎉 恭喜完成全部课程！</h2><p>去练习页复习，或切换另一门语言</p></div>';
+  html += '</div></div>';
+  main.innerHTML = html;
+}
+function setCourse(id){ S.course = id; save(); renderLearn(); }
+
+/* ================= Practice tab ================= */
+function renderPractice(){
+  const c = COURSES[S.course];
+  const allLessons = c.units.flatMap(u=>u.lessons);
+  const doneL = allLessons.filter(l=>S.done[l.id]);
+  const acc = S.totalAnswered ? Math.round(S.totalCorrect/S.totalAnswered*100) : 0;
+  const review = doneL.length ? doneL[S.totalAnswered % doneL.length].id : '';
+  let html = '<div class="screen"><h2 style="font-size:24px;font-weight:900;margin-bottom:16px;">练习</h2><div class="tiles">';
+  html += `<button class="tile g" onclick="reviewMode('${review}')"><div class="ic">💪</div><h4>错题复习</h4><p>混合重做已学内容</p></button>`;
+  html += `<button class="tile b" onclick="reviewMode('${review}')"><div class="ic">⚡</div><h4>闪电战</h4><p>快速 8 题冲刺</p></button>`;
+  html += `<button class="tile o" onclick="toast('发音练习：先完成课程解锁 🎤')"><div class="ic">🎤</div><h4>发音练习</h4><p>跟读日语句子</p></button>`;
+  html += `<button class="tile p" onclick="reviewMode('${review}')"><div class="ic">🎯</div><h4>词汇挑战</h4><p>巩固核心词汇</p></button>`;
+  html += `<button class="tile r" onclick="refillHearts()" style="grid-column:1/-1;"><div class="ic">❤️</div><h4>补充红心</h4><p>用 35 宝石补满 5 颗心（当前 ${S.hearts} 颗）</p></button>`;
+  html += `</div><p style="text-align:center;color:var(--ink-l);font-weight:700;margin-top:18px;">正确率 ${acc}% · 已答题 ${S.totalAnswered}</p></div>`;
+  main.innerHTML = html;
+}
+function refillHearts(){
+  if(S.hearts >= 5){ toast('红心已经是满的啦 ❤️'); return; }
+  if(S.gems < 35){ toast('宝石不足，需要 35 💎'); return; }
+  S.gems -= 35; S.hearts = 5; save(); updateStats(); renderPractice(); toast('红心已补满！❤️');
+}
+function reviewMode(lessonId){ if(!lessonId){ toast('先完成一节课程吧！'); return; } startLesson(lessonId, true); }
+
+/* ================= Leaderboard ================= */
+function renderBoard(){
+  const you = { name:'你 🐦', xp:S.xp, me:true, ava:'🦉' };
+  const bots = BOT_NAMES.slice(0,7).map((n,i)=>({
+    name:n, xp: 40 + ((i*73 + S.xp) % 260), me:false,
+    ava:['🌸','🐵','🐱','🐰','🦊','🐼','🐨'][i%7]
+  }));
+  const all = [...bots, you].sort((a,b)=>b.xp-a.xp);
+  const top = all.slice(0,3);
+  const order = [top[1], top[0], top[2]];
+  let html = '<div class="screen"><h2 style="font-size:24px;font-weight:900;">翡翠联赛</h2><p style="color:var(--ink-l);font-weight:700;margin-bottom:6px;">本周前 7 名晋级 ⬆️</p>';
+  html += '<div class="podium">';
+  order.forEach((p)=>{
+    const place = p===top[0]?1:(p===top[1]?2:3);
+    html += `<div class="pod p${place}"><div class="ava">${p.ava}</div><div class="nm">${esc(p.name)}</div><div class="xp">${p.xp} XP</div><div class="box">${place===1?'🥇':(place===2?'🥈':'🥉')}</div></div>`;
+  });
+  html += '</div>';
+  all.forEach((p,i)=>{
+    html += `<div class="rank-row ${p.me?'me':''}"><div class="pos">${i+1}</div><div class="ava">${p.ava}</div><div>${esc(p.name)}</div><div class="xp">${p.xp} XP</div></div>`;
+  });
+  html += '</div>';
+  main.innerHTML = html;
+}
+
+/* ================= Profile ================= */
+function renderProfile(){
+  const totalL = Object.values(COURSES).reduce((a,c)=>a+c.units.reduce((b,u)=>b+u.lessons.length,0),0);
+  const doneL = Object.keys(S.done).filter(k=>S.done[k]).length;
+  const acc = S.totalAnswered ? Math.round(S.totalCorrect/S.totalAnswered*100) : 0;
+  const achs = [
+    {ic:'🌱', n:'初出茅庐', p:'完成第一节课', on:doneL>=1},
+    {ic:'🔥', n:'三天连胜', p:'连续学习 3 天', on:S.streak>=3},
+    {ic:'⚡', n:'闪电手', p:'累计获得 100 XP', on:S.xp>=100},
+    {ic:'💎', n:'收藏家', p:'拥有 300 宝石', on:S.gems>=300},
+    {ic:'🏆', n:'毕业啦', p:'完成全部课程', on:doneL>=totalL},
+  ];
+  let html = `<div class="screen">
+    <div class="profile-head"><div class="ava">🦉</div><div><h3>学习者</h3><p>加入 LingoBird · ${COURSES[S.course].flag} ${COURSES[S.course].name}</p></div></div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="ic">🔥</div><div><div class="n">${S.streak}</div><div class="l">天连胜</div></div></div>
+      <div class="stat-card"><div class="ic">⚡</div><div><div class="n">${S.xp}</div><div class="l">总经验</div></div></div>
+      <div class="stat-card"><div class="ic">🎯</div><div><div class="n">${acc}%</div><div class="l">正确率</div></div></div>
+      <div class="stat-card"><div class="ic">📚</div><div><div class="n">${doneL}/${totalL}</div><div class="l">完成课程</div></div></div>
+    </div>
+    <h2 style="font-size:20px;font-weight:900;margin:22px 0 4px;">成就</h2>`;
+  for(const a of achs){
+    html += `<div class="ach ${a.on?'':'off'}"><div class="ic">${a.ic}</div><div><h5>${a.n}</h5><p>${a.p}</p></div><div style="margin-left:auto;font-weight:900;">${a.on?'✅':'🔒'}</div></div>`;
+  }
+  html += `<button class="btn ghost block" style="margin-top:22px;" onclick="resetProgress()">重置进度</button></div>`;
+  main.innerHTML = html;
+}
+function resetProgress(){
+  openModal('确定要重置吗？','所有进度、宝石和连胜都会清空。',()=>{
+    S = Object.assign({}, DEFAULT_STATE); save(); updateStats(); setTab('learn'); toast('进度已重置');
+  });
+}
+
+/* ================= Modal ================= */
+let modalCb = null, modalCancelCb = null;
+function openModal(title, body, cb, onCancel){
+  modalCb = cb; modalCancelCb = onCancel || null;
+  const bg = document.createElement('div'); bg.id = 'modal-bg';
+  bg.innerHTML = `<div class="modal"><h3>${title}</h3><p>${body}</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn gray" id="modal-cancel">取消</button>
+      <button class="btn red" id="modal-ok">确定</button>
+    </div></div>`;
+  document.body.appendChild(bg);
+  bg.onclick = e => { if(e.target === bg) closeModal(true); };
+  bg.querySelector('#modal-cancel').onclick = ()=> closeModal(true);
+  bg.querySelector('#modal-ok').onclick = ()=>{ const c=modalCb; closeModal(false); c && c(); };
+}
+function closeModal(cancel){
+  const bg = document.getElementById('modal-bg'); if(bg) bg.remove();
+  const c = modalCancelCb; modalCb = null; modalCancelCb = null;
+  if(cancel && c) c();
+}
+
+/* ================= Lesson engine ================= */
+let L = null;
+
+function findLesson(id){
+  for(const c of Object.values(COURSES)) for(const u of c.units) for(const l of u.lessons) if(l.id===id) return {course:c, unit:u, lesson:l};
+  return null;
+}
+function shuffle(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+function startLesson(id, isReview){
+  const found = findLesson(id); if(!found) return;
+  if(!isReview && S.hearts <= 0){
+    openModal('红心用完啦！❤️','去练习页用 35 宝石补满红心，明天也会自动恢复 1 颗。', ()=>{ setTab('practice'); });
+    return;
+  }
+  L = {
+    id, course:found.course, unit:found.unit, lesson:found.lesson, isReview:!!isReview,
+    idx:-1, hearts:S.hearts, correct:0, answered:0, xpEarned:0, gemsEarned:0,
+    answeredFlag:false, sel:null,
+    queue: shuffle(found.lesson.items).slice(0, isReview?8:found.lesson.items.length)
+  };
+  document.getElementById('nav').classList.add('hidden');
+  nextQuestion();
+}
+function endLesson(returnTo){
+  L = null;
+  document.getElementById('nav').classList.remove('hidden');
+  updateStats();
+  setTab(returnTo || 'learn');
+}
+function lessonShell(){
+  return `
+    <div id="lesson-top">
+      <button id="close-btn" onclick="quitLesson()">✕</button>
+      <div id="bar-wrap"><div id="bar"></div></div>
+      <div id="hearts">${L.isReview?'∞ ❤️':'❤️'}<span id="hearts-n">${L.isReview?'':L.hearts}</span></div>
+    </div>
+    <div id="q-area"></div>
+    <div id="footer">
+      <div id="footer-in">
+        <div id="verdict"></div>
+        <div class="spacer"></div>
+        <button class="btn" id="check-btn">检查</button>
+      </div>
+    </div>`;
+}
+function quitLesson(){
+  openModal('要退出本课吗？','进度不会保存。', ()=> endLesson('learn'));
+}
+function nextQuestion(){
+  L.idx++;
+  if(L.idx >= L.queue.length){ finishLesson(); return; }
+  L.answeredFlag = false; L.sel = null;
+  main.innerHTML = lessonShell();
+  const q = L.queue[L.idx];
+  const area = document.getElementById('q-area');
+  document.getElementById('bar').style.width = (L.idx / L.queue.length * 100) + '%';
+  document.getElementById('check-btn').onclick = onCheck;
+  if(q.t === 'choice') renderChoice(q, area);
+  else if(q.t === 'build') renderBuild(q, area);
+  else if(q.t === 'listen') renderListen(q, area);
+  else if(q.t === 'match') renderMatch(q, area);
+}
+function norm(s){ return String(s).toLowerCase().replace(/[.,!?;:'"’！？。]/g,'').replace(/\s+/g,' ').trim(); }
+
+function renderChoice(q, area){
+  let html = `<div class="prompt">${esc(q.q)}</div>`;
+  if(q.jp){
+    html += `<div class="jpcard" onclick="speak(this.dataset.t)" data-t="${esc(q.jp)}">${esc(q.jp)}${q.en?`<div class="romaji">${esc(q.en)} · 🔊 点卡片听发音</div>`:'<div class="romaji">🔊 点卡片听发音</div>'}</div>`;
+  } else if(q.en){
+    html += `<div class="jpcard" style="font-size:24px;" onclick="speak(this.dataset.t)" data-t="${esc(q.en)}">${esc(q.en)}<div class="romaji">🔊 点卡片听发音</div></div>`;
+  }
+  html += '<div class="choices">';
+  shuffle(q.options.map((o,i)=>({o,i}))).forEach(({o,i},k)=>{
+    html += `<button class="choice" data-i="${i}"><span class="key">${'ABCDEF'[k]}</span>${esc(o)}</button>`;
+  });
+  html += '</div><div class="hint">选择一个答案，然后点「检查」</div>';
+  area.innerHTML = html;
+  area.querySelectorAll('.choice').forEach(b=>{
+    b.onclick = ()=>{
+      if(L.answeredFlag) return;
+      area.querySelectorAll('.choice').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel'); L.sel = +b.dataset.i;
+    };
+  });
+}
+function renderBuild(q, area){
+  let html = `<div class="prompt">${esc(q.q)}</div>`;
+  if(q.jp) html += `<div class="jpcard" onclick="speak(this.dataset.t)" data-t="${esc(q.jp)}">${esc(q.jp)}<div class="romaji">🔊 点卡片听发音</div></div>`;
+  if(q.en) html += `<div class="jpcard" style="font-size:24px;">${esc(q.en)}</div>`;
+  html += `<div id="bank"></div><div class="wordbank" id="pool"></div><div class="hint">点击单词放进框里，再点框里的词可以退回</div>`;
+  area.innerHTML = html;
+  const pool = area.querySelector('#pool'), bank = area.querySelector('#bank');
+  L.words = [];
+  const chips = shuffle(q.words.slice());
+  function sync(){
+    const usedCount = {};
+    L.words.forEach(w=> usedCount[w]=(usedCount[w]||0)+1);
+    const seen = {};
+    pool.querySelectorAll('.chip').forEach(c=>{
+      const w = c.dataset.w; seen[w]=(seen[w]||0)+1;
+      c.classList.toggle('used', (usedCount[w]||0) >= seen[w]);
+    });
+    bank.innerHTML = '';
+    if(!L.words.length){
+      bank.innerHTML = '<span style="color:var(--gray);font-weight:700;font-size:14px;align-self:center;">点下方单词组成答案…</span>';
+    }
+    L.words.forEach((w,i)=>{
+      const b = document.createElement('button');
+      b.className = 'chip sel'; b.textContent = w;
+      b.onclick = ()=>{ if(L.answeredFlag) return; L.words.splice(i,1); sync(); };
+      bank.appendChild(b);
+    });
+    const cb = document.getElementById('check-btn');
+    if(cb) cb.disabled = L.words.length === 0;
+  }
+  chips.forEach(w=>{
+    const b = document.createElement('button');
+    b.className = 'chip'; b.dataset.w = w; b.textContent = w;
+    b.onclick = ()=>{ if(L.answeredFlag) return; L.words.push(w); sync(); };
+    pool.appendChild(b);
+  });
+  sync();
+}
+function renderListen(q, area){
+  let html = `<div class="prompt">${esc(q.q)}</div>
+    <button id="audio-btn" title="播放"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"/></svg></button>
+    <div style="text-align:center;"><button id="audio-btn-slow" class="btn sm" style="background:var(--purple);box-shadow:0 4px 0 #a568d6;">🐢 慢速</button></div>
+    <div class="choices" style="margin-top:20px;">`;
+  shuffle(q.options.map((o,i)=>({o,i}))).forEach(({o,i},k)=>{
+    html += `<button class="choice" data-i="${i}"><span class="key">${'ABCDEF'[k]}</span>${esc(o)}</button>`;
+  });
+  html += '</div>';
+  area.innerHTML = html;
+  const play = ()=>{ if(!speak(q.audio)) toast('浏览器不支持朗读，请根据选项作答'); };
+  setTimeout(play, 250);
+  area.querySelector('#audio-btn').onclick = play;
+  area.querySelector('#audio-btn-slow').onclick = ()=> speak(q.audio, true);
+  area.querySelectorAll('.choice').forEach(b=>{
+    b.onclick = ()=>{
+      if(L.answeredFlag) return;
+      area.querySelectorAll('.choice').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel'); L.sel = +b.dataset.i;
+    };
+  });
+}
+function renderMatch(q, area){
+  L.matched = 0; L.firstPick = null; L.matchBusy = false;
+  const left = q.pairs.map((p,i)=>({txt:p[0], i, side:'L'}));
+  const right = shuffle(q.pairs.map((p,i)=>({txt:p[1], i, side:'R'})));
+  let html = `<div class="prompt">${esc(q.q)}</div><div id="match"></div><div class="hint">先点一列的词，再点另一列配对的词</div>`;
+  area.innerHTML = html;
+  const grid = area.querySelector('#match');
+  const interleaved = [];
+  const maxLen = Math.max(left.length, right.length);
+  for(let i=0;i<maxLen;i++){ if(left[i]) interleaved.push(left[i]); if(right[i]) interleaved.push(right[i]); }
+  interleaved.forEach(t=>{
+    const b = document.createElement('button');
+    b.className = 'mtile'; b.textContent = t.txt; b.dataset.i = t.i; b.dataset.side = t.side;
+    b.onclick = ()=> onTile(b, t, q);
+    grid.appendChild(b);
+  });
+  const cb = document.getElementById('check-btn');
+  if(cb) cb.classList.add('hidden');
+}
+function onTile(b, t, q){
+  if(L.matchBusy || b.classList.contains('done')) return;
+  const tiles = document.querySelectorAll('.mtile');
+  if(!L.firstPick){
+    tiles.forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel'); L.firstPick = {b, t};
+    speak(t.txt);
+    return;
+  }
+  if(L.firstPick.t.side === t.side){
+    L.firstPick.b.classList.remove('sel');
+    L.firstPick = {b, t}; speak(t.txt); return;
+  }
+  if(L.firstPick.t.i === t.i){
+    L.matchBusy = true;
+    L.firstPick.b.classList.remove('sel');
+    L.firstPick.b.classList.add('done'); b.classList.add('done');
+    L.firstPick = null; L.matched++;
+    beep(true);
+    if(L.matched === q.pairs.length){
+      setTimeout(()=>{
+        recordAnswer(true, q, '✅ 全部配对成功！');
+        setTimeout(nextQuestion, 900);
+      }, 300);
+    }
+    L.matchBusy = false;
+  } else {
+    L.matchBusy = true;
+    const p = L.firstPick; L.firstPick = null;
+    p.b.classList.add('miss'); b.classList.add('miss');
+    beep(false);
+    damageHearts();
+    if(!L.isReview && L.hearts <= 0){ setTimeout(outOfHearts, 700); }
+    setTimeout(()=>{ tiles.forEach(x=>x.classList.remove('miss','sel')); L.matchBusy = false; }, 600);
+  }
+}
+function damageHearts(){
+  if(L.isReview) return;
+  L.hearts = Math.max(0, L.hearts - 1);
+  const hn = document.getElementById('hearts-n'); if(hn) hn.textContent = L.hearts;
+  S.hearts = Math.max(0, S.hearts - 1); save(); updateStats();
+}
+function outOfHearts(){
+  openModal('红心用光了！❤️','用 35 宝石补满红心继续学习。', ()=>{
+    if(S.gems >= 35){ S.gems -= 35; S.hearts = 5; save(); updateStats(); if(L) L.hearts = 5;
+      const hn = document.getElementById('hearts-n'); if(hn) hn.textContent = 5;
+      toast('红心已补满，继续！❤️');
+    } else { endLesson('practice'); }
+  }, ()=> endLesson('practice'));
+}
+function onCheck(){
+  const q = L.queue[L.idx];
+  if(L.answeredFlag){ nextQuestion(); return; }
+  let ok = false;
+  if(q.t === 'choice' || q.t === 'listen'){
+    if(L.sel === null){ toast('先选一个答案吧！'); return; }
+    ok = L.sel === q.a;
+  } else if(q.t === 'build'){
+    if(!L.words || !L.words.length){ toast('先点选单词组成答案！'); return; }
+    ok = norm(L.words.join(' ')) === norm(q.answer);
+  }
+  if(q.t === 'choice' || q.t === 'listen'){
+    main.querySelectorAll('.choice').forEach(c=>{
+      const i = +c.dataset.i;
+      if(i === q.a) c.classList.add('ok');
+      if(i === L.sel && L.sel !== q.a) c.classList.add('bad');
+      c.classList.remove('sel');
+    });
+  }
+  if(q.t === 'build'){
+    const bank = main.querySelector('#bank');
+    if(bank){ bank.style.borderColor = ok ? 'var(--green)' : 'var(--red)'; bank.style.background = ok?'#d7ffb8':'#ffdfe0'; }
+    const pool = main.querySelector('#pool'); if(pool) pool.style.opacity = .5;
+  }
+  recordAnswer(ok, q);
+}
+function recordAnswer(ok, q, overrideMsg){
+  if(L.answeredFlag) return;
+  L.answeredFlag = true;
+  L.answered++; S.totalAnswered++;
+  const footer = document.getElementById('footer'), btn = document.getElementById('check-btn'), verdict = document.getElementById('verdict');
+  if(ok){
+    L.correct++; S.totalCorrect++;
+    L.xpEarned += 10; L.gemsEarned += 2;
+    S.xp += 10; S.gems += 2;
+    beep(true);
+    footer.classList.add('ok'); footer.classList.remove('bad');
+    verdict.style.display = 'flex';
+    verdict.innerHTML = `<span class="ic">🎉</span><span>太棒了！<span class="ex">${esc(overrideMsg || q.ex || '')}</span></span>`;
+  } else {
+    damageHearts();
+    beep(false);
+    footer.classList.add('bad'); footer.classList.remove('ok');
+    verdict.style.display = 'flex';
+    const correctTxt = (q.t==='build') ? q.answer : (q.options ? q.options[q.a] : '');
+    verdict.innerHTML = `<span class="ic">❌</span><span>正确答案：${esc(correctTxt)}<span class="ex">${esc(q.ex||'')}</span></span>`;
+    if(!L.isReview && L.hearts <= 0){ setTimeout(outOfHearts, 800); }
+  }
+  save(); updateStats();
+  btn.textContent = (L.idx >= L.queue.length-1) ? '完成' : '继续';
+  btn.classList.remove('blue','red');
+  btn.classList.add(ok ? 'blue' : 'red');
+}
+function finishLesson(){
+  touchStreak();
+  if(!L.isReview){ S.done[L.id] = true; }
+  const acc = L.answered ? Math.round(L.correct/L.answered*100) : 100;
+  const totalXp = L.xpEarned;
+  const bonus = (acc===100 && !L.isReview) ? 5 : 0;
+  if(bonus){ S.gems += bonus; }
+  save(); updateStats();
+  const perfect = acc === 100;
+  main.innerHTML = `
+    <div class="end-screen">
+      <div class="big">${perfect?'🏆':'🎉'}</div>
+      <h1>${perfect?'完美通关！':'课程完成！'}</h1>
+      <div class="rewards">
+        <div class="reward"><div class="t">总经验</div><div class="v y">⚡ +${totalXp}</div></div>
+        <div class="reward"><div class="t">获得宝石</div><div class="v p">💎 +${L.gemsEarned+bonus}</div></div>
+        <div class="reward"><div class="t">正确率</div><div class="v">🎯 ${acc}%</div></div>
+      </div>
+      <button class="btn block" onclick="endLesson('learn')">继续</button>
+    </div>`;
+}
+
+/* ================= boot ================= */
+updateStats();
+setTab('learn');
+</script>
+</body>
+</html>
