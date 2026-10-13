@@ -91,7 +91,14 @@
     background:#111827; color:#fff; padding:10px 20px; border-radius:999px;
     font-size:.9rem; opacity:0; transition:opacity .25s; pointer-events:none; z-index:99;
   }
-  /* ---- 收款码 ---- */
+  /* ---- 收款码（默认内嵌，收款页常驻可见） ---- */
+  .pay-panel {
+    background:#fff; border:1px solid #f0ebe3; border-left:4px solid #16a34a;
+    border-radius:14px; padding:14px; margin-bottom:18px;
+    box-shadow:0 2px 8px rgba(0,0,0,.06);
+  }
+  .pay-panel h2 { font-size:1.05rem; color:#16a34a; margin-bottom:4px; }
+  .pay-panel .mini-hint { font-size:.78rem; color:#8a8378; margin-bottom:10px; }
   .pay-tabbar { display:flex; gap:8px; justify-content:center; margin-bottom:12px; }
   .pay-tab {
     padding:7px 20px; border-radius:999px; border:1px solid #ddd; background:#f9f9f9;
@@ -137,6 +144,20 @@
   </main>
 
   <aside>
+    <div class="pay-panel">
+      <h2>💰 收款码（扫码付款）</h2>
+      <div class="mini-hint">点菜后把合计金额扫码付给店主；也可先吃饭到店付</div>
+      <div class="pay-tabbar">
+        <button class="pay-tab on" id="sideWx" onclick="switchSide('wx')">微信</button>
+        <button class="pay-tab ali" id="sideAli" onclick="switchSide('ali')">支付宝</button>
+      </div>
+      <div class="qr-box">
+        <canvas id="sideQr" width="210" height="210"></canvas>
+        <div class="pay-amt" id="sideAmt">¥0</div>
+        <div class="pay-hint" id="sideHint">先把菜加入购物车，金额会自动更新</div>
+      </div>
+      <button class="clear" onclick="openQrCfg()">⚙️ 更换我的收款码</button>
+    </div>
     <h2>🧾 已点菜品</h2>
     <div id="cartLines"><div class="empty">还没点菜，快去挑选吧～</div></div>
     <div class="total"><span>合计</span><b id="total">¥0</b></div>
@@ -286,6 +307,7 @@ let cart = {};
 let orders = JSON.parse(localStorage.getItem('orders') || '[]');
 let pending = null;   // 待支付订单
 let payMethod = 'wx';
+let sideMethod = 'wx';   // 侧栏常驻收款码
 
 // 桌号
 const tableSel = document.getElementById('tableNo');
@@ -379,6 +401,12 @@ function renderCart() {
   document.getElementById('total').textContent = '¥' + total;
   document.getElementById('cnt').textContent = cnt;
   document.getElementById('orderBtn').disabled = !names.length;
+  // 同步常驻收款码金额
+  document.getElementById('sideAmt').textContent = '¥' + total;
+  document.getElementById('sideHint').textContent = total
+    ? '扫码支付合计金额，付款后点「去下单」提交订单'
+    : '先把菜加入购物车，金额会自动更新';
+  drawQrTo('sideQr', 'sideHint', sideMethod, total);
 }
 
 /* ================= 下单流程 ================= */
@@ -467,65 +495,71 @@ function uploadQr(e, which) {
   r.readAsDataURL(f);
 }
 
-function switchPay(m) {
-  payMethod = m;
-  document.getElementById('tabWx').classList.toggle('on', m === 'wx');
-  document.getElementById('tabAli').classList.toggle('on', m === 'ali');
-  document.getElementById('payOk').style.display = 'none';
-  drawPayQr();
+function switchSide(m) {
+  sideMethod = m;
+  document.getElementById('sideWx').classList.toggle('on', m === 'wx');
+  document.getElementById('sideAli').classList.toggle('on', m === 'ali');
+  const total = Object.keys(cart).reduce((s, n) => s + MENU.find(d => d.name === n).price * cart[n], 0);
+  drawQrTo('sideQr', 'sideHint', m, total);
 }
 
-function drawPayQr() {
+/* 通用：把收款二维码画到指定 canvas */
+function drawQrTo(canvasId, hintId, method, amount) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
   const cfg = qrCfg();
-  const img = cfg[payMethod];
-  const canvas = document.getElementById('qrCanvas');
+  const img = cfg[method];
+  const label = method === 'wx' ? '微信收款码' : '支付宝收款码';
   const ctx = canvas.getContext('2d');
-  const label = payMethod === 'wx' ? '微信收款码' : '支付宝收款码';
 
   if (img) {
-    // 用自定义收款码图片
     const im = new Image();
     im.onload = () => {
       ctx.clearRect(0, 0, 210, 210);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 210, 210);
       const s = Math.min(210 / im.width, 210 / im.height);
       const w = im.width * s, h = im.height * s;
       ctx.drawImage(im, (210 - w) / 2, (210 - h) / 2, w, h);
-      const c = document.createElement('canvas');
-      c.width = c.height = 210;
-      c.getContext('2d').drawImage(canvas, 0, 0);
-      canvas.replaceWith(c); c.id = 'qrCanvas';
+      document.getElementById(hintId).textContent = amount
+        ? '扫码支付 ¥' + amount + '，付款后点「去下单」'
+        : label + '（已设置为你自己的收款码）';
     };
-    im.onerror = () => generateQr(cfg, label);
+    im.onerror = () => drawGenerated(canvas, hintId, label, amount);
     im.src = img;
   } else {
-    generateQr(cfg, label);
+    drawGenerated(canvas, hintId, label, amount);
   }
 }
 
-function generateQr(cfg, label) {
-  // 有文本 → 生成文本二维码；否则生成「收款信息」占位二维码
+function drawGenerated(canvas, hintId, label, amount) {
+  const cfg = qrCfg();
   const text = cfg.text && cfg.text.trim()
     ? cfg.text.trim()
-    : (pending
-        ? '星火小馆收款|订单#' + pending.no + '|金额¥' + pending.total + '|' + label
-        : '星火小馆|' + label + '请在设置中上传收款码');
+    : '星火小馆收款|' + label + (amount ? '|金额¥' + amount : '') + '|请在设置中上传你的收款码';
   const url = 'https://api.qrserver.com/v1/create-qr-code/?size=210x210&margin=8&data=' + encodeURIComponent(text);
-  const canvas = document.getElementById('qrCanvas');
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 210, 210);
   const im = new Image();
   im.crossOrigin = 'anonymous';
   im.onload = () => { ctx.drawImage(im, 0, 0, 210, 210); };
   im.onerror = () => {
-    ctx.fillStyle = '#111';
-    ctx.font = '14px sans-serif';
-    ctx.textAlign = 'center';
+    ctx.fillStyle = '#111'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('二维码生成失败', 105, 100);
-    ctx.fillText('请在设置中上传收款码', 105, 125);
+    ctx.fillText('请点「更换我的收款码」上传', 105, 124);
   };
   im.src = url;
-  document.getElementById('payHint').textContent =
-    (cfg.text ? '扫码支付，备注订单号' : label + '（示例码，可在设置里换成你自己的）');
+  document.getElementById(hintId).textContent = cfg.text
+    ? (amount ? '扫码支付 ¥' + amount : '扫码打开收款信息')
+    : label + '示例码 · 点下方按钮换成你自己的';
+}
+
+function switchPay(m) {
+  payMethod = m;
+  document.getElementById('tabWx').classList.toggle('on', m === 'wx');
+  document.getElementById('tabAli').classList.toggle('on', m === 'ali');
+  document.getElementById('payOk').style.display = 'none';
+  const amt = pending ? pending.total : Object.keys(cart).reduce((s, n) => s + MENU.find(d => d.name === n).price * cart[n], 0);
+  drawQrTo('qrCanvas', 'payHint', m, amt);
 }
 
 function finishOrder(skipPay) {
