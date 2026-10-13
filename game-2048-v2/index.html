@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>2048 · 数字合成大师</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:'PingFang SC','Microsoft YaHei','Segoe UI',sans-serif;
+  background:linear-gradient(150deg,#2b1055 0%,#7597de 100%);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;user-select:none;
+}
+.wrap{width:min(440px,100vw);height:min(760px,100vh);display:flex;flex-direction:column;padding:16px;position:relative;}
+h1{font-size:26px;text-align:center;color:#fff;font-weight:900;letter-spacing:4px;text-shadow:0 4px 14px rgba(0,0,0,.4);}
+.sub{text-align:center;color:#e8eaff;font-size:13px;margin-top:4px;font-weight:700;letter-spacing:1px;}
+.top{display:flex;justify-content:space-between;align-items:center;margin:14px 0 12px;gap:8px;}
+.scores{display:flex;gap:8px;}
+.sbox{background:rgba(0,0,0,.32);border-radius:14px;padding:8px 14px;text-align:center;min-width:80px;border:1px solid rgba(255,255,255,.15);}
+.sbox .t{font-size:11px;color:#cdd3ff;font-weight:800;letter-spacing:2px;}
+.sbox .v{font-size:22px;color:#ffd166;font-weight:900;}
+.btns{display:flex;gap:8px;}
+.btn{background:linear-gradient(145deg,#ffd166,#f08c00);color:#3d2500;border:none;border-radius:14px;padding:10px 16px;font-weight:900;font-size:14px;cursor:pointer;box-shadow:0 4px 0 #a35a00;transition:.1s;}
+.btn:active{transform:translateY(3px);box-shadow:none;}
+.btn.p{background:linear-gradient(145deg,#a78bfa,#7c3aed);color:#fff;box-shadow:0 4px 0 #4c1d95;}
+.board-frame{position:relative;background:rgba(0,0,0,.38);border-radius:20px;padding:12px;border:2px solid rgba(255,255,255,.18);
+  box-shadow:0 20px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.12);}
+#board{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;aspect-ratio:1;position:relative;touch-action:none;}
+.tile{border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;
+  font-size:clamp(22px,7vw,38px);transition:transform .1s;position:relative;
+  box-shadow:inset 0 -5px 0 rgba(0,0,0,.18), inset 0 4px 0 rgba(255,255,255,.4);}
+.tile.new{animation:appear .18s;}
+@keyframes appear{from{transform:scale(0);}to{transform:scale(1);}}
+.tile.pop{animation:pop .2s;}
+@keyframes pop{50%{transform:scale(1.12);}}
+.t2{background:#eee4da;color:#776e65;}
+.t4{background:#ede0c8;color:#776e65;}
+.t8{background:#f2b179;color:#fff;}
+.t16{background:#f59563;color:#fff;}
+.t32{background:#f67c5f;color:#fff;}
+.t64{background:#f65e3b;color:#fff;}
+.t128{background:#edcf72;color:#fff;font-size:clamp(20px,6vw,34px);}
+.t256{background:#edcc61;color:#fff;font-size:clamp(20px,6vw,34px);}
+.t512{background:#edc850;color:#fff;font-size:clamp(20px,6vw,34px);}
+.t1024{background:#edc53f;color:#fff;font-size:clamp(17px,5vw,29px);}
+.t2048{background:#edc22e;color:#fff;font-size:clamp(17px,5vw,29px);box-shadow:0 0 24px #edc22e, inset 0 -5px 0 rgba(0,0,0,.18);}
+.tbig{background:#3c3a32;color:#f9f6f2;font-size:clamp(15px,4.5vw,26px);}
+.hud{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:8px;}
+.tip{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:8px 14px;font-size:13px;font-weight:700;color:#e8eaff;flex:1;}
+.tip b{color:#ffd166;}
+.overlay{position:absolute;inset:0;background:rgba(12,8,40,.93);backdrop-filter:blur(5px);border-radius:20px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;z-index:6;}
+.overlay.hide{display:none;}
+.overlay .big{font-size:64px;}
+.overlay h2{font-size:32px;background:linear-gradient(90deg,#ffd166,#ff6b9d);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900;}
+.overlay p{font-size:15px;color:#cfd6ff;line-height:1.8;}
+.bigbtn{padding:14px 44px;border:none;border-radius:30px;font-size:18px;font-weight:900;cursor:pointer;
+  background:linear-gradient(145deg,#ffd166,#f08c00);color:#3d2500;box-shadow:0 6px 0 #a35a00;}
+.bigbtn:active{transform:translateY(4px);box-shadow:none;}
+.bigbtn.p{background:linear-gradient(145deg,#a78bfa,#7c3aed);color:#fff;box-shadow:0 6px 0 #4c1d95;}
+#toast{position:absolute;top:44%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.88);color:#fff;
+  padding:12px 26px;border-radius:30px;font-weight:900;font-size:18px;opacity:0;transition:.25s;pointer-events:none;
+  z-index:9;border:2px solid #ffd166;}
+#toast.show{opacity:1;transform:translate(-50%,-62%);}
+.flypts{position:absolute;font-weight:900;color:#ffd166;font-size:22px;pointer-events:none;z-index:8;animation:flyup .8s forwards;text-shadow:0 2px 8px rgba(0,0,0,.6);}
+@keyframes flyup{to{transform:translateY(-60px);opacity:0;}}
+.arrowhint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);color:#aab4ff;font-size:13px;font-weight:700;letter-spacing:2px;pointer-events:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>2️⃣0️⃣4️⃣8️⃣</h1>
+  <div class="sub">滑动合成，挑战 2048！</div>
+  <div class="top">
+    <div class="scores">
+      <div class="sbox"><div class="t">分数</div><div class="v" id="score">0</div></div>
+      <div class="sbox"><div class="t">最佳</div><div class="v" id="best">0</div></div>
+    </div>
+    <div class="btns">
+      <button class="btn" onclick="openHelp()">❓ 玩法</button>
+      <button class="btn p" onclick="startGame()">🔄 新局</button>
+    </div>
+  </div>
+  <div class="board-frame">
+    <div id="board"></div>
+    <div class="overlay" id="startOv">
+      <div class="big">🔢</div>
+      <h2>2048 数字合成</h2>
+      <p>滑动屏幕 / 方向键 移动全部方块<br>相同数字<b>碰撞即合成</b>（2+2=4）<br>目标：合成 <b>2048</b> 方块！</p>
+      <button class="bigbtn" onclick="startGame()">开始游戏</button>
+    </div>
+    <div class="overlay hide" id="overOv">
+      <div class="big" id="overIcon">😵</div>
+      <h2 id="overTitle">游戏结束</h2>
+      <p id="overMsg">没有可移动的方块了<br>得分：<b id="finalScore">0</b></p>
+      <div style="display:flex;gap:12px;">
+        <button class="bigbtn" onclick="startGame()">再来一局</button>
+        <button class="bigbtn p" onclick="openHelp()">📖 玩法</button>
+      </div>
+    </div>
+    <div class="overlay hide" id="helpOv">
+      <div class="big">📖</div>
+      <h2>玩法说明</h2>
+      <p>① 方向键 / 滑动 屏幕移动全部方块<br>② 相同数字碰撞合并成 2 倍数<br>③ 每次移动后随机出现 2 或 4<br>④ 合成 <b>2048</b> 即胜利，可继续挑战更高<br>⑤ 无处可动 = 游戏结束<br>⑥ 建议把大数字囤在角落 🎯</p>
+      <button class="bigbtn p" onclick="closeHelp()">明白啦</button>
+    </div>
+    <div id="toast"></div>
+    <div class="arrowhint">⬆⬇⬅➡ 或滑动屏幕</div>
+  </div>
+  <div class="hud">
+    <div class="tip">🎯 当前最大方块 <b id="maxTile">2</b> · 步数 <b id="moves">0</b></div>
+  </div>
+</div>
+<script>
+const N = 4;
+let grid, score, best, moves, over, won, started;
+const $ = id => document.getElementById(id);
+
+best = +(localStorage.getItem('2048best') || 0);
+$('best').textContent = best;
+
+function startGame(){
+  grid = Array.from({length:N}, () => Array(N).fill(0));
+  score = 0; moves = 0; over = false; won = false; started = true;
+  $('score').textContent = 0;
+  $('moves').textContent = 0;
+  $('maxTile').textContent = 2;
+  $('startOv').classList.add('hide');
+  $('overOv').classList.add('hide');
+  $('helpOv').classList.add('hide');
+  addTile(); addTile();
+  render();
+}
+
+function addTile(){
+  const empty = [];
+  for(let r=0; r<N; r++) for(let c=0; c<N; c++) if(grid[r][c]===0) empty.push({r,c});
+  if(!empty.length) return;
+  const {r,c} = empty[Math.floor(Math.random()*empty.length)];
+  grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+  return {r,c};
+}
+
+let newCell = null, popCells = [];
+
+function render(){
+  const el = $('board');
+  el.innerHTML = '';
+  let maxT = 2;
+  for(let r=0; r<N; r++) for(let c=0; c<N; c++){
+    const v = grid[r][c];
+    const d = document.createElement('div');
+    if(v === 0){
+      d.className = 'tile';
+      d.style.background = 'rgba(255,255,255,.12)';
+      d.style.boxShadow = 'inset 0 2px 6px rgba(0,0,0,.2)';
+    } else {
+      const cls = v <= 2048 ? 't' + v : 'tbig';
+      d.className = 'tile ' + cls;
+      d.textContent = v;
+      if(newCell && newCell.r===r && newCell.c===c) d.classList.add('new');
+      if(popCells.some(p => p.r===r && p.c===c)) d.classList.add('pop');
+      maxT = Math.max(maxT, v);
+    }
+    el.appendChild(d);
+  }
+  $('maxTile').textContent = maxT;
+  newCell = null; popCells = [];
+}
+
+function slide(row){
+  // 返回 {line, gained, mergedPositions}
+  const arr = row.filter(v => v !== 0);
+  const out = [];
+  let gained = 0;
+  const mergedIdx = [];
+  for(let i=0; i<arr.length; i++){
+    if(i+1 < arr.length && arr[i] === arr[i+1]){
+      out.push(arr[i]*2);
+      gained += arr[i]*2;
+      mergedIdx.push(out.length-1);
+      i++;
+    } else out.push(arr[i]);
+  }
+  while(out.length < N) out.push(0);
+  return {line: out, gained, mergedIdx};
+}
+
+function move(dir){
+  if(over || !started) return;
+  // dir: 0=up 1=right 2=down 3=left
+  const before = JSON.stringify(grid);
+  let gained = 0;
+  popCells = [];
+  const getLine = (i) => {
+    if(dir===0) return [0,1,2,3].map(r => grid[r][i]);
+    if(dir===2) return [3,2,1,0].map(r => grid[r][i]);
+    if(dir===3) return [0,1,2,3].map(c => grid[i][c]);
+    return [3,2,1,0].map(c => grid[i][c]);
+  };
+  const setLine = (i, line) => {
+    if(dir===0) line.forEach((v,r) => grid[r][i] = v);
+    else if(dir===2) line.forEach((v,k) => grid[3-k][i] = v);
+    else if(dir===3) line.forEach((v,c) => grid[i][c] = v);
+    else line.forEach((v,k) => grid[i][3-k] = v);
+  };
+  for(let i=0; i<N; i++){
+    const {line, gained: g, mergedIdx} = slide(getLine(i));
+    gained += g;
+    // map merged indices back to board coords for pop anim
+    mergedIdx.forEach(idx => {
+      let r, c;
+      if(dir===0){ r = idx; c = i; }
+      else if(dir===2){ r = 3-idx; c = i; }
+      else if(dir===3){ r = i; c = idx; }
+      else { r = i; c = 3-idx; }
+      popCells.push({r,c});
+    });
+    setLine(i, line);
+  }
+  const after = JSON.stringify(grid);
+  if(before === after){ popCells = []; return; } // no move
+  moves++;
+  $('moves').textContent = moves;
+  if(gained > 0){
+    score += gained;
+    $('score').textContent = score;
+    if(score > best){ best = score; localStorage.setItem('2048best', best); $('best').textContent = best; }
+    flyPoints(gained);
+  }
+  newCell = addTile();
+  render();
+  checkWin();
+  if(!hasEmpty() && !canMove()) endGame(false);
+}
+
+function hasEmpty(){
+  for(let r=0; r<N; r++) for(let c=0; c<N; c++) if(grid[r][c]===0) return true;
+  return false;
+}
+function canMove(){
+  for(let r=0; r<N; r++) for(let c=0; c<N; c++){
+    const v = grid[r][c];
+    if(v===0) return true;
+    if(c+1<N && grid[r][c+1]===v) return true;
+    if(r+1<N && grid[r+1][c]===v) return true;
+  }
+  return false;
+}
+
+function checkWin(){
+  if(won) return;
+  for(let r=0; r<N; r++) for(let c=0; c<N; c++){
+    if(grid[r][c] >= 2048){
+      won = true;
+      toast('🎉 恭喜合成 2048！可继续挑战更高分');
+      return;
+    }
+  }
+}
+
+function endGame(win){
+  over = true;
+  $('overIcon').textContent = win ? '🏆' : '😵';
+  $('overTitle').textContent = win ? '胜利！' : '游戏结束';
+  $('overMsg').innerHTML = (win ? '你合成了 2048！' : '没有可移动的方块了') + '<br>得分：<b>' + score + '</b>';
+  $('finalScore').textContent = score;
+  $('overOv').classList.remove('hide');
+}
+
+function flyPoints(pts){
+  const frame = document.querySelector('.board-frame');
+  const fx = document.createElement('div');
+  fx.className = 'flypts';
+  fx.textContent = '+' + pts;
+  fx.style.left = '50%';
+  fx.style.top = '40%';
+  frame.appendChild(fx);
+  setTimeout(() => fx.remove(), 850);
+}
+
+let toastTimer;
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
+}
+
+function openHelp(){ $('helpOv').classList.remove('hide'); }
+function closeHelp(){ $('helpOv').classList.add('hide'); }
+
+// keyboard
+window.addEventListener('keydown', e => {
+  const map = {ArrowUp:0, ArrowRight:1, ArrowDown:2, ArrowLeft:3, w:0, d:1, s:2, a:3, W:0, D:1, S:2, A:3};
+  if(e.key in map){
+    e.preventDefault();
+    if(!$('helpOv').classList.contains('hide')) return;
+    if($('startOv').classList.contains('hide') === false && started) return;
+    if(!started) return;
+    move(map[e.key]);
+  }
+});
+
+// touch swipe
+let tx=0, ty=0;
+const boardEl = document.getElementById('board');
+boardEl.addEventListener('pointerdown', e => { tx = e.clientX; ty = e.clientY; });
+boardEl.addEventListener('pointerup', e => {
+  if(!started || over) return;
+  const dx = e.clientX - tx, dy = e.clientY - ty;
+  if(Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
+  if(Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : 3);
+  else move(dy > 0 ? 2 : 0);
+});
+document.querySelector('.board-frame').addEventListener('pointerdown', e => { tx = e.clientX; ty = e.clientY; });
+document.querySelector('.board-frame').addEventListener('pointerup', e => {
+  if(!started || over) return;
+  const dx = e.clientX - tx, dy = e.clientY - ty;
+  if(Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
+  if(Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : 3);
+  else move(dy > 0 ? 2 : 0);
+});
+</script>
+</body>
+</html>
