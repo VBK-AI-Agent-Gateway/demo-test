@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>像素勇者 · 地牢探险</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:"PingFang SC","Microsoft YaHei",monospace,sans-serif;
+    background:radial-gradient(700px 400px at 50% -10%, #14304a 0%, #070d18 60%);
+    color:#dbeafe; min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    padding:18px 12px 40px; user-select:none;
+  }
+  h1 { font-size:1.45rem; letter-spacing:3px; }
+  h1 span { color:#fbbf24; }
+  .sub { color:#7f9cc4; font-size:.8rem; margin:4px 0 12px; text-align:center; }
+  .hud { display:flex; gap:12px; margin-bottom:10px; flex-wrap:wrap; justify-content:center; font-family:monospace; font-size:.88rem; }
+  .chip { background:#0d1b2e; border:1px solid #23456b; border-radius:999px; padding:5px 14px; }
+  .chip b { color:#fbbf24; }
+  .hpbar { width:110px; height:10px; background:#3b1418; border-radius:99px; overflow:hidden; display:inline-block; vertical-align:middle; margin-left:6px; }
+  .hpbar i { display:block; height:100%; background:linear-gradient(90deg,#f87171,#fbbf24); transition:.2s; }
+  .stage {
+    position:relative; width:100%; max-width:760px;
+    background:#0a1220; border:1px solid #23456b; border-radius:16px;
+    overflow:hidden; box-shadow:0 16px 50px rgba(0,0,0,.55);
+    display:flex; justify-content:center;
+  }
+  canvas { display:block; image-rendering:pixelated; }
+  .overlay {
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:13px; text-align:center; padding:20px;
+    background:rgba(7,13,24,.88); backdrop-filter:blur(4px); z-index:5;
+  }
+  .overlay.hide { display:none; }
+  .overlay h2 { font-size:1.7rem; letter-spacing:4px; color:#fbbf24; text-shadow:0 0 18px #fbbf2466; }
+  .overlay p { color:#7f9cc4; font-size:.88rem; line-height:2; }
+  .keys { font-family:monospace; color:#22d3ee; font-size:.78rem; }
+  .go {
+    background:linear-gradient(135deg,#fbbf24,#f59e0b); border:none; color:#241503;
+    padding:12px 42px; border-radius:11px; font-size:1rem; font-weight:900;
+    letter-spacing:4px; cursor:pointer;
+  }
+  .go:hover { filter:brightness(1.1); transform:translateY(-2px); transition:.15s; }
+  .toast {
+    position:absolute; top:12px; left:50%; transform:translateX(-50%);
+    background:#0d1b2eee; border:1px solid #23456b; border-radius:999px;
+    padding:6px 18px; font-size:.82rem; opacity:0; transition:.3s; pointer-events:none; z-index:4;
+  }
+  .toast.show { opacity:1; top:40px; }
+  .dpad { display:none; gap:8px; margin-top:14px; }
+  @media (pointer:coarse) { .dpad { display:flex; } }
+  .dpad button {
+    width:56px; height:56px; border-radius:14px; border:1px solid #23456b;
+    background:#0d1b2e; color:#dbeafe; font-size:1.3rem; cursor:pointer;
+  }
+  .dpad button:active { background:#23456b; }
+</style>
+</head>
+<body>
+
+<h1>🗡️ 像素<span>勇者</span> · 地牢探险</h1>
+<div class="sub">深入随机地牢，砍翻史莱姆和骷髅，吃药水捡宝箱，撑过 5 层到达宝藏！</div>
+
+<div class="hud">
+  <div class="chip">❤️ <b id="hpTxt">100</b><span class="hpbar"><i id="hpFill" style="width:100%"></i></span></div>
+  <div class="chip">⚔️ 攻击 <b id="atk">10</b></div>
+  <div class="chip">🧪 药水 <b id="pot">1</b></div>
+  <div class="chip">💰 金币 <b id="gold">0</b></div>
+  <div class="chip">🚪 层级 <b id="floor">1</b>/5</div>
+</div>
+
+<div class="stage" id="stage">
+  <canvas id="cv" width="720" height="440"></canvas>
+  <div class="toast" id="toast"></div>
+
+  <div class="overlay" id="ovStart">
+    <h2>像素勇者</h2>
+    <p>地牢共 5 层，每层清空敌人后楼梯会开启。<br>砍敌人得金币，踩药水回血，踩宝箱开装备。</p>
+    <div class="keys">WASD/方向键 移动 · 空格/J 挥剑 · R 喝药水</div>
+    <button class="go" onclick="start()">出 发</button>
+  </div>
+
+  <div class="overlay hide" id="ovEnd">
+    <h2 id="endTitle">💀 陨落地牢</h2>
+    <p id="endInfo"></p>
+    <button class="go" onclick="start()">重 新 挑 战</button>
+  </div>
+</div>
+
+<div class="dpad">
+  <button onpointerdown="setKey('ArrowUp',1)" onpointerup="setKey('ArrowUp',0)" onpointerleave="setKey('ArrowUp',0)">⬆️</button>
+  <button onpointerdown="setKey('ArrowLeft',1)" onpointerup="setKey('ArrowLeft',0)" onpointerleave="setKey('ArrowLeft',0)">⬅️</button>
+  <button onpointerdown="setKey('ArrowDown',1)" onpointerup="setKey('ArrowDown',0)" onpointerleave="setKey('ArrowDown',0)">⬇️</button>
+  <button onpointerdown="setKey('ArrowRight',1)" onpointerup="setKey('ArrowRight',0)" onpointerleave="setKey('ArrowRight',0)">➡️</button>
+  <button onpointerdown="attack()">⚔️</button>
+  <button onpointerdown="drink()">🧪</button>
+</div>
+
+<script>
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+const TILE = 40, COLS = W / TILE, ROWS = H / TILE;
+
+let running = false, raf = null, last = 0;
+let map, player, enemies, items, particles, stairs, clearFx;
+let floorNo = 1, gold = 0, pots = 1, atk = 10;
+const keys = {};
+function setKey(c, v) { keys[c] = v; if (v && c === ' ') attack(); }
+const rnd = (a, b) => a + Math.random() * (b - a);
+const rndi = (a, b) => Math.floor(rnd(a, b + 1));
+
+addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+  if ((e.code === 'Space' || e.code === 'KeyJ') && !e.repeat) attack();
+  if (e.code === 'KeyR' && !e.repeat) drink();
+});
+addEventListener('keyup', e => keys[e.code] = false);
+
+/* ---------- 地图生成（房间+走廊 随机地牢） ---------- */
+function genMap() {
+  const g = Array.from({ length: ROWS }, () => Array(COLS).fill(0)); // 0=墙 1=地
+  const rooms = [];
+  const rn = rndi(5, 7);
+  for (let i = 0; i < rn * 8 && rooms.length < rn; i++) {
+    const rw = rndi(4, 8), rh = rndi(3, 6);
+    const rx = rndi(1, COLS - rw - 2), ry = rndi(1, ROWS - rh - 2);
+    let ok = true;
+    for (const r of rooms) {
+      if (rx < r.x + r.w + 1 && rx + rw + 1 > r.x && ry < r.y + r.h + 1 && ry + rh + 1 > r.y) { ok = false; break; }
+    }
+    if (!ok) continue;
+    for (let y = ry; y < ry + rh; y++) for (let x = rx; x < rx + rw; x++) g[y][x] = 1;
+    rooms.push({ x: rx, y: ry, w: rw, h: rh, cx: rx + (rw >> 1), cy: ry + (rh >> 1) });
+    // 走廊连到上一个房间
+    if (rooms.length > 1) {
+      const a = rooms[rooms.length - 2], b = rooms[rooms.length - 1];
+      let x = a.cx, y = a.cy;
+      while (x !== b.cx) { g[y][x] = 1; g[Math.min(ROWS-1,y+1)][x] = 1; x += Math.sign(b.cx - x); }
+      while (y !== b.cy) { g[y][x] = 1; g[y][Math.min(COLS-1,x+1)] = 1; y += Math.sign(b.cy - y); }
+    }
+  }
+  return { g, rooms };
+}
+
+const isFloor = (tx, ty) => tx >= 0 && ty >= 0 && tx < COLS && ty < ROWS && map[ty][tx] === 1;
+
+function start() {
+  floorNo = 1; gold = 0; pots = 1; atk = 10;
+  loadFloor();
+  document.getElementById('ovStart').classList.add('hide');
+  document.getElementById('ovEnd').classList.add('hide');
+  running = true;
+  last = performance.now();
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(loop);
+}
+
+function loadFloor() {
+  const { g, rooms } = genMap();
+  map = g;
+  enemies = []; items = []; particles = []; stairs = null; clearFx = 0;
+  const r0 = rooms[0];
+  player = { x: (r0.cx + .5) * TILE, y: (r0.cy + .5) * TILE, r: 13, hp: player ? player.hp : 100, maxhp: player ? player.maxhp : 100, cool: 0, inv: 0, face: 1, anim: 0 };
+  // 楼梯放最后一个房间
+  const rl = rooms[rooms.length - 1];
+  stairs = { x: (rl.cx + .5) * TILE, y: (rl.cy + .5) * TILE, open: false };
+  // 敌人
+  const en = 4 + floorNo * 2;
+  for (let i = 0; i < en; i++) {
+    const r = rooms[rndi(1, rooms.length - 1)];
+    const type = Math.random() < (0.3 + floorNo * 0.08) ? 'skel' : 'slime';
+    const hp = (type === 'skel' ? 24 : 16) + floorNo * 4;
+    enemies.push({
+      x: (r.cx + rnd(-1, 1) + .5) * TILE, y: (r.cy + rnd(-1, 1) + .5) * TILE,
+      r: 13, type, hp, maxhp: hp, hit: 0,
+      vx: 0, vy: 0, ph: rnd(0, 6.28),
+    });
+  }
+  // 物品
+  for (let i = 1; i < rooms.length; i++) {
+    const r = rooms[i];
+    const roll = Math.random();
+    if (roll < 0.45) items.push({ x: (r.cx + .5) * TILE, y: (r.cy + .5) * TILE, type: Math.random() < 0.6 ? 'potion' : 'chest' });
+    else if (roll < 0.7) items.push({ x: (r.cx + rnd(-1.5, 1.5) + .5) * TILE, y: (r.cy + rnd(-1, 1) + .5) * TILE, type: 'coin' });
+  }
+  toast('⚔️ 第 ' + floorNo + ' 层 —— 清空敌人开启楼梯');
+  updateHud();
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._tm);
+  t._tm = setTimeout(() => t.classList.remove('show'), 1500);
+}
+function updateHud() {
+  document.getElementById('hpTxt').textContent = Math.max(0, Math.ceil(player.hp));
+  document.getElementById('hpFill').style.width = Math.max(0, player.hp / player.maxhp * 100) + '%';
+  document.getElementById('atk').textContent = atk;
+  document.getElementById('pot').textContent = pots;
+  document.getElementById('gold').textContent = gold;
+  document.getElementById('floor').textContent = floorNo;
+}
+
+function burst(x, y, color, n = 10) {
+  for (let i = 0; i < n; i++) {
+    const a = rnd(0, 6.28), s = rnd(1, 3.5);
+    particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(14, 32), color });
+  }
+}
+
+function attack() {
+  if (!running || player.cool > 0) return;
+  player.cool = 300;
+  const rx = player.x + player.face * 34, ry = player.y;
+  let hitAny = false;
+  enemies.forEach(e => {
+    if (Math.hypot(e.x - rx, e.y - ry) < 38 && e.hit <= 0) {
+      e.hp -= atk; e.hit = 250;
+      e.x += player.face * 10;
+      burst(e.x, e.y, '#fbbf24', 8);
+      hitAny = true;
+      if (e.hp <= 0) {
+        gold += e.type === 'skel' ? 8 : 5;
+        burst(e.x, e.y, e.type === 'skel' ? '#e5e7eb' : '#86efac', 16);
+        enemies.splice(enemies.indexOf(e), 1);
+        if (!enemies.length && !stairs.open) {
+          stairs.open = true;
+          toast('🎉 本层清空！楼梯已开启 🚪');
+        }
+      }
+    }
+  });
+  if (hitAny) updateHud();
+}
+
+function drink() {
+  if (!running) return;
+  if (pots <= 0) return toast('没有药水了 😢');
+  if (player.hp >= player.maxhp) return toast('血量已满');
+  pots--;
+  player.hp = Math.min(player.maxhp, player.hp + 40);
+  burst(player.x, player.y, '#4ade80', 14);
+  toast('🧪 喝下药水 +40 HP');
+  updateHud();
+}
+
+function moveEnt(ent, dx, dy) {
+  const tryAxis = (nx, ny) => {
+    const tx = Math.floor(nx / TILE), ty = Math.floor(ny / TILE);
+    const probe = [[-ent.r, -ent.r], [ent.r, -ent.r], [-ent.r, ent.r], [ent.r, ent.r]];
+    return probe.every(([ox, oy]) => isFloor(Math.floor((nx + ox) / TILE), Math.floor((ny + oy) / TILE)));
+  };
+  if (tryAxis(ent.x + dx, ent.y)) ent.x += dx;
+  if (tryAxis(ent.x, ent.y + dy)) ent.y += dy;
+}
+
+function loop(now) {
+  if (!running) return;
+  const dt = Math.min(50, now - last); last = now;
+  update(dt);
+  draw();
+  raf = requestAnimationFrame(loop);
+}
+
+function update(dt) {
+  const k = dt / 16.7;
+
+  // 玩家移动
+  let mx = 0, my = 0;
+  if (keys.ArrowLeft || keys.KeyA) { mx -= 1; player.face = -1; }
+  if (keys.ArrowRight || keys.KeyD) { mx += 1; player.face = 1; }
+  if (keys.ArrowUp || keys.KeyW) my -= 1;
+  if (keys.ArrowDown || keys.KeyS) my += 1;
+  if (mx && my) { mx *= .707; my *= .707; }
+  const sp = 2.9 * k;
+  moveEnt(player, mx * sp, my * sp);
+  if (mx || my) player.anim += 0.25 * k;
+  if (player.cool > 0) player.cool -= dt;
+  if (player.inv > 0) player.inv -= dt;
+
+  // 敌人 AI
+  enemies.forEach(e => {
+    if (e.hit > 0) { e.hit -= dt; return; }
+    e.ph += 0.06 * k;
+    const d = Math.hypot(player.x - e.x, player.y - e.y);
+    let vx = 0, vy = 0;
+    const sp2 = (e.type === 'skel' ? 1.7 : 1.1) * k;
+    if (d < 240) {
+      vx = (player.x - e.x) / d * sp2;
+      vy = (player.y - e.y) / d * sp2;
+    } else {
+      vx = Math.cos(e.ph) * sp2 * .6; vy = Math.sin(e.ph) * sp2 * .6;
+    }
+    moveEnt(e, vx, vy);
+    // 攻击玩家
+    if (d < e.r + player.r + 4 && player.inv <= 0) {
+      const dmg = e.type === 'skel' ? 14 : 8;
+      player.hp -= dmg; player.inv = 800;
+      burst(player.x, player.y, '#f87171', 12);
+      toast('💔 受到 ' + dmg + ' 点伤害');
+      updateHud();
+      if (player.hp <= 0) return end(false);
+    }
+  });
+
+  // 拾取物品
+  items = items.filter(it => {
+    if (Math.hypot(it.x - player.x, it.y - player.y) < 26) {
+      if (it.type === 'potion') { pots++; toast('🧪 捡到药水'); }
+      else if (it.type === 'coin') { gold += rndi(5, 15); toast('💰 捡到金币'); }
+      else { // chest
+        const r = Math.random();
+        if (r < 0.5) { atk += 5; toast('⚔️ 宝箱：攻击 +5！'); }
+        else if (r < 0.8) { player.maxhp += 20; player.hp += 20; toast('❤️ 宝箱：生命上限 +20！'); }
+        else { pots += 2; toast('🎁 宝箱：药水 ×2！'); }
+      }
+      burst(it.x, it.y, '#fbbf24', 14);
+      updateHud();
+      return false;
+    }
+    return true;
+  });
+
+  // 楼梯
+  if (stairs.open && Math.hypot(stairs.x - player.x, stairs.y - player.y) < 26) {
+    if (floorNo >= 5) return end(true);
+    floorNo++;
+    loadFloor();
+    return;
+  }
+
+  particles = particles.filter(p => { p.x += p.vx * k; p.y += p.vy * k; p.life -= k; return p.life > 0; });
+}
+
+function end(win) {
+  running = false;
+  cancelAnimationFrame(raf);
+  const best = +(localStorage.getItem('heroBest') || 0);
+  const score = gold + floorNo * 50 + (win ? 500 : 0);
+  const newBest = score > best;
+  if (newBest) localStorage.setItem('heroBest', score);
+  document.getElementById('endTitle').textContent = win ? '👑 宝藏到手！' : '💀 陨落地牢';
+  document.getElementById('endInfo').innerHTML =
+    '到达第 <b>' + floorNo + '</b> 层 · 金币 <b>' + gold + '</b><br>' +
+    '得分 <b style="color:#fbbf24">' + score + '</b>' +
+    (newBest ? ' 🎉 新纪录！' : ' · 最高 ' + Math.max(best, score));
+  document.getElementById('ovEnd').classList.remove('hide');
+}
+
+/* ---------- 绘制 ---------- */
+function draw() {
+  ctx.fillStyle = '#0a1220';
+  ctx.fillRect(0, 0, W, H);
+
+  // 地板与墙
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      if (map[y][x] === 1) {
+        ctx.fillStyle = (x + y) % 2 ? '#16273e' : '#142237';
+        ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+        ctx.strokeStyle = 'rgba(34,66,107,.4)';
+        ctx.strokeRect(x * TILE + .5, y * TILE + .5, TILE - 1, TILE - 1);
+      } else {
+        // 墙：露出相邻地面一侧描边
+        ctx.fillStyle = '#0c1626';
+        ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+        if (y + 1 < ROWS && map[y + 1][x] === 1 || y - 1 >= 0 && map[y - 1][x] === 1 ||
+            x + 1 < COLS && map[y][x + 1] === 1 || x - 1 >= 0 && map[y][x - 1] === 1) {
+          ctx.fillStyle = '#1d3352';
+          ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+          ctx.fillStyle = '#24426b';
+          ctx.fillRect(x * TILE, y * TILE, TILE, 6);
+        }
+      }
+    }
+  }
+
+  // 楼梯
+  if (stairs) {
+    ctx.save();
+    if (stairs.open) {
+      ctx.shadowBlur = 16; ctx.shadowColor = '#22d3ee';
+      ctx.fillStyle = '#22d3ee';
+      for (let i = 0; i < 4; i++) ctx.fillRect(stairs.x - 15 + i * 3, stairs.y - 14 + i * 7, 30 - i * 6, 5);
+      ctx.font = '13px monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#67e8f9';
+      ctx.fillText('⬇ 下一层', stairs.x, stairs.y - 22);
+    } else {
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(stairs.x - 15, stairs.y - 12, 30, 24);
+      ctx.font = '18px monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('🔒', stairs.x, stairs.y + 7);
+    }
+    ctx.restore();
+  }
+
+  // 物品
+  items.forEach(it => {
+    ctx.save();
+    ctx.translate(it.x, it.y + Math.sin(Date.now() / 300) * 3);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '20px monospace';
+    ctx.fillText(it.type === 'potion' ? '🧪' : it.type === 'chest' ? '🎁' : '🪙', 0, 0);
+    ctx.restore();
+  });
+
+  // 敌人
+  enemies.forEach(e => {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    const bounce = Math.sin(e.ph * 2) * 2;
+    if (e.hit > 0 && Math.floor(e.hit / 60) % 2) ctx.globalAlpha = 0.4;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '24px monospace';
+    ctx.fillText(e.type === 'skel' ? '💀' : '🟢', 0, bounce);
+    // 血条
+    if (e.hp < e.maxhp) {
+      ctx.fillStyle = '#3b1418'; ctx.fillRect(-14, -22, 28, 4);
+      ctx.fillStyle = '#f87171'; ctx.fillRect(-14, -22, 28 * e.hp / e.maxhp, 4);
+    }
+    ctx.restore();
+  });
+
+  // 玩家
+  if (player) {
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    if (player.inv > 0 && Math.floor(player.inv / 80) % 2) ctx.globalAlpha = 0.45;
+    // 挥剑弧光
+    if (player.cool > 200) {
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 4;
+      ctx.shadowBlur = 12; ctx.shadowColor = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(player.face * 24, 0, 26, -1.1, 1.1);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+    ctx.font = '26px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const bob = Math.sin(player.anim * 2) * 1.5;
+    ctx.fillText('🧑‍🎤', 0, bob);
+    ctx.restore();
+  }
+
+  // 粒子
+  particles.forEach(p => {
+    ctx.globalAlpha = Math.min(1, p.life / 14);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+    ctx.globalAlpha = 1;
+  });
+}
+</script>
+</body>
+</html>
