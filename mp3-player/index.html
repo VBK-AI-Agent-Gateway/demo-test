@@ -182,28 +182,68 @@ let mode = 'list';   // list | one
 let rand = false;
 
 /* ---------- 内置世界名曲（Wikimedia Commons 直链，公有领域/自由许可） ---------- */
+const W = 'https://upload.wikimedia.org/wikipedia/commons/';
 const WORLD = [
-  { name:'致爱丽丝 (Für Elise)',        artist:'贝多芬',       url:'https://upload.wikimedia.org/wikipedia/commons/6/62/Beeethoven_Moonlight_1st_movement.ogg' },
-  { name:'月光奏鸣曲 第一乐章',          artist:'贝多芬',       url:'https://upload.wikimedia.org/wikipedia/commons/6/62/Beeethoven_Moonlight_1st_movement.ogg' },
-  { name:'土耳其进行曲',                 artist:'莫扎特',       url:'https://upload.wikimedia.org/wikipedia/commons/f/f8/Mozart_-_Rondo_alla_Turca.ogg' },
-  { name:'小星星变奏曲',                 artist:'莫扎特',       url:'https://upload.wikimedia.org/wikipedia/commons/2/27/Mozart_-_Twinkle_Twinkle_Little_Star_Variations.ogg' },
-  { name:'天鹅湖 (Swan Lake)',           artist:'柴可夫斯基',   url:'https://upload.wikimedia.org/wikipedia/commons/9/9c/Tchaikovsky_-_Swan_Lake_-_Theme.ogg' },
-  { name:'蓝色多瑙河',                   artist:'约翰·施特劳斯', url:'https://upload.wikimedia.org/wikipedia/commons/9/9a/Johann_Strauss_II_-_An_der_sch%C3%B6nen_blauen_Donau.ogg' },
-  { name:'卡农 (Canon in D)',            artist:'帕赫贝尔',     url:'https://upload.wikimedia.org/wikipedia/commons/6/63/Pachelbel_Canon.ogg' },
-  { name:'G弦上的咏叹调',                artist:'巴赫',         url:'https://upload.wikimedia.org/wikipedia/commons/2/2e/Bach_Air_on_the_G_String.ogg' },
-  { name:'四季 · 春',                    artist:'维瓦尔第',     url:'https://upload.wikimedia.org/wikipedia/commons/4/4d/Vivaldi_-_Four_Seasons_-_Spring_1st_movement.ogg' },
-  { name:'野蜂飞舞',                     artist:'穆索尔斯基',   url:'https://upload.wikimedia.org/wikipedia/commons/8/8a/Rimsky-Korsakov_Flight_of_the_Bumblebee.ogg' },
-  { name:'献给爱丽丝 · 流行钢琴版',      artist:'贝多芬',       url:'https://upload.wikimedia.org/wikipedia/commons/d/d3/Beethoven_Fur_Elise.ogg' },
-  { name:'婚礼进行曲',                   artist:'瓦格纳',       url:'https://upload.wikimedia.org/wikipedia/commons/2/24/Wagner_Bridal_Chorus.ogg' },
-  { name:'哈巴涅拉 (Habanera)',          artist:'比才',         url:'https://upload.wikimedia.org/wikipedia/commons/8/8b/Bizet_Habanera.ogg' },
-  { name:'绿袖子 (Greensleeves)',        artist:'英国民谣',     url:'https://upload.wikimedia.org/wikipedia/commons/1/1d/Greensleeves.ogg' },
-  { name:'奇异恩典 (Amazing Grace)',      artist:'美国福音歌曲', url:'https://upload.wikimedia.org/wikipedia/commons/6/6b/Amazing_Grace.ogg' },
-  { name:'铃儿响叮当',                   artist:'James Pierpont', url:'https://upload.wikimedia.org/wikipedia/commons/6/6d/Jingle_Bells.ogg' },
-  { name:'平安夜 (Silent Night)',         artist:'传统圣诞歌曲', url:'https://upload.wikimedia.org/wikipedia/commons/7/7c/Silent_Night.ogg' },
-  { name:'欢乐颂 (Ode to Joy)',          artist:'贝多芬',       url:'https://upload.wikimedia.org/wikipedia/commons/8/81/Beethoven_Symphony_9_4th_movement_Ode_to_Joy.ogg' },
+  { name:'月光奏鸣曲 第一乐章', artist:'贝多芬', url: W+'6/62/Beeethoven_Moonlight_1st_movement.ogg' },
+  { name:'致爱丽丝 (Für Elise)', artist:'贝多芬', url: W+'d/d3/Beethoven_Fur_Elise.ogg' },
+  { name:'欢乐颂 (Ode to Joy)', artist:'贝多芬', url: W+'8/81/Beethoven_Symphony_9_4th_movement_Ode_to_Joy.ogg' },
+  { name:'土耳其进行曲', artist:'莫扎特', url: W+'f/f8/Mozart_-_Rondo_alla_Turca.ogg' },
+  { name:'小星星变奏曲', artist:'莫扎特', url: W+'2/27/Mozart_-_Twinkle_Twinkle_Little_Star_Variations.ogg' },
+  { name:'费加罗的婚礼 序曲', artist:'莫扎特', url: W+'4/40/Mozart_Le_Nozze_di_Figaro_Ouverture.ogg' },
+  { name:'G弦上的咏叹调', artist:'巴赫', url: W+'2/2e/Bach_Air_on_the_G_String.ogg' },
+  { name:'卡农 (Canon in D)', artist:'帕赫贝尔', url: W+'6/63/Pachelbel_Canon.ogg' },
+  { name:'天鹅湖 · 主题', artist:'柴可夫斯基', url: W+'9/9c/Tchaikovsky_-_Swan_Lake_-_Theme.ogg' },
+  { name:'蓝色多瑙河', artist:'约翰·施特劳斯', url: W+'9/9a/Johann_Strauss_II_-_An_der_sch%C3%B6nen_blauen_Donau.ogg' },
+  { name:'四季 · 春 第一乐章', artist:'维瓦尔第', url: W+'4/4d/Vivaldi_-_Four_Seasons_-_Spring_1st_movement.ogg' },
+  { name:'野蜂飞舞', artist:'穆索尔斯基', url: W+'8/8a/Rimsky-Korsakov_Flight_of_the_Bumblebee.ogg' },
+  { name:'婚礼进行曲', artist:'瓦格纳', url: W+'2/24/Wagner_Bridal_Chorus.ogg' },
+  { name:'哈巴涅拉 (Habanera)', artist:'比才', url: W+'8/8b/Bizet_Habanera.ogg' },
+  { name:'威廉·退尔 序曲', artist:'罗西尼', url: W+'9/93/Rossini_William_Tell_Overture.ogg' },
+  { name:'哈利路亚 (Hallelujah)', artist:'亨德尔', url: W+'2/2b/Handel_-_Messiah_-_Hallelujah.ogg' },
+  { name:'爱的致意 (Salut d\'Amour)', artist:'埃尔加', url: W+'6/6e/Elgar_Salut_d_Amour.ogg' },
+  { name:'致新大陆 · 第二乐章 Largo', artist:'德沃夏克', url: W+'5/5b/Dvorak_Symphony_9_New_World_2nd_movement.ogg' },
+  { name:'绿袖子 (Greensleeves)', artist:'英国民谣', url: W+'1/1d/Greensleeves.ogg' },
+  { name:'奇异恩典 (Amazing Grace)', artist:'美国福音歌曲', url: W+'6/6b/Amazing_Grace.ogg' },
+  { name:'友谊地久天长 (Auld Lang Syne)', artist:'苏格兰民歌', url: W+'8/83/Auld_Lang_Syne.ogg' },
+  { name:'铃儿响叮当 (Jingle Bells)', artist:'James Pierpont', url: W+'6/6d/Jingle_Bells.ogg' },
+  { name:'平安夜 (Silent Night)', artist:'传统圣诞歌曲', url: W+'7/7c/Silent_Night.ogg' },
 ];
 
 let worldCur = -1;
+/* 多直链播放：一个源挂了自动换下一个（commons 直链 → Special:FilePath） */
+function srcs(u) {
+  const file = u.split('/').pop();
+  return [
+    u,
+    'https://commons.wikimedia.org/wiki/Special:FilePath/' + file,
+    'https://upload.wikimedia.org/wikipedia/commons/' + file,
+  ];
+}
+function playSrc(el, list, i, onOk) {
+  if (i >= list.length) { onOk && onOk(false); return; }
+  let done = false;
+  el.onerror = () => { if (!done) { done = true; playSrc(el, list, i + 1, onOk); } };
+  el.oncanplay = () => { if (!done) { done = true; onOk && onOk(true); } };
+  el.src = list[i];
+  el.play().catch(() => {});
+}
+/* 内置曲源队列：一个直链挂了自动换下一个 */
+function srcs(u) {
+  const enc = encodeURIComponent(u.split('/').pop());
+  return [
+    u,
+    'https://commons.wikimedia.org/wiki/Special:FilePath/' + enc,
+    'https://cdn.jsdelivr.net/ogg/' + enc,
+  ];
+}
+function playSrc(el, list, i, onOk) {
+  if (i >= list.length) { onOk && onOk(false); return; }
+  el.onerror = () => playSrc(el, list, i + 1, onOk);
+  el.oncanplay = () => { onOk && onOk(true); };
+  el.src = list[i];
+  el.play().catch(() => {});
+}
+
 function renderWorld() {
   const ul = document.getElementById('worldList');
   ul.innerHTML = '';
@@ -211,13 +251,13 @@ function renderWorld() {
     const li = document.createElement('li');
     if (i === worldCur) li.className = 'cur';
     li.innerHTML =
-      '<span class="idx">' + (i === worldCur && !audio.paused && audio.src === t.url ? '<span class="playing-eq">▮</span>' : (i+1)) + '</span>' +
+      '<span class="idx">' + (i === worldCur && !audio.paused ? '<span class="playing-eq">▮</span>' : (i+1)) + '</span>' +
       '<span class="info"><div class="nm">' + esc(t.name) + '</div><div class="ar">' + esc(t.artist) + '</div></span>' +
       '<button class="del" title="加入我的列表" style="width:auto;font-size:.76rem;color:#34d399" data-a="add">＋ 加入</button>';
     li.onclick = () => playWorld(i);
     li.querySelector('[data-a=add]').onclick = e => {
       e.stopPropagation();
-      playlist.push({ name:t.name, artist:t.artist, url:t.url, dur:0 });
+      playlist.push({ name:t.name, artist:t.artist, url:t.url, dur:0, alt:srcs(t.url) });
       renderList();
       toast('已加入列表：' + t.name);
     };
@@ -227,23 +267,22 @@ function renderWorld() {
 function playWorld(i) {
   worldCur = i;
   const t = WORLD[i];
-  audio.src = t.url;
   audio.loop = false;
-  audio.play().then(() => {
+  playSrc(audio, srcs(t.url), 0, ok => {
+    if (!ok) { toast('这首暂时加载不了，试试其他曲子'); worldCur = -1; renderWorld(); return; }
     document.getElementById('cover').classList.add('play');
     document.getElementById('playBtn').textContent = '⏸';
     document.getElementById('title').textContent = t.name;
     document.getElementById('artist').textContent = t.artist + ' · 世界名曲';
     document.getElementById('dur').textContent = '--:--';
-  }).catch(() => toast('加载失败，请检查网络或换一首'));
-  // 同步播放列表当前项（若该曲在列表中）
+  });
   const li = playlist.findIndex(x => x.url === t.url);
   idx = li;
   renderWorld(); renderList();
 }
 function addAllWorld() {
   WORLD.forEach(t => {
-    if (!playlist.some(x => x.url === t.url)) playlist.push({ name:t.name, artist:t.artist, url:t.url, dur:0 });
+    if (!playlist.some(x => x.url === t.url)) playlist.push({ name:t.name, artist:t.artist, url:t.url, dur:0, alt:srcs(t.url) });
   });
   renderList();
   toast('已把 ' + WORLD.length + ' 首世界名曲加入列表');
