@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>宝石消消乐 · LingoBird 游戏</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:'PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif;
+  background:linear-gradient(160deg,#1a1040 0%,#2d1b69 50%,#0f2027 100%);
+  color:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.wrap{width:min(440px,100vw);height:min(760px,100vh);display:flex;flex-direction:column;padding:14px;position:relative;}
+h1{font-size:22px;text-align:center;letter-spacing:2px;background:linear-gradient(90deg,#ffd166,#ff6b9d,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900;}
+.top{display:flex;justify-content:space-between;align-items:center;margin:8px 0 10px;gap:8px;}
+.chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:6px 14px;font-size:14px;font-weight:700;backdrop-filter:blur(6px);}
+.chip b{color:#ffd166;font-size:17px;}
+.top button{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:20px;padding:6px 12px;font-size:13px;cursor:pointer;font-weight:700;}
+.top button:active{transform:scale(.95);}
+.board-frame{position:relative;background:rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.18);border-radius:18px;padding:10px;box-shadow:0 20px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.1);}
+#board{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;touch-action:none;user-select:none;}
+.cell{aspect-ratio:1;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:clamp(20px,6vw,32px);cursor:pointer;position:relative;transition:transform .1s;box-shadow:inset 0 -4px 0 rgba(0,0,0,.3), inset 0 3px 0 rgba(255,255,255,.35);text-shadow:0 2px 4px rgba(0,0,0,.4);}
+.cell:active{transform:scale(.9);}
+.cell.sel{outline:3px solid #fff;outline-offset:-3px;animation:pulse .6s infinite alternate;}
+@keyframes pulse{to{outline-color:#ffd166;}}
+.cell.pop{animation:pop .3s forwards;}
+@keyframes pop{50%{transform:scale(1.25);opacity:.7;}100%{transform:scale(0);opacity:0;}}
+.c0{background:linear-gradient(145deg,#ff6b6b,#c92a2a);}
+.c1{background:linear-gradient(145deg,#ffd43b,#f08c00);}
+.c2{background:linear-gradient(145deg,#51cf66,#2b8a3e);}
+.c3{background:linear-gradient(145deg,#4dabf7,#1864ab);}
+.c4{background:linear-gradient(145deg,#da77f2,#862e9c);}
+.c5{background:linear-gradient(145deg,#ff922b,#d9480f);}
+.hud{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+.mission{background:linear-gradient(135deg,rgba(255,209,102,.2),rgba(255,107,157,.15));border:1px solid rgba(255,209,102,.4);border-radius:16px;padding:8px 16px;font-size:14px;font-weight:800;flex:1;}
+.mission b{color:#ffd166;}
+.moves{font-size:15px;font-weight:900;color:#ff9ff3;}
+.bottom{margin-top:auto;display:flex;gap:10px;}
+.btn{flex:1;padding:14px;border:none;border-radius:16px;font-size:16px;font-weight:900;cursor:pointer;transition:.15s;box-shadow:0 5px 0 rgba(0,0,0,.4);}
+.btn:active{transform:translateY(3px);box-shadow:none;}
+.btn.g{background:linear-gradient(145deg,#ffd166,#f08c00);color:#3d2500;}
+.btn.p{background:linear-gradient(145deg,#a78bfa,#7c3aed);color:#fff;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.overlay{position:absolute;inset:0;background:rgba(10,5,30,.92);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;z-index:5;backdrop-filter:blur(4px);}
+.overlay.hide{display:none;}
+.overlay h2{font-size:34px;background:linear-gradient(90deg,#ffd166,#ff6b9d);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.overlay p{font-size:15px;color:#cfc3ff;line-height:1.7;}
+.overlay .big{font-size:60px;}
+#toast{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.85);padding:10px 22px;border-radius:30px;font-weight:900;font-size:18px;opacity:0;transition:.25s;pointer-events:none;z-index:9;border:2px solid #ffd166;}
+#toast.show{opacity:1;transform:translate(-50%,-60%);}
+.fx{position:absolute;pointer-events:none;font-size:26px;font-weight:900;z-index:8;animation:fly 1s forwards;color:#ffd166;text-shadow:0 2px 8px rgba(0,0,0,.6);}
+@keyframes fly{to{transform:translateY(-70px);opacity:0;}}
+.hint-glow{animation:glow .8s infinite alternate;}
+@keyframes glow{to{box-shadow:inset 0 0 18px #fff, 0 0 14px #ffd166;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>💎 宝石消消乐</h1>
+  <div class="top">
+    <div class="chip">🏆 分数 <b id="score">0</b></div>
+    <div class="chip">🎯 关卡 <b id="level">1</b></div>
+    <div class="chip">🔥 连击 <b id="combo">x1</b></div>
+    <button onclick="openHelp()">❓ 玩法</button>
+  </div>
+  <div class="board-frame">
+    <div id="board"></div>
+    <div class="overlay" id="startOverlay">
+      <div class="big">💎</div>
+      <h2>宝石消消乐</h2>
+      <p>点击两颗<b>相邻</b>宝石交换位置<br>连成 <b>3 颗以上</b>横/竖即消除<br>连锁反应可触发连击加分！</p>
+      <button class="btn g" style="width:200px" onclick="startGame()">开始游戏</button>
+    </div>
+    <div class="overlay hide" id="overOverlay">
+      <div class="big">🌈</div>
+      <h2>时间到！</h2>
+      <p>最终得分：<b id="finalScore">0</b><br>最高分：<b id="bestScore">0</b></p>
+      <button class="btn g" style="width:200px" onclick="startGame()">再来一局</button>
+    </div>
+    <div class="overlay hide" id="helpOverlay">
+      <div class="big">📖</div>
+      <h2>玩法说明</h2>
+      <p>① 点击宝石，再点相邻宝石交换<br>② 三个及以上连线即消除<br>③ 消除后宝石下落，可能触发<b>连锁</b><br>④ 连锁越多，<b>连击倍率</b>越高<br>⑤ 60 秒内尽量拿高分！</p>
+      <button class="btn p" style="width:200px" onclick="closeHelp()">明白啦</button>
+    </div>
+    <div id="toast"></div>
+  </div>
+  <div class="hud">
+    <div class="mission">🎯 本关目标：消除 <b id="goal">15</b> 颗（<b id="prog">0</b>/<b id="goalN">15</b>）</div>
+    <div class="moves" style="margin-left:10px;">⏱ <span id="time">60</span>s</div>
+  </div>
+  <div class="bottom">
+    <button class="btn p" id="shuffleBtn" onclick="manualShuffle()">🔀 洗牌 <span id="shufN">3</span></button>
+    <button class="btn g" onclick="startGame()">🔄 重新开始</button>
+  </div>
+</div>
+<script>
+const N = 8, COLORS = 6;
+let board = [], score = 0, combo = 1, selected = null, busy = false;
+let timeLeft = 60, timer = null, goalCount = 0, goal = 15, level = 1, shuffles = 3;
+const $ = id => document.getElementById(id);
+
+function randColor(){ return Math.floor(Math.random() * COLORS); }
+
+function initBoard(){
+  board = [];
+  for(let r=0; r<N; r++){
+    board[r] = [];
+    for(let c=0; c<N; c++){
+      let col;
+      do { col = randColor(); } while(
+        (c>=2 && board[r][c-1]===col && board[r][c-2]===col) ||
+        (r>=2 && board[r-1][c]===col && board[r-2][c]===col)
+      );
+      board[r][c] = col;
+    }
+  }
+}
+
+function render(){
+  const el = $('board');
+  el.innerHTML = '';
+  for(let r=0; r<N; r++){
+    for(let c=0; c<N; c++){
+      const d = document.createElement('div');
+      d.className = 'cell c' + board[r][c];
+      d.dataset.r = r; d.dataset.c = c;
+      d.textContent = '💎';
+      if(selected && selected.r===r && selected.c===c) d.classList.add('sel');
+      d.addEventListener('click', () => onCell(r, c));
+      el.appendChild(d);
+    }
+  }
+}
+
+function neighbors(a, b){
+  return Math.abs(a.r-b.r) + Math.abs(a.c-b.c) === 1;
+}
+
+function onCell(r, c){
+  if(busy) return;
+  if(!selected){ selected = {r, c}; render(); return; }
+  const cur = {r, c};
+  if(selected.r===r && selected.c===c){ selected = null; render(); return; }
+  if(!neighbors(selected, cur)){ selected = cur; render(); return; }
+  swap(selected, cur);
+  const found = findMatches();
+  if(!found.length){
+    swap(selected, cur);
+    selected = null;
+    render();
+    toast('这样消不了哦 🤔');
+    return;
+  }
+  selected = null;
+  busy = true;
+  render();
+  cascade(1);
+}
+
+function swap(a, b){
+  const t = board[a.r][a.c];
+  board[a.r][a.c] = board[b.r][b.c];
+  board[b.r][b.c] = t;
+}
+
+function findMatches(){
+  const hit = new Set();
+  for(let r=0; r<N; r++){
+    let run = 1;
+    for(let c=1; c<=N; c++){
+      if(c<N && board[r][c]===board[r][c-1]) run++;
+      else {
+        if(run>=3) for(let k=c-run; k<c; k++) hit.add(r*N+k);
+        run = 1;
+      }
+    }
+  }
+  for(let c=0; c<N; c++){
+    let run = 1;
+    for(let r=1; r<=N; r++){
+      if(r<N && board[r][c]===board[r-1][c]) run++;
+      else {
+        if(run>=3) for(let k=r-run; k<r; k++) hit.add(k*N+c);
+        run = 1;
+      }
+    }
+  }
+  return [...hit];
+}
+
+function cascade(depth){
+  const hit = findMatches();
+  if(!hit.length){
+    busy = false;
+    checkLevel();
+    return;
+  }
+  combo = depth;
+  const pts = hit.length * 10 * depth;
+  score += pts;
+  goalCount += hit.length;
+  $('score').textContent = score;
+  $('combo').textContent = 'x' + depth;
+  $('prog').textContent = Math.min(goalCount, goal);
+  spawnFx(hit, pts);
+  // pop animation
+  hit.forEach(idx => {
+    const r = Math.floor(idx/N), c = idx % N;
+    const cell = $('board').children[idx];
+    if(cell) cell.classList.add('pop');
+    board[r][c] = -1;
+  });
+  setTimeout(() => {
+    collapse();
+    render();
+    setTimeout(() => cascade(depth+1), 160);
+  }, 250);
+}
+
+function collapse(){
+  for(let c=0; c<N; c++){
+    let write = N-1;
+    for(let r=N-1; r>=0; r--){
+      if(board[r][c] !== -1){
+        board[write][c] = board[r][c];
+        write--;
+      }
+    }
+    for(let r=write; r>=0; r--) board[r][c] = randColor();
+  }
+}
+
+function spawnFx(hit, pts){
+  const frame = $('board').parentElement;
+  const rect = $('board').getBoundingClientRect();
+  const fRect = frame.getBoundingClientRect();
+  const cellSize = (rect.width - 6*(N-1)) / N;
+  const mid = hit[Math.floor(hit.length/2)];
+  const r = Math.floor(mid/N), c = mid % N;
+  const fx = document.createElement('div');
+  fx.className = 'fx';
+  fx.textContent = '+' + pts + (combo>1 ? ' 🔥x'+combo : '');
+  fx.style.left = (rect.left - fRect.left + c*(cellSize+6) + cellSize/2 - 30) + 'px';
+  fx.style.top = (rect.top - fRect.top + r*(cellSize+6) + cellSize/2 - 20) + 'px';
+  frame.appendChild(fx);
+  setTimeout(() => fx.remove(), 1000);
+}
+
+function checkLevel(){
+  if(goalCount >= goal){
+    toast('🎉 关卡通过！');
+    level++;
+    goal = 15 + (level-1)*5;
+    $('level').textContent = level;
+    $('goal').textContent = goal;
+    $('goalN').textContent = goal;
+    timeLeft = Math.min(90, timeLeft + 10);
+    $('time').textContent = timeLeft;
+  }
+}
+
+function hasValidMove(){
+  for(let r=0; r<N; r++) for(let c=0; c<N; c++){
+    if(c+1<N){
+      swap({r,c},{r,c:c+1});
+      if(findMatches().length){ swap({r,c},{r,c:c+1}); return true; }
+      swap({r,c},{r,c:c+1});
+    }
+    if(r+1<N){
+      swap({r,c},{r:r+1,c});
+      if(findMatches().length){ swap({r,c},{r:r+1,c}); return true; }
+      swap({r,c},{r:r+1,c});
+    }
+  }
+  return false;
+}
+
+function autoShuffle(){
+  initBoard();
+  render();
+  toast('🌀 没有可消的了，已自动洗牌');
+}
+
+function manualShuffle(){
+  if(shuffles <= 0 || busy) return;
+  shuffles--;
+  $('shufN').textContent = shuffles;
+  initBoard();
+  render();
+  toast('🔀 已洗牌');
+}
+
+function startGame(){
+  score = 0; combo = 1; selected = null; busy = false;
+  timeLeft = 60; goalCount = 0; goal = 15; level = 1; shuffles = 3;
+  $('score').textContent = 0;
+  $('combo').textContent = 'x1';
+  $('level').textContent = 1;
+  $('goal').textContent = 15;
+  $('goalN').textContent = 15;
+  $('prog').textContent = 0;
+  $('time').textContent = 60;
+  $('shufN').textContent = 3;
+  $('startOverlay').classList.add('hide');
+  $('overOverlay').classList.add('hide');
+  $('helpOverlay').classList.add('hide');
+  initBoard();
+  if(!hasValidMove()) initBoard();
+  render();
+  if(timer) clearInterval(timer);
+  timer = setInterval(() => {
+    timeLeft--;
+    $('time').textContent = timeLeft;
+    if(timeLeft <= 0){
+      clearInterval(timer);
+      $('finalScore').textContent = score;
+      const best = Math.max(score, +(localStorage.getItem('gemBest')||0));
+      localStorage.setItem('gemBest', best);
+      $('bestScore').textContent = best;
+      $('overOverlay').classList.remove('hide');
+    }
+  }, 1000);
+}
+
+function openHelp(){ $('helpOverlay').classList.remove('hide'); if(timer) clearInterval(timer); }
+function closeHelp(){ $('helpOverlay').classList.add('hide'); if(timer && timeLeft>0){ /* resume */ } }
+
+let toastTimer;
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1400);
+}
+
+$('bestScore').textContent = localStorage.getItem('gemBest') || 0;
+render();
+</script>
+</body>
+</html>
