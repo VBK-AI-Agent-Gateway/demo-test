@@ -151,6 +151,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .mtile.sel{background:#ddf4ff;border-color:var(--blue);color:var(--blue-d);}
 .mtile.done{background:#d7ffb8;border-color:var(--green);color:var(--green-d);opacity:.7;border-bottom-width:2px;}
 .mtile.miss{background:#ffdfe0;border-color:var(--red);color:var(--red);animation:shake .3s;}
+.mtile .mtile-txt{display:block;font-weight:900;}
+.mtile .zh-line{display:block;font-size:13px;font-weight:800;color:var(--ink-l);margin-top:4px;line-height:1.3;}
 @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 
 /* ---------- Footer / check ---------- */
@@ -168,6 +170,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 }
 .grammar-box::before{content:'📖 语法讲解';display:block;font-size:12px;color:#b98a00;letter-spacing:1px;margin-bottom:3px;}
 .grammar-box .rule{display:block;color:#5c4700;font-weight:700;font-size:13.5px;line-height:1.45;}
+.zh-line-answer{font-size:14px;font-weight:800;color:var(--green-d);margin-top:4px;}
 .wrong-echo{
   background:#ffdfe0;border:2px solid var(--red);border-radius:12px;padding:6px 12px;
   font-size:14px;font-weight:800;color:var(--red);margin-top:6px;
@@ -824,13 +827,12 @@ function renderChoice(q, area){
   if(q.jp){
     const jpIsCJK = hasCJKText(q.jp) && !hasJapaneseText(q.jp);
     const jpSpeakLang = jpIsCJK ? 'zh-CN' : (hasJapaneseText(q.jp) ? 'ja-JP' : (course==='ja'?'ja-JP':'en-US'));
-    const enIsEnglish = q.en && !hasCJKText(q.en);
     const jpClickAttr = jpIsCJK ? '' : `onclick="speak(this.dataset.t,'${jpSpeakLang}')"` ;
     let cardInner = esc(q.jp);
     // 主行下面统一显示中文翻译（母语释义）
     if(q.zh) cardInner += `<div class="zh-mean">${esc(q.zh)}</div>`;
     // 再下面补充原文（如果是英文/罗马字）
-    if(q.en && enIsEnglish){
+    if(q.en && !hasCJKText(q.en)){
       cardInner += `<div class="romaji" onclick="event.stopPropagation();speak(this.dataset.t,'${speakLangFor(q.en,course)}')" data-t="${esc(q.en)}">${esc(q.en)} · 🔊</div>`;
     } else if(!q.en && !jpIsCJK){
       cardInner += `<div class="romaji">点卡片听发音 🔊</div>`;
@@ -943,9 +945,14 @@ function renderMatch(q, area){
   const interleaved = [];
   const maxLen = Math.max(left.length, right.length);
   for(let i=0;i<maxLen;i++){ if(left[i]) interleaved.push(left[i]); if(right[i]) interleaved.push(right[i]); }
+  const zhMap = {};
+  if(q.pairs) q.pairs.forEach(pr => { if(pr[1]) zhMap[pr[0]] = pr[1]; });
   interleaved.forEach(t=>{
     const b = document.createElement('button');
-    b.className = 'mtile'; b.textContent = t.txt; b.dataset.i = t.i; b.dataset.side = t.side;
+    b.className = 'mtile';
+    const zhLine = zhMap[t.txt] ? `<div class="zh-line">${esc(zhMap[t.txt])}</div>` : '';
+    b.innerHTML = `<span class="mtile-txt">${esc(t.txt)}</span>${zhLine}`;
+    b.dataset.i = t.i; b.dataset.side = t.side;
     b.onclick = ()=> onTile(b, t, q);
     grid.appendChild(b);
   });
@@ -1038,7 +1045,8 @@ function recordAnswer(ok, q, overrideMsg){
     footer.classList.add('ok'); footer.classList.remove('bad');
     verdict.style.display = 'flex';
     const tip = q.grammar ? `<div class="grammar-box"><span class="rule">${esc(q.grammar)}</span></div>` : '';
-    verdict.innerHTML = `<span class="ic">🎉</span><span>太棒了！<span class="ex">${esc(overrideMsg || q.ex || '')}</span>${tip}</span>`;
+    const zhLine = q.zh ? `<span class="ex" style="color:var(--green-d);">🇨🇳 ${esc(q.zh)}</span>` : '';
+    verdict.innerHTML = `<span class="ic">🎉</span><span>太棒了！<span class="ex">${esc(overrideMsg || q.ex || '')}</span>${zhLine}${tip}</span>`;
   } else {
     damageHearts();
     beep(false);
@@ -1052,7 +1060,8 @@ function recordAnswer(ok, q, overrideMsg){
       echo = `<div class="wrong-echo">你选的：${esc(q.options[L.sel])}</div>`;
     }
     const grammar = q.grammar || q.ex || '';
-    verdict.innerHTML = `<span class="ic">❌</span><span>正确答案：${esc(correctTxt)}${echo}
+    const zhLine2 = q.zh ? `<div class="zh-line-answer">🇨🇳 中文：${esc(q.zh)}</div>` : '';
+    verdict.innerHTML = `<span class="ic">❌</span><span>正确答案：${esc(correctTxt)}${zhLine2}${echo}
       <div class="grammar-box"><span class="rule">${esc(grammar)}</span></div></span>`;
     if(!L.isReview && L.hearts <= 0){ setTimeout(outOfHearts, 800); }
   }
