@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡通打地鼠</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  body {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #7ed6ff 0%, #b8ecff 45%, #8fd97a 45%, #6fbf5c 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: "Comic Sans MS", "PingFang SC", "Microsoft YaHei", sans-serif;
+    gap: 14px; padding: 16px; color: #3a5a2c;
+  }
+  h1 {
+    font-size: 40px; color: #ff8c42;
+    text-shadow: 3px 3px 0 #fff, 5px 5px 0 #d96a26;
+    letter-spacing: 6px;
+  }
+  .panel {
+    display: flex; gap: 14px; align-items: center; flex-wrap: wrap; justify-content: center;
+    background: rgba(255,255,255,.75); padding: 10px 22px; border-radius: 40px;
+    box-shadow: 0 6px 0 rgba(0,0,0,.12); font-size: 20px; font-weight: bold;
+  }
+  .panel span b { color: #ff6b35; font-size: 26px; }
+  #timeBar {
+    width: 220px; height: 16px; background: #e8e8e8; border-radius: 10px; overflow: hidden;
+    border: 2px solid #fff; box-shadow: inset 0 2px 4px rgba(0,0,0,.15);
+  }
+  #timeFill { height: 100%; width: 100%; background: linear-gradient(90deg, #ffd93d, #ff8c42); transition: width .3s linear; }
+  .btn {
+    background: #ff8c42; color: #fff; border: none; padding: 12px 30px;
+    font-size: 20px; font-weight: bold; border-radius: 40px; cursor: pointer;
+    font-family: inherit; letter-spacing: 3px;
+    box-shadow: 0 5px 0 #d96a26; transition: transform .05s;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #d96a26; }
+
+  .field {
+    display: grid; grid-template-columns: repeat(3, 150px); gap: 22px;
+    padding: 26px; background: #7a5230; border-radius: 30px;
+    border: 6px solid #5f3f24; box-shadow: 0 10px 0 rgba(0,0,0,.2);
+    background-image: radial-gradient(#8b6140 15%, transparent 16%);
+    background-size: 26px 26px;
+  }
+  .hole {
+    position: relative; width: 150px; height: 150px; cursor: pointer; overflow: hidden;
+  }
+  .hole .pit {
+    position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+    width: 128px; height: 52px; border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 35%, #4a2f1a 0%, #2b1a0d 70%);
+    box-shadow: inset 0 6px 10px rgba(0,0,0,.7);
+  }
+  .hole .rim {
+    position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%);
+    width: 140px; height: 34px; border-radius: 50%;
+    background: linear-gradient(180deg, #a3703f, #7a5230);
+    z-index: 3;
+  }
+  /* 地鼠 */
+  .mole {
+    position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(110%);
+    width: 104px; height: 116px; z-index: 2;
+    transition: transform .18s cubic-bezier(.3,1.4,.6,1);
+  }
+  .hole.up .mole { transform: translateX(-50%) translateY(-6px); }
+  .mole .body {
+    position: absolute; inset: 14px 6px 0; top: 20px;
+    background: radial-gradient(circle at 35% 30%, #c98d5a, #a06a3d 70%);
+    border-radius: 50% 50% 46% 46%;
+    box-shadow: inset -6px -6px 12px rgba(0,0,0,.25);
+  }
+  .mole .ear {
+    position: absolute; top: 8px; width: 30px; height: 30px; border-radius: 50%;
+    background: #a06a3d; border: 3px solid #8a5830;
+  }
+  .mole .ear.l { left: 4px; } .mole .ear.r { right: 4px; }
+  .mole .face {
+    position: absolute; top: 34px; left: 50%; transform: translateX(-50%);
+    width: 76px; height: 66px;
+  }
+  .mole .eye {
+    position: absolute; top: 6px; width: 20px; height: 22px; background: #fff; border-radius: 50%;
+  }
+  .mole .eye.l { left: 8px; } .mole .eye.r { right: 8px; }
+  .mole .eye::after {
+    content: ''; position: absolute; top: 6px; left: 6px;
+    width: 9px; height: 10px; background: #2b1a0d; border-radius: 50%;
+  }
+  .mole .nose {
+    position: absolute; top: 26px; left: 50%; transform: translateX(-50%);
+    width: 26px; height: 18px; background: #ff9db0; border-radius: 50%;
+    box-shadow: inset -3px -3px 4px rgba(0,0,0,.2);
+  }
+  .mole .mouth {
+    position: absolute; top: 44px; left: 50%; transform: translateX(-50%);
+    width: 34px; height: 16px;
+    border-bottom: 4px solid #6b3f22; border-radius: 0 0 50% 50%;
+  }
+  .mole .tooth {
+    position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
+    width: 20px; height: 12px; background: #fff; border-radius: 0 0 5px 5px;
+    border: 2px solid #e0e0e0;
+  }
+  .mole .cheek {
+    position: absolute; top: 40px; width: 16px; height: 10px;
+    background: #ff9db0; border-radius: 50%; opacity: .8;
+  }
+  .mole .cheek.l { left: 0; } .mole .cheek.r { right: 0; }
+  /* 金地鼠（高分） */
+  .hole.gold .mole .body { background: radial-gradient(circle at 35% 30%, #ffe066, #f0b429 70%); }
+  .hole.gold .mole .ear { background: #f0b429; border-color: #d9a01f; }
+  /* 炸弹 */
+  .hole.bomb .mole .body { background: radial-gradient(circle at 35% 30%, #555, #222 70%); }
+  .hole.bomb .mole .ear { display: none; }
+  .hole.bomb .mole .eye { background: #ff5252; width: 16px; height: 6px; top: 14px; border-radius: 3px; }
+  .hole.bomb .mole .eye::after { display: none; }
+  .hole.bomb .mole .nose, .hole.bomb .mole .tooth, .hole.bomb .mole .cheek { display: none; }
+  .hole.bomb .mole .mouth { border-bottom-color: #ff5252; border-top: 4px solid #ff5252; border-radius: 50%; height: 12px; top: 34px; }
+  .hole.bomb .mole::after {
+    content: '💣'; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    font-size: 34px; filter: drop-shadow(0 0 6px #ff5252);
+    animation: blink .4s infinite alternate;
+  }
+  @keyframes blink { from { opacity: 1; } to { opacity: .4; } }
+
+  .hole.hit .mole { animation: whack .3s ease; }
+  @keyframes whack {
+    0% { transform: translateX(-50%) translateY(-6px) rotate(0); }
+    30% { transform: translateX(-50%) translateY(10px) rotate(-14deg); filter: brightness(1.6); }
+    100% { transform: translateX(-50%) translateY(120%); }
+  }
+  .popup {
+    position: absolute; left: 50%; top: 16px; transform: translateX(-50%);
+    font-size: 34px; font-weight: bold; z-index: 9; pointer-events: none;
+    animation: pop .6s ease forwards; text-shadow: 2px 2px 0 #fff;
+  }
+  @keyframes pop {
+    0% { opacity: 0; transform: translateX(-50%) translateY(20px) scale(.5); }
+    30% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.2); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-50px) scale(1); }
+  }
+
+  #overlay {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 18px;
+    background: rgba(30,60,30,.7); backdrop-filter: blur(4px); z-index: 50; text-align: center;
+  }
+  #overlay h2 { font-size: 46px; color: #ffd93d; text-shadow: 3px 3px 0 #b3541e; letter-spacing: 4px; }
+  #overlay p { color: #fff; font-size: 19px; line-height: 2; text-shadow: 1px 1px 2px rgba(0,0,0,.5); }
+  .legend { font-size: 15px; color: #4a7a3a; background: rgba(255,255,255,.7); border-radius: 20px; padding: 8px 20px; }
+  .fx { position: fixed; font-size: 46px; pointer-events: none; z-index: 60; animation: fxUp .7s ease forwards; }
+  @keyframes fxUp {
+    0% { opacity: 1; transform: translateY(0) scale(.6); }
+    100% { opacity: 0; transform: translateY(-90px) scale(1.4); }
+  }
+</style>
+</head>
+<body>
+<h1>🐹 打地鼠</h1>
+<div class="panel">
+  <span>得分 <b id="score">0</b></span>
+  <span>连击 <b id="combo">x0</b></span>
+  <span>时间 <b id="time">30</b>s</span>
+  <div id="timeBar"><div id="timeFill"></div></div>
+  <button class="btn" id="startBtn">开始游戏</button>
+</div>
+<div class="field" id="field"></div>
+<div class="legend">🌟 金地鼠 +30 ｜ 🐹 普通 +10（连击加倍）｜ 💣 炸弹 -20 &amp; 断连击</div>
+
+<div id="overlay" style="display:flex">
+  <h2>🐹 打地鼠</h2>
+  <p>30 秒内尽可能敲晕地鼠！<br>普通地鼠 +10 分，金地鼠 +30 分，连击有加成<br>小心 💣 炸弹，会扣分并打断连击！</p>
+  <button class="btn" id="ovBtn">开 始</button>
+</div>
+
+<script>
+const HOLES = 9;
+const GAME_TIME = 30;
+const field = document.getElementById('field');
+const scoreEl = document.getElementById('score');
+const comboEl = document.getElementById('combo');
+const timeEl = document.getElementById('time');
+const timeFill = document.getElementById('timeFill');
+const overlay = document.getElementById('overlay');
+const ovBtn = document.getElementById('ovBtn');
+
+let score = 0, combo = 0, timeLeft = GAME_TIME, playing = false;
+let popTimer = null, tickTimer = null, busySlots = [];
+
+// 建洞
+for (let i = 0; i < HOLES; i++) {
+  const h = document.createElement('div');
+  h.className = 'hole';
+  h.dataset.idx = i;
+  h.innerHTML = `
+    <div class="mole">
+      <div class="ear l"></div><div class="ear r"></div>
+      <div class="body"></div>
+      <div class="face">
+        <div class="eye l"></div><div class="eye r"></div>
+        <div class="cheek l"></div><div class="cheek r"></div>
+        <div class="nose"></div>
+        <div class="mouth"></div>
+        <div class="tooth"></div>
+      </div>
+    </div>
+    <div class="pit"></div>
+    <div class="rim"></div>`;
+  h.addEventListener('pointerdown', () => whack(i));
+  field.appendChild(h);
+}
+const holes = [...field.children];
+busySlots = Array(HOLES).fill(null); // null | timer
+
+function popup(i, text, color) {
+  const p = document.createElement('div');
+  p.className = 'popup';
+  p.textContent = text;
+  p.style.color = color;
+  holes[i].appendChild(p);
+  setTimeout(() => p.remove(), 620);
+}
+
+function bigFx(emoji, x, y) {
+  const f = document.createElement('div');
+  f.className = 'fx';
+  f.textContent = emoji;
+  f.style.left = (x - 23) + 'px';
+  f.style.top = (y - 23) + 'px';
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 720);
+}
+
+function popUp(i) {
+  if (!playing || busySlots[i]) return;
+  const r = Math.random();
+  let type = 'normal';
+  if (r < 0.15) type = 'bomb';
+  else if (r < 0.30) type = 'gold';
+
+  const h = holes[i];
+  h.classList.remove('bomb', 'gold', 'hit');
+  h.classList.add('up');
+  if (type === 'bomb') h.classList.add('bomb');
+  if (type === 'gold') h.classList.add('gold');
+
+  const stay = type === 'gold' ? 700 : 900 - Math.random() * 250;
+  busySlots[i] = setTimeout(() => {
+    h.classList.remove('up', 'bomb', 'gold');
+    busySlots[i] = null;
+  }, stay);
+}
+
+function whack(i) {
+  if (!playing) return;
+  const h = holes[i];
+  if (!h.classList.contains('up') || h.classList.contains('hit')) return;
+  const type = h.classList.contains('bomb') ? 'bomb'
+             : h.classList.contains('gold') ? 'gold' : 'normal';
+
+  clearTimeout(busySlots[i]);
+  busySlots[i] = null;
+  h.classList.add('hit');
+  h.classList.remove('up');
+  setTimeout(() => h.classList.remove('hit', 'bomb', 'gold'), 320);
+
+  const rect = h.getBoundingClientRect();
+  if (type === 'bomb') {
+    score = Math.max(0, score - 20);
+    combo = 0;
+    popup(i, '-20 💥', '#ff5252');
+    bigFx('💥', rect.left + rect.width/2, rect.top + rect.height/2);
+  } else {
+    combo++;
+    const base = type === 'gold' ? 30 : 10;
+    const gain = base * Math.min(combo, 5);
+    score += gain;
+    popup(i, `+${gain}`, type === 'gold' ? '#f0b429' : '#3fbf5f');
+    bigFx(type === 'gold' ? '🌟' : '🐹', rect.left + rect.width/2, rect.top + 40);
+  }
+  scoreEl.textContent = score;
+  comboEl.textContent = 'x' + combo;
+  comboEl.style.color = combo >= 3 ? '#ff6b35' : '#ff8c42';
+}
+
+function spawnLoop() {
+  if (!playing) return;
+  const activeCount = busySlots.filter(Boolean).length;
+  const maxActive = timeLeft > 20 ? 2 : timeLeft > 10 ? 3 : 4;
+  if (activeCount < maxActive) {
+    const free = [];
+    busySlots.forEach((v, i) => { if (!v && !holes[i].classList.contains('up')) free.push(i); });
+    if (free.length) popUp(free[(Math.random() * free.length) | 0]);
+  }
+  const gap = timeLeft > 20 ? 550 : timeLeft > 10 ? 430 : 330;
+  popTimer = setTimeout(spawnLoop, gap * (0.7 + Math.random() * 0.6));
+}
+
+function tick() {
+  timeLeft--;
+  timeEl.textContent = timeLeft;
+  timeFill.style.width = (timeLeft / GAME_TIME * 100) + '%';
+  if (timeLeft <= 0) endGame();
+}
+
+function startGame() {
+  clearInterval(tickTimer);
+  clearTimeout(popTimer);
+  busySlots.forEach(t => clearTimeout(t));
+  busySlots = Array(HOLES).fill(null);
+  holes.forEach(h => h.classList.remove('up', 'bomb', 'gold', 'hit'));
+  score = 0; combo = 0; timeLeft = GAME_TIME;
+  scoreEl.textContent = 0;
+  comboEl.textContent = 'x0';
+  timeEl.textContent = GAME_TIME;
+  timeFill.style.width = '100%';
+  overlay.style.display = 'none';
+  playing = true;
+  spawnLoop();
+  tickTimer = setInterval(tick, 1000);
+}
+
+function endGame() {
+  playing = false;
+  clearTimeout(popTimer);
+  clearInterval(tickTimer);
+  busySlots.forEach(t => clearTimeout(t));
+  busySlots = Array(HOLES).fill(null);
+  holes.forEach(h => h.classList.remove('up', 'bomb', 'gold', 'hit'));
+  const best = Math.max(score, parseInt(localStorage.getItem('whack_best') || '0', 10));
+  localStorage.setItem('whack_best', best);
+  overlay.querySelector('h2').textContent = '⏰ 时间到！';
+  overlay.querySelector('p').innerHTML =
+    `最终得分 <b style="color:#ffd93d">${score}</b> 分<br>历史最高 <b style="color:#ffd93d">${best}</b> 分<br>再来一局冲击更高分！`;
+  ovBtn.textContent = '再来一局';
+  overlay.style.display = 'flex';
+}
+
+ovBtn.addEventListener('click', startGame);
+document.getElementById('startBtn').addEventListener('click', startGame);
+</script>
+</body>
+</html>
