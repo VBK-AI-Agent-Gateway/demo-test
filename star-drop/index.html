@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>⭐ 星陨 Star Drop</title>
+<style>
+  :root { --bg:#0b1020; --panel:#151b30; --text:#e6ecff; --muted:#8b96b8; --accent:#7c9cff; --danger:#ff6b81; }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    background:radial-gradient(1200px 600px at 50% -10%, #1a2347, var(--bg));
+    color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  header { text-align:center; padding:24px 16px 6px; }
+  h1 { margin:0 0 6px; font-size:26px; letter-spacing:2px; }
+  p.sub { margin:0; color:var(--muted); font-size:13px; }
+  .hud {
+    display:flex; gap:18px; margin:14px 0; flex-wrap:wrap; justify-content:center;
+    background:var(--panel); border:1px solid #26304d; border-radius:12px; padding:10px 18px;
+    font-size:14px;
+  }
+  .hud b { color:var(--accent); font-variant-numeric:tabular-nums; }
+  .wrap { position:relative; }
+  canvas {
+    display:block; background:linear-gradient(#0d1330, #0a0f22);
+    border:2px solid #26304d; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.5);
+    touch-action:none;
+  }
+  .overlay {
+    position:absolute; inset:0; display:flex; flex-direction:column; gap:12px;
+    align-items:center; justify-content:center; text-align:center;
+    background:rgba(7,10,22,.86); border-radius:14px; padding:20px;
+  }
+  .overlay.hidden { display:none; }
+  .overlay h2 { margin:0; font-size:24px; }
+  .overlay p { margin:0; color:var(--muted); font-size:14px; max-width:340px; line-height:1.6; }
+  .btn {
+    background:var(--accent); color:#0b1020; border:none; border-radius:8px;
+    padding:11px 26px; font-size:15px; font-weight:600; cursor:pointer;
+  }
+  .btn:hover { filter:brightness(1.1); }
+  .btn.ghost { background:transparent; color:var(--text); border:1px solid #26304d; }
+  .btn:focus-visible { outline:3px solid #ffd166; outline-offset:2px; }
+  .keys { font-size:12px; color:var(--muted); margin-top:6px; }
+  footer { padding:14px; color:#5c668a; font-size:12px; }
+  .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+</style>
+</head>
+<body>
+<header>
+  <h1>⭐ 星陨 Star Drop</h1>
+  <p class="sub">接住下落的星星，别让它们坠毁。移动木板，撑过越来越快的流星雨。</p>
+</header>
+
+<div class="hud" role="status" aria-live="polite">
+  <span>得分 <b id="score">0</b></span>
+  <span>生命 <b id="lives">❤️❤️❤️</b></span>
+  <span>关卡 <b id="level">1</b></span>
+  <span>最高 <b id="best">0</b></span>
+</div>
+
+<div class="wrap">
+  <canvas id="game" width="480" height="640" role="img"
+          aria-label="游戏画布：接星星游戏，用左右方向键或鼠标移动底部木板"></canvas>
+
+  <div class="overlay" id="overlay-start">
+    <h2>准备好了吗？</h2>
+    <p>用 <b>← →</b> 方向键 / <b>A D</b> / 鼠标 / 触屏移动木板。接到星星 +10 分，漏掉扣一颗心，三颗心用完结束。</p>
+    <button class="btn" id="btn-start">开始游戏</button>
+    <div class="keys">也可以按 Enter 或 空格 开始</div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-over">
+    <h2>游戏结束 💥</h2>
+    <p id="over-msg"></p>
+    <button class="btn" id="btn-retry">再来一局</button>
+    <div class="keys">按 R 或 Enter 重新开始</div>
+  </div>
+</div>
+
+<footer>可访问性：全程键盘可玩，画布有 aria 描述，HUD 用 aria-live 播报。</footer>
+
+<script>
+(() => {
+  const cv = document.getElementById('game');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+
+  const el = {
+    score: document.getElementById('score'),
+    lives: document.getElementById('lives'),
+    level: document.getElementById('level'),
+    best: document.getElementById('best'),
+    start: document.getElementById('overlay-start'),
+    over: document.getElementById('overlay-over'),
+    overMsg: document.getElementById('over-msg'),
+    btnStart: document.getElementById('btn-start'),
+    btnRetry: document.getElementById('btn-retry'),
+  };
+
+  const state = {
+    running: false, over: false,
+    score: 0, lives: 3, level: 1,
+    best: Number(localStorage.getItem('stardrop_best') || 0),
+    stars: [], particles: [],
+    spawnTimer: 0, levelTimer: 0,
+    paddle: { x: W/2 - 50, w: 100, h: 14, speed: 420 },
+    keys: { left:false, right:false },
+    mouseX: null,
+    last: 0,
+  };
+  el.best.textContent = state.best;
+
+  // ---- 星空背景（静态） ----
+  const bgStars = Array.from({length: 70}, () => ({
+    x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.5+0.3,
+    tw: Math.random()*Math.PI*2,
+  }));
+
+  function reset() {
+    state.score = 0; state.lives = 3; state.level = 1;
+    state.stars = []; state.particles = [];
+    state.spawnTimer = 0; state.levelTimer = 0;
+    state.paddle.x = W/2 - state.paddle.w/2;
+    state.over = false;
+    updateHUD();
+  }
+
+  function updateHUD() {
+    el.score.textContent = state.score;
+    el.lives.textContent = '❤️'.repeat(Math.max(0,state.lives)) + '🖤'.repeat(Math.max(0,3-state.lives));
+    el.level.textContent = state.level;
+  }
+
+  function start() {
+    reset();
+    state.running = true;
+    el.start.classList.add('hidden');
+    el.over.classList.add('hidden');
+    state.last = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  function gameOver() {
+    state.running = false; state.over = true;
+    if (state.score > state.best) {
+      state.best = state.score;
+      localStorage.setItem('stardrop_best', state.best);
+      el.best.textContent = state.best;
+    }
+    el.overMsg.textContent = `最终得分 ${state.score} · 到达第 ${state.level} 关` +
+      (state.score >= state.best && state.score > 0 ? ' · 新纪录！🏆' : '');
+    el.over.classList.remove('hidden');
+    el.btnRetry.focus();
+  }
+
+  // ---- 输入 ----
+  addEventListener('keydown', (e) => {
+    if (['ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') state.keys.left = true;
+    if (e.key === 'ArrowRight'|| e.key === 'd' || e.key === 'D') state.keys.right = true;
+    if ((e.key === 'Enter' || e.key === ' ') && !state.running) {
+      if (!state.over) el.start.classList.contains('hidden') ? null : start();
+      else start();
+    }
+    if ((e.key === 'r' || e.key === 'R') && state.over) start();
+  });
+  addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') state.keys.left = false;
+    if (e.key === 'ArrowRight'|| e.key === 'd' || e.key === 'D') state.keys.right = false;
+  });
+  function pointerX(e) {
+    const r = cv.getBoundingClientRect();
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+    return cx * (W / r.width);
+  }
+  cv.addEventListener('mousemove', (e) => { state.mouseX = pointerX(e); });
+  cv.addEventListener('touchmove', (e) => { e.preventDefault(); state.mouseX = pointerX(e); }, {passive:false});
+  cv.addEventListener('mouseleave', () => { state.mouseX = null; });
+
+  el.btnStart.addEventListener('click', start);
+  el.btnRetry.addEventListener('click', start);
+
+  // ---- 游戏逻辑 ----
+  function spawnStar() {
+    const r = 10 + Math.random()*6;
+    const golden = Math.random() < 0.12;
+    state.stars.push({
+      x: r + Math.random()*(W-2*r), y: -r,
+      r, vy: 80 + state.level*14 + Math.random()*40,
+      vx: (Math.random()-0.5)*30,
+      rot: Math.random()*Math.PI, vr: (Math.random()-0.5)*3,
+      golden,
+    });
+  }
+
+  function burst(x, y, color, n=12) {
+    for (let i=0;i<n;i++) {
+      const a = Math.random()*Math.PI*2, s = 60+Math.random()*160;
+      state.particles.push({x, y, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:1, color});
+    }
+  }
+
+  function update(dt) {
+    // paddle
+    const p = state.paddle;
+    if (state.mouseX != null) {
+      p.x += (state.mouseX - p.w/2 - p.x) * Math.min(1, dt*14);
+    }
+    if (state.keys.left) p.x -= p.speed*dt;
+    if (state.keys.right) p.x += p.speed*dt;
+    p.x = Math.max(0, Math.min(W-p.w, p.x));
+
+    // spawn
+    state.spawnTimer -= dt;
+    const interval = Math.max(0.32, 1.1 - state.level*0.09);
+    if (state.spawnTimer <= 0) { spawnStar(); state.spawnTimer = interval; }
+
+    // level up every 15s
+    state.levelTimer += dt;
+    if (state.levelTimer >= 15) { state.levelTimer = 0; state.level++; updateHUD(); }
+
+    // stars
+    const topY = H - 60;
+    for (let i = state.stars.length-1; i>=0; i--) {
+      const s = state.stars[i];
+      s.y += s.vy*dt; s.x += s.vx*dt; s.rot += s.vr*dt;
+      if (s.x < s.r || s.x > W-s.r) s.vx *= -1;
+      // catch
+      const caught =
+        s.y + s.r >= topY && s.y - s.r <= topY + p.h &&
+        s.x >= p.x - s.r && s.x <= p.x + p.w + s.r;
+      if (caught) {
+        const pts = s.golden ? 50 : 10;
+        state.score += pts;
+        burst(s.x, s.y, s.golden ? '#ffd166' : '#7c9cff', s.golden?20:10);
+        state.stars.splice(i,1);
+        updateHUD();
+        continue;
+      }
+      if (s.y - s.r > H) {
+        state.stars.splice(i,1);
+        state.lives--;
+        burst(s.x, H-8, '#ff6b81', 8);
+        updateHUD();
+        if (state.lives <= 0) { gameOver(); return; }
+      }
+    }
+
+    // particles
+    for (let i=state.particles.length-1;i>=0;i--) {
+      const q = state.particles[i];
+      q.x += q.vx*dt; q.y += q.vy*dt; q.vy += 300*dt; q.life -= dt*1.6;
+      if (q.life <= 0) state.particles.splice(i,1);
+    }
+  }
+
+  function drawStar(x, y, r, rot, color) {
+    ctx.save(); ctx.translate(x,y); ctx.rotate(rot);
+    ctx.beginPath();
+    for (let i=0;i<10;i++) {
+      const rad = i%2===0 ? r : r*0.45;
+      const a = (i*Math.PI/5) - Math.PI/2;
+      ctx[i?'lineTo':'moveTo'](Math.cos(a)*rad, Math.sin(a)*rad);
+    }
+    ctx.closePath();
+    ctx.fillStyle = color; ctx.fill();
+    ctx.restore();
+  }
+
+  function draw(now) {
+    ctx.clearRect(0,0,W,H);
+    // bg stars
+    for (const b of bgStars) {
+      const a = 0.4 + 0.4*Math.sin(now/700 + b.tw);
+      ctx.globalAlpha = a; ctx.fillStyle = '#cdd6ff';
+      ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // catch line glow
+    const topY = H - 60;
+    ctx.strokeStyle = 'rgba(124,156,255,.25)'; ctx.setLineDash([6,8]);
+    ctx.beginPath(); ctx.moveTo(0, topY); ctx.lineTo(W, topY); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // particles
+    for (const q of state.particles) {
+      ctx.globalAlpha = Math.max(0, q.life);
+      ctx.fillStyle = q.color;
+      ctx.fillRect(q.x-2, q.y-2, 4, 4);
+    }
+    ctx.globalAlpha = 1;
+
+    // stars
+    for (const s of state.stars) drawStar(s.x, s.y, s.r, s.rot, s.golden ? '#ffd166' : '#9db4ff');
+
+    // paddle
+    const p = state.paddle;
+    const grad = ctx.createLinearGradient(p.x, topY, p.x, topY+p.h);
+    grad.addColorStop(0,'#8fa8ff'); grad.addColorStop(1,'#4b66d6');
+    ctx.fillStyle = grad;
+    roundRect(p.x, topY, p.w, p.h, 7); ctx.fill();
+  }
+
+  function roundRect(x,y,w,h,r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+
+  function loop(now) {
+    if (!state.running) return;
+    const dt = Math.min(0.05, (now - state.last)/1000);
+    state.last = now;
+    update(dt);
+    if (!state.running) { draw(now); return; } // game over mid-frame
+    draw(now);
+    requestAnimationFrame(loop);
+  }
+
+  // 初始静态画面
+  draw(performance.now());
+})();
+</script>
+</body>
+</html>
