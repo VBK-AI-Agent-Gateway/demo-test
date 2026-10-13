@@ -67,7 +67,7 @@
     align-items:center; justify-content:center; z-index:50; padding:16px;
   }
   .modal {
-    background:#fff; border-radius:16px; padding:24px; width:100%; max-width:380px;
+    background:#fff; border-radius:16px; padding:24px; width:100%; max-width:400px;
     max-height:90vh; overflow:auto;
   }
   .modal h3 { font-size:1.2rem; margin-bottom:6px; }
@@ -91,6 +91,29 @@
     background:#111827; color:#fff; padding:10px 20px; border-radius:999px;
     font-size:.9rem; opacity:0; transition:opacity .25s; pointer-events:none; z-index:99;
   }
+  /* ---- 收款码 ---- */
+  .pay-tabbar { display:flex; gap:8px; justify-content:center; margin-bottom:12px; }
+  .pay-tab {
+    padding:7px 20px; border-radius:999px; border:1px solid #ddd; background:#f9f9f9;
+    cursor:pointer; font-weight:700; font-size:.9rem;
+  }
+  .pay-tab.on { background:#16a34a; color:#fff; border-color:#16a34a; }
+  .pay-tab.on.ali { background:#1677ff; border-color:#1677ff; }
+  .qr-box {
+    display:flex; flex-direction:column; align-items:center;
+    background:#fff; border:2px dashed #e5e7eb; border-radius:14px; padding:16px;
+  }
+  .qr-box canvas, .qr-box img.ph { width:210px; height:210px; border-radius:8px; }
+  .qr-box .pay-amt { font-size:1.5rem; font-weight:900; color:#dc2626; margin:10px 0 2px; }
+  .qr-box .pay-hint { font-size:.8rem; color:#8a8378; margin-bottom:10px; text-align:center; }
+  .pay-ok-banner {
+    background:#dcfce7; color:#166534; border-radius:10px; padding:10px;
+    text-align:center; font-weight:800; margin-top:10px;
+  }
+  .pay-acts { display:flex; gap:10px; margin-top:12px; }
+  .pay-acts button { flex:1; padding:10px; border:none; border-radius:9px; font-weight:800; cursor:pointer; }
+  .btn-skip { background:#fef3c7; color:#92400e; }
+  .btn-paid { background:#16a34a; color:#fff; }
   @media (max-width: 780px) {
     .layout { flex-direction:column; }
     aside { width:100%; position:static; }
@@ -102,7 +125,7 @@
 <header>
   <div>
     <h1>🍜 星火小馆 · 点菜系统</h1>
-    <div class="sub">扫码点餐 · 无需下载 · 下单即送后厨</div>
+    <div class="sub">扫码点餐 · 下单即送后厨 · 支持扫码收款</div>
   </div>
   <button class="cart-btn" onclick="openOrder()">🛒 购物车（<span id="cnt">0</span>）</button>
 </header>
@@ -122,11 +145,12 @@
   </aside>
 </div>
 
+<!-- 下单表单 -->
 <div class="modal-bg" id="orderModal">
   <div class="modal">
     <div id="orderForm">
       <h3>📝 确认下单</h3>
-      <div class="hint">填写桌号和联系方式，提交后生成订单号</div>
+      <div class="hint">填写桌号和联系方式，提交后进入收款</div>
       <div class="field">
         <label>桌号 *</label>
         <select id="tableNo"></select>
@@ -145,16 +169,42 @@
       </div>
       <div class="row">
         <button class="btn-cancel" onclick="closeOrder()">取消</button>
-        <button class="btn-ok" onclick="submitOrder()">提交订单</button>
+        <button class="btn-ok" onclick="submitOrder()">提交订单 · 去支付</button>
       </div>
     </div>
 
+    <!-- 收款码 -->
+    <div id="payStep" style="display:none">
+      <h3>💰 扫码支付</h3>
+      <div class="hint">请使用微信或支付宝扫码支付以下金额</div>
+      <div class="pay-tabbar">
+        <button class="pay-tab on" id="tabWx" onclick="switchPay('wx')">微信支付</button>
+        <button class="pay-tab ali" id="tabAli" onclick="switchPay('ali')">支付宝</button>
+      </div>
+      <div class="qr-box">
+        <canvas id="qrCanvas" width="210" height="210"></canvas>
+        <div class="pay-amt" id="payAmt">¥0</div>
+        <div class="pay-hint" id="payHint">扫码向店主转账，备注订单号</div>
+        <div class="pay-ok-banner" id="payOk" style="display:none">✅ 已确认收款</div>
+      </div>
+      <div class="pay-acts">
+        <button class="btn-skip" onclick="finishOrder(true)">暂缓支付（到店付）</button>
+        <button class="btn-paid" onclick="finishOrder(false)">我已付款</button>
+      </div>
+      <div class="hint" style="margin-top:10px">
+        收款码可在下方「收款码设置」里换成你自己的微信/支付宝收款码图片
+      </div>
+      <button class="clear" onclick="showForm()">← 返回修改订单</button>
+    </div>
+
+    <!-- 下单成功 -->
     <div id="orderDone" style="display:none">
       <div class="ok-box">
         <div class="big">🎉</div>
         <div>订单已提交到后厨！</div>
         <div class="no" id="orderNo">#----</div>
         <p id="doneInfo"></p>
+        <p id="donePay" style="font-weight:800"></p>
         <p>请稍候，服务员即将为您上菜</p>
         <div class="row">
           <button class="btn-cancel" onclick="closeOrder()">继续点餐</button>
@@ -164,9 +214,46 @@
   </div>
 </div>
 
+<!-- 收款码设置 -->
+<div class="modal-bg" id="qrModal">
+  <div class="modal">
+    <h3>⚙️ 收款码设置</h3>
+    <div class="hint">
+      方式一（推荐）：把你的微信/支付宝收款码保存成图片，粘贴图片地址，或直接上传图片转成 Base64 存本地。<br>
+      方式二：粘贴收款码里的文本（如支付宝开店收款链接），页面会自动生成二维码。
+    </div>
+    <div class="field">
+      <label>微信收款码 · 图片地址（https://... 或 data:...）</label>
+      <input id="cfgWxUrl" placeholder="https://example.com/wechat-qr.png">
+    </div>
+    <div class="field">
+      <label>微信收款码 · 或上传图片</label>
+      <input type="file" accept="image/*" onchange="uploadQr(event,'wx')">
+    </div>
+    <div class="field">
+      <label>支付宝收款码 · 图片地址</label>
+      <input id="cfgAliUrl" placeholder="https://example.com/alipay-qr.png">
+    </div>
+    <div class="field">
+      <label>支付宝收款码 · 或上传图片</label>
+      <input type="file" accept="image/*" onchange="uploadQr(event,'ali')">
+    </div>
+    <div class="field">
+      <label>或粘贴收款文本自动生成二维码（留空则用上面的图片）</label>
+      <textarea id="cfgText" rows="2" placeholder="粘贴支付宝收款链接/任意收款信息文本"></textarea>
+    </div>
+    <div class="row">
+      <button class="btn-cancel" onclick="document.getElementById('qrModal').style.display='none'">关闭</button>
+      <button class="btn-ok" onclick="saveQrCfg()">保存设置</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
+<button class="cart-btn" style="position:fixed;left:16px;bottom:16px;z-index:30" onclick="openQrCfg()">⚙️ 收款码设置</button>
 
 <script>
+/* ================= 菜单 ================= */
 const MENU = [
   { cat:'招牌热菜', emoji:'🍲', name:'红烧肉',       price:38, desc:'肥而不腻，入口即化，招牌必点' },
   { cat:'招牌热菜', emoji:'🐟', name:'清蒸鲈鱼',     price:58, desc:'鲜活现蒸，豉油提鲜，原汁原味' },
@@ -190,15 +277,17 @@ const MENU = [
   { cat:'甜品',     emoji:'🍧', name:'杨枝甘露',     price:16, desc:'芒果西柚，清爽香甜' },
   { cat:'饮品',     emoji:'🧋', name:'珍珠奶茶',     price:14, desc:'现煮黑糖珍珠，茶香醇厚' },
   { cat:'饮品',     emoji:'🍋', name:'酸梅汤',       price:8,  desc:'冰镇解腻，古法熬制' },
-  { cat:'饮品', emoji:'🍺', name:'冰镇啤酒',     price:12, desc:'330ml，透心凉' },
+  { cat:'饮品',     emoji:'🍺', name:'冰镇啤酒',     price:12, desc:'330ml，透心凉' },
 ];
 
 const CATS = ['全部', ...new Set(MENU.map(d => d.cat))];
 let curCat = '全部';
-let cart = {}; // name -> qty
+let cart = {};
 let orders = JSON.parse(localStorage.getItem('orders') || '[]');
+let pending = null;   // 待支付订单
+let payMethod = 'wx';
 
-// 初始化桌号
+// 桌号
 const tableSel = document.getElementById('tableNo');
 for (let i = 1; i <= 20; i++) {
   const o = document.createElement('option');
@@ -216,6 +305,7 @@ function toast(msg) {
   t._tm = setTimeout(() => t.style.opacity = 0, 1500);
 }
 
+/* ================= 菜单渲染 ================= */
 function renderCats() {
   const el = document.getElementById('cats');
   el.innerHTML = '';
@@ -249,18 +339,17 @@ function renderDishes() {
   });
 }
 
+/* ================= 购物车 ================= */
 function addCart(name) {
   cart[name] = (cart[name] || 0) + 1;
   renderCart();
   toast('已加入：' + name);
 }
-
 function changeQty(name, delta) {
   cart[name] = (cart[name] || 0) + delta;
   if (cart[name] <= 0) delete cart[name];
   renderCart();
 }
-
 function clearCart() { cart = {}; renderCart(); }
 
 function renderCart() {
@@ -279,9 +368,7 @@ function renderCart() {
       row.className = 'line';
       row.innerHTML =
         '<span class="nm">' + dish.emoji + ' ' + n + '</span>' +
-        '<span class="qty">' +
-          '<button>−</button><span>' + q + '</span><button>＋</button>' +
-        '</span>' +
+        '<span class="qty"><button>−</button><span>' + q + '</span><button>＋</button></span>' +
         '<b style="color:#dc2626">¥' + dish.price * q + '</b>';
       const btns = row.querySelectorAll('.qty button');
       btns[0].onclick = () => changeQty(n, -1);
@@ -289,22 +376,25 @@ function renderCart() {
       lines.appendChild(row);
     });
   }
-  names.forEach(n => cnt = cnt); // already counted above
   document.getElementById('total').textContent = '¥' + total;
   document.getElementById('cnt').textContent = cnt;
   document.getElementById('orderBtn').disabled = !names.length;
 }
 
+/* ================= 下单流程 ================= */
 function openOrder() {
   if (!Object.keys(cart).length && document.getElementById('orderModal').style.display !== 'flex') {
     toast('购物车是空的，先点几个菜吧～');
     return;
   }
-  document.getElementById('orderForm').style.display = '';
-  document.getElementById('orderDone').style.display = 'none';
+  showForm();
   document.getElementById('orderModal').style.display = 'flex';
 }
-
+function showForm() {
+  document.getElementById('orderForm').style.display = '';
+  document.getElementById('payStep').style.display = 'none';
+  document.getElementById('orderDone').style.display = 'none';
+}
 function closeOrder() {
   document.getElementById('orderModal').style.display = 'none';
 }
@@ -321,30 +411,147 @@ function submitOrder() {
     total += dish.price * cart[n];
     return { name: n, qty: cart[n], price: dish.price };
   });
-
   const no = 'SP' + Date.now().toString().slice(-8) + Math.floor(Math.random() * 90 + 10);
-  const order = {
+  pending = {
     no,
     table: tableSel.value,
     name, phone,
     remark: document.getElementById('remark').value.trim(),
     items, total,
     time: new Date().toLocaleString('zh-CN'),
+    status: 'new',
+    paid: false,
   };
-  orders.push(order);
-  localStorage.setItem('orders', JSON.stringify(orders));
 
-  // 下单成功 → 清空购物车，展示订单号
-  cart = {};
-  renderCart();
-  document.getElementById('orderNo').textContent = '#' + no;
-  document.getElementById('doneInfo').textContent =
-    order.table + ' · ' + order.name + ' · 共 ' +
-    items.reduce((s, i) => s + i.qty, 0) + ' 件 · 合计 ¥' + total;
+  // 进入收款步骤
   document.getElementById('orderForm').style.display = 'none';
-  document.getElementById('orderDone').style.display = '';
+  document.getElementById('orderDone').style.display = 'none';
+  document.getElementById('payStep').style.display = '';
+  document.getElementById('payAmt').textContent = '¥' + pending.total;
+  document.getElementById('payOk').style.display = 'none';
+  switchPay('wx');
 }
 
+/* ================= 收款码 ================= */
+function qrCfg() {
+  try { return JSON.parse(localStorage.getItem('qrCfg') || '{}'); }
+  catch(e) { return {}; }
+}
+function saveQrCfg() {
+  const cfg = {
+    wx: document.getElementById('cfgWxUrl').value.trim() || qrCfg().wx || '',
+    ali: document.getElementById('cfgAliUrl').value.trim() || qrCfg().ali || '',
+    text: document.getElementById('cfgText').value.trim(),
+  };
+  localStorage.setItem('qrCfg', JSON.stringify(cfg));
+  document.getElementById('qrModal').style.display = 'none';
+  toast('收款码设置已保存');
+}
+function openQrCfg() {
+  const cfg = qrCfg();
+  document.getElementById('cfgWxUrl').value = cfg.wx && cfg.wx.startsWith('data:') ? '' : (cfg.wx || '');
+  document.getElementById('cfgAliUrl').value = cfg.ali && cfg.ali.startsWith('data:') ? '' : (cfg.ali || '');
+  document.getElementById('cfgText').value = cfg.text || '';
+  document.getElementById('qrModal').style.display = 'flex';
+}
+function uploadQr(e, which) {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    const cfg = qrCfg();
+    cfg[which] = r.result;
+    localStorage.setItem('qrCfg', JSON.stringify(cfg));
+    toast((which === 'wx' ? '微信' : '支付宝') + '收款码已上传');
+  };
+  r.readAsDataURL(f);
+}
+
+function switchPay(m) {
+  payMethod = m;
+  document.getElementById('tabWx').classList.toggle('on', m === 'wx');
+  document.getElementById('tabAli').classList.toggle('on', m === 'ali');
+  document.getElementById('payOk').style.display = 'none';
+  drawPayQr();
+}
+
+function drawPayQr() {
+  const cfg = qrCfg();
+  const img = cfg[payMethod];
+  const canvas = document.getElementById('qrCanvas');
+  const ctx = canvas.getContext('2d');
+  const label = payMethod === 'wx' ? '微信收款码' : '支付宝收款码';
+
+  if (img) {
+    // 用自定义收款码图片
+    const im = new Image();
+    im.onload = () => {
+      ctx.clearRect(0, 0, 210, 210);
+      const s = Math.min(210 / im.width, 210 / im.height);
+      const w = im.width * s, h = im.height * s;
+      ctx.drawImage(im, (210 - w) / 2, (210 - h) / 2, w, h);
+      const c = document.createElement('canvas');
+      c.width = c.height = 210;
+      c.getContext('2d').drawImage(canvas, 0, 0);
+      canvas.replaceWith(c); c.id = 'qrCanvas';
+    };
+    im.onerror = () => generateQr(cfg, label);
+    im.src = img;
+  } else {
+    generateQr(cfg, label);
+  }
+}
+
+function generateQr(cfg, label) {
+  // 有文本 → 生成文本二维码；否则生成「收款信息」占位二维码
+  const text = cfg.text && cfg.text.trim()
+    ? cfg.text.trim()
+    : (pending
+        ? '星火小馆收款|订单#' + pending.no + '|金额¥' + pending.total + '|' + label
+        : '星火小馆|' + label + '请在设置中上传收款码');
+  const url = 'https://api.qrserver.com/v1/create-qr-code/?size=210x210&margin=8&data=' + encodeURIComponent(text);
+  const canvas = document.getElementById('qrCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 210, 210);
+  const im = new Image();
+  im.crossOrigin = 'anonymous';
+  im.onload = () => { ctx.drawImage(im, 0, 0, 210, 210); };
+  im.onerror = () => {
+    ctx.fillStyle = '#111';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('二维码生成失败', 105, 100);
+    ctx.fillText('请在设置中上传收款码', 105, 125);
+  };
+  im.src = url;
+  document.getElementById('payHint').textContent =
+    (cfg.text ? '扫码支付，备注订单号' : label + '（示例码，可在设置里换成你自己的）');
+}
+
+function finishOrder(skipPay) {
+  if (!pending) return;
+  pending.paid = !skipPay;
+  pending.paidMethod = skipPay ? '到店支付' : (payMethod === 'wx' ? '微信支付' : '支付宝');
+  orders.push(pending);
+  localStorage.setItem('orders', JSON.stringify(orders));
+
+  document.getElementById('orderNo').textContent = '#' + pending.no;
+  document.getElementById('doneInfo').textContent =
+    pending.table + ' · ' + pending.name + ' · 共 ' +
+    pending.items.reduce((s, i) => s + i.qty, 0) + ' 件 · 合计 ¥' + pending.total;
+  document.getElementById('donePay').textContent = pending.paid
+    ? '💰 已支付（' + pending.paidMethod + '）'
+    : '🕓 待支付（到店支付）';
+
+  cart = {};
+  renderCart();
+  document.getElementById('payStep').style.display = 'none';
+  document.getElementById('orderForm').style.display = 'none';
+  document.getElementById('orderDone').style.display = '';
+  pending = null;
+}
+
+/* ================= 初始化 ================= */
 renderCats();
 renderDishes();
 renderCart();
