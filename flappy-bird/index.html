@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Flappy Bird · 翼动飞翔</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:'PingFang SC','Microsoft YaHei',sans-serif;
+  background:#0f2027;display:flex;align-items:center;justify-content:center;overflow:hidden;user-select:none;
+}
+.wrap{position:relative;width:min(440px,100vw);height:min(760px,100vh);overflow:hidden;border-radius:20px;
+  box-shadow:0 25px 60px rgba(0,0,0,.6);}
+canvas{display:block;width:100%;height:100%;background:linear-gradient(#4ec0ca 0%,#8ee3ef 55%,#c9f0f4 100%);}
+.hud{position:absolute;top:14px;left:0;right:0;text-align:center;pointer-events:none;z-index:5;}
+.score{font-size:54px;font-weight:900;color:#fff;text-shadow:3px 3px 0 #333, -2px -2px 0 #333, 2px -2px 0 #333, -2px 2px 0 #333;letter-spacing:3px;}
+.hud .row{display:flex;gap:10px;justify-content:center;margin-top:6px;}
+.chip{background:rgba(0,0,0,.45);color:#ffd166;padding:5px 14px;border-radius:20px;font-weight:900;font-size:14px;border:2px solid rgba(255,255,255,.25);}
+.overlay{position:absolute;inset:0;background:rgba(8,18,30,.88);backdrop-filter:blur(5px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:26px;z-index:9;}
+.overlay.hide{display:none;}
+.overlay .big{font-size:74px;animation:bounce 1s infinite alternate;}
+@keyframes bounce{to{transform:translateY(-14px);}}
+.overlay h2{font-size:34px;background:linear-gradient(90deg,#ffd166,#ff6b9d);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900;}
+.overlay h3{font-size:24px;color:#fff;font-weight:900;}
+.overlay p{font-size:15px;color:#bfe9f2;line-height:1.8;}
+.btn{padding:14px 44px;border:none;border-radius:30px;font-size:19px;font-weight:900;cursor:pointer;
+  background:linear-gradient(145deg,#ffd166,#f08c00);color:#3d2500;box-shadow:0 6px 0 #a35a00;transition:.1s;}
+.btn:active{transform:translateY(4px);box-shadow:none;}
+.btn.p{background:linear-gradient(145deg,#a78bfa,#7c3aed);color:#fff;box-shadow:0 6px 0 #4c1d95;}
+.medals{display:flex;gap:16px;align-items:center;justify-content:center;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.18);border-radius:20px;padding:16px 28px;}
+.medal{font-size:56px;filter:drop-shadow(0 6px 12px rgba(0,0,0,.5));}
+.stat{text-align:left;color:#fff;font-size:15px;line-height:1.9;font-weight:700;}
+.stat b{color:#ffd166;font-size:22px;margin-left:8px;}
+#toast{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 24px;border-radius:30px;font-weight:900;font-size:17px;opacity:0;transition:.25s;pointer-events:none;z-index:10;border:2px solid #ffd166;}
+#toast.show{opacity:1;}
+.best-tag{position:absolute;top:64px;left:50%;transform:translateX(-50%);background:#ff5b5b;color:#fff;font-weight:900;font-size:12px;padding:3px 12px;border-radius:12px;z-index:6;letter-spacing:1px;}
+.best-tag.hide{display:none;}
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <canvas id="cv"></canvas>
+  <div class="hud">
+    <div class="score" id="score">0</div>
+    <div class="row"><div class="chip">🏆 最高 <span id="best">0</span></div><div class="chip">🎖 奖牌 <span id="medalName">无</span></div></div>
+  </div>
+  <div class="best-tag hide" id="bestTag">NEW RECORD!</div>
+  <div class="overlay" id="startOv">
+    <div class="big">🐤</div>
+    <h2>翼动飞翔</h2>
+    <p>点击屏幕 / 按空格键 🕊️ 扇动翅膀<br>穿过水管缝隙，别撞墙也别坠地！<br>每过一根水管 <b>+1 分</b></p>
+    <button class="btn" onclick="startGame()">开始游戏</button>
+  </div>
+  <div class="overlay hide" id="overOv">
+    <div class="big" id="overIcon">💀</div>
+    <h2>游戏结束</h2>
+    <div class="medals">
+      <div class="medal" id="medal">🏅</div>
+      <div class="stat">得分：<b id="finalScore">0</b><br>最高：<b id="finalBest">0</b></div>
+    </div>
+    <div style="display:flex;gap:14px;">
+      <button class="btn" onclick="startGame()">再来一局</button>
+      <button class="btn p" onclick="showHelp()">📖 玩法</button>
+    </div>
+  </div>
+  <div class="overlay hide" id="helpOv">
+    <div class="big">📖</div>
+    <h2>玩法说明</h2>
+    <p>① 点击屏幕或按<b>空格</b>让小鸟跳跃<br>② 从上下水管中间飞过去<br>③ 撞到水管或地面 = 游戏结束<br>④ 每过一根水管得 1 分<br>⑤ 10 分🥉 / 20 分🥈 / 40 分🥇 奖牌<br>⑥ 连过水管触发连击特效 🔥</p>
+    <button class="btn p" onclick="hideHelp()">明白啦</button>
+  </div>
+  <div id="toast"></div>
+</div>
+<script>
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const wrap = document.getElementById('wrap');
+let W, H, DPR;
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = wrap.clientWidth; H = wrap.clientHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+resize();
+window.addEventListener('resize', resize);
+
+const G = 1400;            // 重力 px/s
+const FLAP = -440;          // 跳跃速度
+const PIPE_W = 68;
+const PIPE_GAP = 170;       // 初始缝隙
+const PIPE_SPEED = 130;
+const PIPE_EVERY = 1.75;    // 秒生成一根
+
+let bird, pipes, score, best, running, dead, t, spawnT, flash, shake, comboN, fastMode;
+
+best = +(localStorage.getItem('flappyBest') || 0);
+document.getElementById('best').textContent = best;
+
+function reset(){
+  bird = { x: W * 0.28, y: H * 0.45, vy: 0, r: 15, rot: 0, wing: 0 };
+  pipes = []; score = 0; running = false; dead = false;
+  t = 0; spawnT = 0; flash = 0; shake = 0; comboN = 0; fastMode = false;
+  document.getElementById('score').textContent = 0;
+  document.getElementById('bestTag').classList.add('hide');
+}
+
+function startGame(){
+  reset();
+  document.getElementById('startOv').classList.add('hide');
+  document.getElementById('overOv').classList.add('hide');
+  document.getElementById('helpOv').classList.add('hide');
+  running = true;
+  flap();
+}
+
+function showHelp(){ document.getElementById('overOv').classList.add('hide'); document.getElementById('helpOv').classList.remove('hide'); }
+function hideHelp(){ document.getElementById('helpOv').classList.add('hide'); document.getElementById('overOv').classList.remove('hide'); }
+
+function flap(){
+  if(dead || !running) return;
+  bird.vy = FLAP;
+  bird.wing = 1;
+}
+
+function medalFor(s){
+  if(s >= 40) return {ic:'🥇', n:'黄金'};
+  if(s >= 20) return {ic:'🥈', n:'白银'};
+  if(s >= 10) return {ic:'🥉', n:'青铜'};
+  return {ic:'🏅', n:'参与'};
+}
+
+function gameOver(){
+  if(dead) return;
+  dead = true; running = false;
+  flash = 1; shake = 12;
+  const isNew = score > best;
+  if(isNew){ best = score; localStorage.setItem('flappyBest', best); }
+  const m = medalFor(score);
+  document.getElementById('best').textContent = best;
+  document.getElementById('medalName').textContent = m.n;
+  document.getElementById('medal').textContent = m.ic;
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('finalBest').textContent = best;
+  document.getElementById('overIcon').textContent = isNew ? '🎉' : '💀';
+  if(isNew) document.getElementById('bestTag').classList.remove('hide');
+  setTimeout(() => {
+    if(dead) document.getElementById('overOv').classList.remove('hide');
+  }, 700);
+}
+
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1200);
+}
+
+function spawnPipe(){
+  const gap = Math.max(130, PIPE_GAP - (score > 30 ? 30 : score));
+  const margin = 70;
+  const topH = margin + Math.random() * (H - gap - margin * 2);
+  pipes.push({ x: W + 10, topH, gap, passed: false });
+}
+
+function update(dt){
+  if(!running && !dead) return;
+  t += dt;
+
+  if(running && !dead){
+    // gravity
+    bird.vy += G * dt;
+    bird.y += bird.vy * dt;
+    bird.rot = Math.max(-0.5, Math.min(1.4, bird.vy / 500));
+    bird.wing = Math.max(0, bird.wing - dt * 5);
+
+    // spawn pipes
+    spawnT += dt;
+    const every = score >= 40 ? PIPE_EVERY * 0.8 : PIPE_EVERY;
+    if(spawnT >= every){ spawnT = 0; spawnPipe(); }
+
+    const speed = PIPE_SPEED + (score > 20 ? (score - 20) * 1.5 : 0);
+    for(const p of pipes){
+      p.x -= speed * dt;
+      if(!p.passed && p.x + PIPE_W < bird.x){
+        p.passed = true;
+        score++;
+        document.getElementById('score').textContent = score;
+        comboN++;
+        if(score % 10 === 0) toast('🔥 连过 ' + score + ' 根！ +10 分里程碑');
+        else if(score % 5 === 0) toast('⭐ ' + score + ' 分！继续保持');
+      }
+    }
+    pipes = pipes.filter(p => p.x > -PIPE_W - 10);
+
+    // collisions
+    const bx = bird.x, by = bird.y, br = bird.r;
+    // ground & ceiling
+    if(by + br >= H - 10){ bird.y = H - 10 - br; gameOver(); }
+    if(by - br <= 0){ bird.y = br; bird.vy = 0; }
+    // pipes
+    for(const p of pipes){
+      if(bx + br > p.x && bx - br < p.x + PIPE_W){
+        if(by - br < p.topH || by + br > p.topH + p.gap){ gameOver(); break; }
+      }
+    }
+  } else if(dead){
+    // 小鸟下落动画
+    bird.vy += G * dt;
+    bird.y = Math.min(H - 10 - bird.r, bird.y + bird.vy * dt);
+    bird.rot = Math.min(1.7, bird.rot + dt * 4);
+    // pipes 停止
+    flash = Math.max(0, flash - dt * 2);
+    shake = Math.max(0, shake - dt * 30);
+  }
+}
+
+function drawBG(){
+  // 已由 CSS 渐变，canvas 半透明画装饰
+  ctx.save();
+  // 远山
+  ctx.fillStyle = 'rgba(255,255,255,.35)';
+  const off = (t * 20) % 300;
+  for(let i = -1; i < W / 300 + 2; i++){
+    const x = i * 300 - off;
+    ctx.beginPath();
+    ctx.moveTo(x, H);
+    ctx.quadraticCurveTo(x + 75, H - 130, x + 150, H);
+    ctx.quadraticCurveTo(x + 225, H - 90, x + 300, H);
+    ctx.fill();
+  }
+  // 地面
+  ctx.fillStyle = '#ded895';
+  ctx.fillRect(0, H - 10, W, 10);
+  ctx.fillStyle = '#7cc242';
+  ctx.fillRect(0, H - 16, W, 6);
+  ctx.restore();
+}
+
+function drawPipes(){
+  for(const p of pipes){
+    const drawPipe = (x, y, w, h, isTop) => {
+      const g = ctx.createLinearGradient(x, 0, x + w, 0);
+      g.addColorStop(0, '#5cb544');
+      g.addColorStop(.3, '#8de06a');
+      g.addColorStop(.55, '#5cb544');
+      g.addColorStop(1, '#3d8a30');
+      ctx.fillStyle = g;
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = '#2c6b22'; ctx.lineWidth = 3;
+      ctx.strokeRect(x, y, w, h);
+      // 管口
+      const capH = 26;
+      const capY = isTop ? y + h - capH : y;
+      const cg = ctx.createLinearGradient(x - 6, 0, x + w + 6, 0);
+      cg.addColorStop(0, '#5cb544');
+      cg.addColorStop(.3, '#8de06a');
+      cg.addColorStop(.55, '#5cb544');
+      cg.addColorStop(1, '#3d8a30');
+      ctx.fillStyle = cg;
+      ctx.fillRect(x - 6, capY, w + 12, capH);
+      ctx.strokeRect(x - 6, capY, w + 12, capH);
+    };
+    drawPipe(p.x, 0, PIPE_W, p.topH, true);
+    drawPipe(p.x, p.topH + p.gap, PIPE_W, H - p.topH - p.gap, false);
+  }
+}
+
+function drawBird(){
+  ctx.save();
+  ctx.translate(bird.x, bird.y);
+  ctx.rotate(bird.rot);
+  // body
+  const g = ctx.createRadialGradient(-4, -5, 3, 0, 0, bird.r + 4);
+  g.addColorStop(0, '#ffe680');
+  g.addColorStop(1, '#f5a623');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0, 0, bird.r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#c77800'; ctx.lineWidth = 2.5;
+  ctx.stroke();
+  // wing
+  const wingY = 3 - bird.wing * 9;
+  ctx.fillStyle = '#fff2bf';
+  ctx.beginPath();
+  ctx.ellipse(-4, wingY, 9, 6 + bird.wing * 3, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  // eye
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(7, -5, 5.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#222';
+  ctx.beginPath(); ctx.arc(9, -5, 2.5, 0, Math.PI * 2); ctx.fill();
+  // beak
+  ctx.fillStyle = '#ff7043';
+  ctx.beginPath();
+  ctx.moveTo(12, 0); ctx.lineTo(22, 3); ctx.lineTo(12, 7);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function loop(ts){
+  const dt = Math.min(0.033, (ts - (loop.last || ts)) / 1000);
+  loop.last = ts;
+  update(dt);
+  ctx.save();
+  if(shake > 0) ctx.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake);
+  ctx.clearRect(-20, -20, W + 40, H + 40);
+  drawBG();
+  drawPipes();
+  drawBird();
+  if(flash > 0){
+    ctx.fillStyle = 'rgba(255,60,60,' + (flash * 0.4) + ')';
+    ctx.fillRect(-20, -20, W + 40, H + 40);
+  }
+  ctx.restore();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// input
+function onTap(e){
+  e.preventDefault();
+  const helpVisible = !document.getElementById('helpOv').classList.contains('hide');
+  if(helpVisible) return;
+  if(!running && !dead && document.getElementById('startOv').classList.contains('hide')){
+    startGame(); return;
+  }
+  flap();
+}
+wrap.addEventListener('pointerdown', onTap);
+window.addEventListener('keydown', e => {
+  if(e.code === 'Space' || e.code === 'ArrowUp'){
+    e.preventDefault();
+    if(!running && !dead && document.getElementById('startOv').classList.contains('hide')){
+      if(!document.getElementById('overOv').classList.contains('hide')) return;
+      startGame(); return;
+    }
+    flap();
+  }
+});
+reset();
+</script>
+</body>
+</html>
