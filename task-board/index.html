@@ -210,7 +210,7 @@
 <script>
 (() => {
   // ====== 后端 API 配置 ======
-  // 通过 ?api=<base> 覆盖，默认指向同源 /api
+  // 通过 ?api=<base> 覆盖（如本地 http://127.0.0.1:8787/api），默认同源 /api
   const API = new URLSearchParams(location.search).get('api') || '/api';
 
   const $ = (id) => document.getElementById(id);
