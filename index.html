@@ -188,6 +188,18 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .reward .v{font-size:24px;font-weight:900;display:flex;align-items:center;gap:6px;justify-content:center;margin-top:4px;}
 .reward .v.y{color:var(--orange);} .reward .v.p{color:var(--purple);}
 
+.voice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.voice-opt{
+  position:relative;background:#fff;border:2px solid var(--gray-l);border-bottom-width:4px;border-radius:16px;
+  padding:14px 8px 12px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:.12s;
+}
+.voice-opt:hover{transform:translateY(-2px);}
+.voice-opt.on{background:#ddf4ff;border-color:var(--blue);box-shadow:0 4px 14px rgba(78,187,255,.3);}
+.voice-opt .vi{font-size:26px;}
+.voice-opt .vn{font-weight:900;font-size:15px;}
+.voice-opt .vd{font-size:12px;color:var(--ink-l);font-weight:700;}
+.voice-opt .vb{position:absolute;top:6px;right:8px;color:var(--blue);font-weight:900;}
+
 /* ---------- Learn tab ---------- */
 .lang-tabs{display:flex;gap:10px;margin-bottom:16px;}
 .lang-tab{
@@ -571,7 +583,8 @@ const COURSES = {
 
 const DEFAULT_STATE = {
   xp:0, hearts:5,
-  done:{}, course:'ja', totalCorrect:0, totalAnswered:0
+  done:{}, course:'ja', totalCorrect:0, totalAnswered:0,
+  voice:'female'   // 'female' | 'male' | 'auto'  多角色音色
 };
 
 let S = load();
@@ -589,19 +602,67 @@ function hasCJKText(t){ return /[\u4e00-\u9fff\u3040-\u30ff\u3400-\u4dbf]/.test(
 function hasJapaneseText(t){ return /[\u3040-\u30ff]/.test(t||''); }
 function speakLangFor(t, course){ if(hasJapaneseText(t)) return 'ja-JP'; if(hasCJKText(t)) return 'zh-CN'; if(course==='ja') return 'ja-JP'; return 'en-US'; }
 /* ================= Speech ================= */
+/* ------- 多角色音色引擎：按语言挑选系统内最佳人声 ------- */
+let _voices = [];
+function _refreshVoices(){
+  try{ _voices = speechSynthesis.getVoices() || []; }catch(e){ _voices = []; }
+}
+if('speechSynthesis' in window){
+  _refreshVoices();
+  speechSynthesis.onvoiceschanged = _refreshVoices;
+  // Firefox 有些环境不触发 onvoiceschanged，轮询兜底
+  let _vc = 0;
+  const _vTimer = setInterval(()=>{ _refreshVoices(); if(_voices.length && ++_vc>5) clearInterval(_vTimer); }, 300);
+}
+const _NICKS = ['female','f','girl','woman','lady','samantha','victoria','karen','moira','tessa','fiona','veena','zira','hazel','susan','allison','aria','jenny','sonia','libby','natasha','kana','haruka','kyoko','ai','alice','anna','maria','yuna','sora','mei','xiaoqi','tingting','yaoyao','huihui','yuwei','zh-CN-Female','google'];
+const _NICKS_M = ['male','m','boy','man','daniel','alex','fred','oliver','james','guy','david','mark','ryan','gordon','arthur','thomas','aaron','ryan','hideo','takumi','kyoto','tae','kang','daehye','google male','en-GB Male','zh-CN-Male'];
+function _pickVoice(lang, role){
+  if(!_voices.length){ try{ _refreshVoices(); }catch(e){} }
+  if(!_voices.length) return null;
+  let cands = _voices.filter(v => (v.lang||'').replace('_','-').toLowerCase().startsWith(lang.toLowerCase()));
+  if(!cands) cands = _voices.slice();
+  // 排序：先按偏好角色（female/male 关键词），再按 name 长度（短=更可能是系统主力音色）
+  const want = (role === 'male') ? _NICKS_M : (role === 'female' ? _NICKS : null); // role==='auto' 时为 null（中性，不偏向）
+  const score = v => {
+    const nm = (v.name||'').toLowerCase();
+    let s = 0;
+    if(want && want.some(k => nm.includes(k))) s += 10;
+    // 通用知名高质量音色加分
+    if(/natural|neural|premium|enhanced|google/i.test(nm)) s += 5;
+    if(/micro|robot|desktop|espeak|compact/i.test(nm)) s -= 10;
+    s -= Math.min(nm.length, 40) / 100; // 轻微偏好短名
+    return s;
+  };
+  cands = cands.slice().sort((a,b)=>score(b)-score(a));
+  return cands[0] || null;
+}
 function speak(text, slow, forceLang){
   try{
     if(!('speechSynthesis' in window)) return false;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    if(forceLang){ if(slow) {} u.lang = forceLang; if(slow) u.rate = .6; speechSynthesis.speak(u); return true; }
+    const course = (typeof S !== 'undefined') ? S.course : 'ja';
+    const role = (typeof S !== 'undefined' && S.voice) ? S.voice : 'female';
     const hasCJK = /[\u4e00-\u9fff\u3040-\u30ff\u3400-\u4dbf]/.test(text);
-    const hasJapanese = /[\u3040-\u30ff]/.test(text) || (S.course === 'ja' && /^[\x20-\x7E]+$/.test(text) && /[a-z]/i.test(text));
-    u.lang = hasJapanese ? 'ja-JP' : (hasCJK ? 'zh-CN' : 'en-US');
-    if(slow) u.rate = .6;
+    const hasJapanese = /[\u3040-\u30ff]/.test(text) || (course === 'ja' && /^[\x20-\x7E]+$/.test(text) && /[a-z]/i.test(text));
+    u.lang = forceLang || (hasJapanese ? 'ja-JP' : (hasCJK ? 'zh-CN' : 'en-US'));
+    if(slow) u.rate = 0.65;
+    const v = _pickVoice(u.lang, role);
+    if(v){ u.voice = v; u.lang = v.lang || u.lang; }
     speechSynthesis.speak(u);
     return true;
   }catch(e){ return false; }
+}
+/* 试听当前角色（在设置里点按钮调用） */
+function previewVoice(){
+  const lang = (S.course==='ja') ? 'ja-JP' : 'en-US';
+  const sample = (lang==='ja-JP') ? 'こんにちは、みなさん！よろしくね。' : 'Hello there! Nice to meet you.';
+  speak(sample);
+  const v = _pickVoice(lang, S.voice);
+  if(!v){ toast('未检测到 ' + lang + ' 人声，正在用系统默认（建议用 Chrome/Edge 获得最佳音质）'); return; }
+  const nm = (v.name||'').toLowerCase();
+  const premium = /natural|neural|premium|enhanced|google/i.test(nm);
+  toast('🎬 ' + (v.name || v.lang) + (premium ? '（优质音色）' : '（普通音色，建议用 Chrome/Edge）'));
 }
 
 /* ================= UI helpers ================= */
@@ -726,8 +787,24 @@ function renderProfile(){
   for(const a of achs){
     html += `<div class="ach ${a.on?'':'off'}"><div class="ic">${a.ic}</div><div><h5>${a.n}</h5><p>${a.p}</p></div><div style="margin-left:auto;font-weight:900;">${a.on?'✅':'🔒'}</div></div>`;
   }
-  html += `<button class="btn ghost block" style="margin-top:22px;" onclick="resetProgress()">重置进度</button></div>`;
+  const voiceOpts = [
+    {v:'female', ic:'👩', n:'女声', d:'温柔清晰'},
+    {v:'male',   ic:'👨', n:'男声', d:'沉稳有力'},
+    {v:'auto',   ic:'🎲', n:'自动', d:'随系统'}
+  ];
+  html += `<h2 style="font-size:20px;font-weight:900;margin:22px 0 8px;">🔊 语音角色</h2><div class="voice-grid">`;
+  for(const vo of voiceOpts){
+    const on = (S.voice||'female') === vo.v;
+    html += `<button class="voice-opt ${on?'on':''}" onclick="setVoice('${vo.v}')"><span class="vi">${vo.ic}</span><span class="vn">${vo.n}</span><span class="vd">${vo.d}</span>${on?'<span class="vb">✓</span>':''}</button>`;
+  }
+  html += `</div><button class="btn ghost block" style="margin-top:8px;" onclick="previewVoice()">🎬 试听当前角色</button>`;
+  html += `<button class="btn ghost block" style="margin-top:14px;" onclick="resetProgress()">重置进度</button></div>`;
   main.innerHTML = html;
+}
+function setVoice(v){
+  S.voice = v; save();
+  renderProfile();
+  previewVoice();
 }
 function resetProgress(){
   openModal('确定要重置吗？','所有进度和经验都会清空。',()=>{
@@ -914,6 +991,19 @@ function renderBuild(q, area){
 }
 function renderListen(q, area){
   const zhHint = q.zh ? `<div class="zh-mean">🇨🇳 中文：${esc(q.zh)}</div>` : '';
+  // 多角色：同一课里让不同题次用不同角色，模拟真人对话感
+  const _voiceSeq = ['female','male','female','male'];
+  const _roleIdx = (typeof L !== 'undefined' && L) ? (L.idx % _voiceSeq.length) : 0;
+  const _origSpeak = speak;
+  const speakAsRole = (txt, sl, lang) => {
+    const sv = (typeof S !== 'undefined') ? S.voice : 'female';
+    if(sv === 'auto') return _origSpeak(txt, sl, lang);
+    const alt = _voiceSeq[_roleIdx] === sv ? (sv === 'female' ? 'male' : 'female') : sv;
+    if(typeof S !== 'undefined') S.voice = alt;
+    const r = _origSpeak(txt, sl, lang);
+    if(typeof S !== 'undefined') S.voice = sv;
+    return r;
+  };
   let html = `<div class="prompt">${esc(q.q)}</div>
     <button id="audio-btn" title="播放"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"/></svg></button>
     <div style="text-align:center;"><button id="audio-btn-slow" class="btn sm" style="background:var(--purple);box-shadow:0 4px 0 #a568d6;">🐢 慢速</button></div>
@@ -923,10 +1013,10 @@ function renderListen(q, area){
   });
   html += '</div>' + zhHint;
   area.innerHTML = html;
-  const play = ()=>{ if(!speak(q.audio, false, S.course==='ja'?'ja-JP':'en-US')) toast('浏览器不支持朗读，请根据选项作答'); };
+  const play = ()=>{ if(!speakAsRole(q.audio, false, S.course==='ja'?'ja-JP':'en-US')) toast('浏览器不支持朗读，请根据选项作答'); };
   setTimeout(play, 250);
   area.querySelector('#audio-btn').onclick = play;
-  area.querySelector('#audio-btn-slow').onclick = ()=> speak(q.audio, true, S.course==='ja'?'ja-JP':'en-US');
+  area.querySelector('#audio-btn-slow').onclick = ()=> speakAsRole(q.audio, true, S.course==='ja'?'ja-JP':'en-US');
   area.querySelectorAll('.choice').forEach(b=>{
     b.onclick = ()=>{
       if(L.answeredFlag) return;
