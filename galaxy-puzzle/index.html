@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>星轨拼图 · Galaxy Tangram</title>
+<title>星轨拼图 · Galaxy Tangram · 答案模式</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
@@ -37,14 +37,14 @@
     text-align:center; gap:14px; padding:24px; backdrop-filter:blur(4px);
   }
   .overlay h2 { font-size:1.5rem; letter-spacing:2px; }
-  .overlay p { color:#9aa4d0; font-size:.9rem; line-height:1.9; max-width:420px; }
+  .overlay p { color:#9aa4d0; font-size:.9rem; line-height:1.9; max-width:440px; }
   .overlay button {
     background:linear-gradient(135deg,#a855f7,#f0abfc); color:#150a2a; border:none;
     border-radius:999px; padding:12px 36px; font-size:1rem; font-weight:700;
     letter-spacing:2px; cursor:pointer; box-shadow:0 8px 24px rgba(168,85,247,.4);
   }
   .overlay button:hover { filter:brightness(1.1); }
-  .tip { color:#5d6496; font-size:.78rem; margin-top:14px; text-align:center; max-width:560px; line-height:1.8; }
+  .tip { color:#5d6496; font-size:.78rem; margin-top:14px; text-align:center; max-width:620px; line-height:1.8; }
   .toast {
     position:fixed; left:50%; bottom:34px; transform:translateX(-50%);
     background:#171233; border:1px solid #4c3fa0; color:#e7ecff;
@@ -55,8 +55,8 @@
 </head>
 <body>
 
-<h1>🧩 星轨<span>拼图</span></h1>
-<div class="sub">七巧板模式：把散落的星尘板块拖进虚线轮廓，拼出星座图案</div>
+<h1>🧩 星轨<span>拼图</span> · 答案模式</h1>
+<div class="sub">已按图案内置标准解法：点「⚡ 自动归位」看每块的正确位置与方向，再拖散自己拼一遍</div>
 
 <div class="hud">
   <span>🖼 图案 <b id="hLevel">1/8</b></span>
@@ -69,23 +69,28 @@
 <div id="stage">
   <canvas id="cv" width="720" height="520"></canvas>
   <div class="overlay" id="ov">
-    <h2 id="ovTitle">星轨拼图</h2>
-    <p id="ovDesc">7 块星尘碎片散落在左侧碎片盘，右侧是虚线轮廓的目标图案。
-      把碎片拖进对应轮廓：<b style="color:#f0abfc">位置 + 方向都要贴合</b>
-      （点选碎片后按 R 或「↺ 旋转」调整方向），共 8 个星座图案等你解锁。</p>
+    <h2 id="ovTitle">星轨拼图 · 答案模式</h2>
+    <p id="ovDesc">每个星座图案都内置了<b style="color:#f0abfc">标准解法</b>：
+      点工具栏「⚡ 自动归位」，7 块碎片会带颜色飞入正确位置（这就是答案）；
+      点「👁 显示答案」可随时叠加查看答案轮廓；再点「⟲ 重置」拖散自己重拼。</p>
     <button id="ovBtn">开 始 拼 图</button>
   </div>
 </div>
 
 <div class="toolbar">
+  <button id="btnAnswer" aria-label="自动归位显示答案">⚡ 自动归位(答案)</button>
+  <button id="btnShowAns" aria-label="显示答案轮廓">👁 显示答案</button>
   <button id="btnRot" aria-label="旋转选中碎片">↺ 旋转</button>
   <button id="btnHint" aria-label="使用提示">💡 提示</button>
   <button id="btnShuffle" aria-label="重排碎片">🔀 重排</button>
   <button id="btnReset" aria-label="重置本图">⟲ 重置</button>
-  <button id="btnNext" aria-label="下一个图案">下一个图案 ➜</button>
+  <button id="btnNext" aria-label="下一个图案">下一个 ➜</button>
 </div>
 
-<div class="tip">🖱 拖动碎片移动 · 单击选中碎片，再按 R 或「↺ 旋转」· 快捷键 R 旋转 / H 提示 / 空格 下一图 · 支持触屏拖拽</div>
+<div class="tip">
+  ⚡ 自动归位 = 标准答案（位置+方向一次性摆好）· 👁 显示答案 = 叠加答案轮廓参照 ·
+  🖱 拖动移动、单击选中按 R 旋转 · 快捷键：R 旋转 / H 提示 / A 答案 / 空格 下一图 · 支持触屏
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -96,68 +101,82 @@ const GOAL  = { x: 300, y: 14, w: W - 314, h: H - 28 };
 const SNAP = 34;
 const COLORS = ['#f0abfc','#67e8f9','#fcd34d','#86efac','#fca5a5','#a5b4fc','#fdba74'];
 
-/* 七巧板 7 块（局部坐标） */
 const SHAPES = [
-  { name:'大三角', pts:[[0,0],[120,0],[0,120]] },
-  { name:'大三角', pts:[[0,0],[120,0],[120,120]] },
+  { name:'大三角A', pts:[[0,0],[120,0],[0,120]] },
+  { name:'大三角B', pts:[[0,0],[120,0],[120,120]] },
   { name:'中三角', pts:[[0,0],[85,0],[0,85]] },
-  { name:'小三角', pts:[[0,0],[60,0],[0,60]] },
-  { name:'小三角', pts:[[0,0],[60,0],[60,60]] },
-  { name:'方块',   pts:[[0,0],[60,0],[60,60],[0,60]] },
+  { name:'小三角A', pts:[[0,0],[60,0],[0,60]] },
+  { name:'小三角B', pts:[[0,0],[60,0],[60,60]] },
+  { name:'方块', pts:[[0,0],[60,0],[60,60],[0,60]] },
   { name:'平行四边形', pts:[[0,0],[60,0],[90,30],[30,30]] },
 ];
 
-/* 8 个星座目标：7 槽位（x,y 相对拼图区, r 目标旋转） */
+/* 8 图案 × 7 槽位：slot 有 si 字段 = 该槽放哪块碎片 → 标准答案（保证每块形状能贴合轮廓） */
 const LEVELS = [
-  { name:'小熊座', slots:[ {x:70,y:70,r:0},{x:170,y:80,r:1},{x:250,y:130,r:2},{x:70,y:190,r:3},{x:170,y:200,r:1},{x:250,y:250,r:0},{x:140,y:280,r:2} ] },
-  { name:'猎户座', slots:[ {x:90,y:60,r:1},{x:200,y:70,r:0},{x:70,y:160,r:2},{x:170,y:170,r:3},{x:260,y:160,r:1},{x:120,y:260,r:0},{x:220,y:270,r:2} ] },
-  { name:'仙后座', slots:[ {x:60,y:90,r:0},{x:140,y:60,r:1},{x:220,y:100,r:2},{x:120,y:160,r:3},{x:200,y:180,r:1},{x:80,y:240,r:2},{x:240,y:260,r:0} ] },
-  { name:'天琴座', slots:[ {x:150,y:60,r:1},{x:90,y:130,r:0},{x:210,y:130,r:2},{x:150,y:200,r:3},{x:80,y:250,r:1},{x:220,y:250,r:0},{x:150,y:310,r:2} ] },
-  { name:'天鹅座', slots:[ {x:160,y:50,r:0},{x:90,y:120,r:2},{x:230,y:120,r:1},{x:160,y:180,r:3},{x:80,y:240,r:0},{x:240,y:240,r:2},{x:160,y:300,r:1} ] },
-  { name:'双子座', slots:[ {x:90,y:70,r:1},{x:210,y:70,r:0},{x:90,y:170,r:2},{x:210,y:170,r:3},{x:90,y:270,r:0},{x:210,y:270,r:1},{x:150,y:330,r:2} ] },
-  { name:'白羊座', slots:[ {x:70,y:100,r:0},{x:150,y:70,r:1},{x:230,y:110,r:2},{x:110,y:180,r:3},{x:200,y:200,r:1},{x:80,y:260,r:2},{x:240,y:280,r:0} ] },
-  { name:'天龙座', slots:[ {x:80,y:60,r:1},{x:180,y:80,r:0},{x:260,y:140,r:2},{x:130,y:160,r:3},{x:210,y:230,r:1},{x:100,y:260,r:0},{x:200,y:320,r:2} ] },
+  { name:'小熊座', slots:[
+    {si:0,x:85,y:85,r:0},{si:1,x:215,y:100,r:1},{si:2,x:95,y:225,r:2},
+    {si:3,x:215,y:215,r:3},{si:4,x:290,y:290,r:0},{si:5,x:85,y:320,r:1},{si:6,x:235,y:355,r:2} ] },
+  { name:'猎户座', slots:[
+    {si:0,x:100,y:90,r:1},{si:1,x:230,y:80,r:0},{si:2,x:80,y:220,r:2},
+    {si:3,x:195,y:215,r:3},{si:4,x:275,y:150,r:1},{si:5,x:120,y:330,r:0},{si:6,x:255,y:335,r:2} ] },
+  { name:'仙后座', slots:[
+    {si:0,x:80,y:110,r:0},{si:1,x:170,y:80,r:1},{si:2,x:255,y:120,r:2},
+    {si:3,x:150,y:195,r:3},{si:4,x:235,y:215,r:1},{si:5,x:95,y:290,r:2},{si:6,x:260,y:310,r:0} ] },
+  { name:'天琴座', slots:[
+    {si:0,x:170,y:80,r:1},{si:1,x:95,y:155,r:0},{si:2,x:245,y:155,r:2},
+    {si:3,x:170,y:230,r:3},{si:4,x:95,y:300,r:1},{si:5,x:255,y:300,r:0},{si:6,x:170,y:370,r:2} ] },
+  { name:'天鹅座', slots:[
+    {si:0,x:175,y:70,r:0},{si:1,x:95,y:150,r:2},{si:2,x:260,y:150,r:1},
+    {si:3,x:175,y:215,r:3},{si:4,x:90,y:285,r:0},{si:5,x:265,y:285,r:2},{si:6,x:175,y:355,r:1} ] },
+  { name:'双子座', slots:[
+    {si:0,x:105,y:90,r:1},{si:1,x:235,y:90,r:0},{si:2,x:105,y:200,r:2},
+    {si:3,x:235,y:200,r:3},{si:4,x:105,y:310,r:0},{si:5,x:235,y:310,r:1},{si:6,x:170,y:385,r:2} ] },
+  { name:'白羊座', slots:[
+    {si:0,x:90,y:120,r:0},{si:1,x:180,y:85,r:1},{si:2,x:270,y:130,r:2},
+    {si:3,x:130,y:210,r:3},{si:4,x:225,y:230,r:1},{si:5,x:95,y:300,r:2},{si:6,x:265,y:320,r:0} ] },
+  { name:'天龙座', slots:[
+    {si:0,x:95,y:75,r:1},{si:1,x:205,y:95,r:0},{si:2,x:285,y:165,r:2},
+    {si:3,x:150,y:185,r:3},{si:4,x:235,y:255,r:1},{si:5,x:120,y:285,r:0},{si:6,x:225,y:350,r:2} ] },
 ];
 
 /* 状态 */
 let level = 0, score = 0, hints = 3, elapsed = 0, started = false, doneCount = 0;
 let pieces = [];
-let sel = -1, drag = null, dragMoved = false;
+let sel = -1, drag = null;
 let hintIdx = -1, hintT = 0;
+let showAns = false;
 
 function bounds(pts) {
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
   for (const [x,y] of pts) { x0=Math.min(x0,x); y0=Math.min(y0,y); x1=Math.max(x1,x); y1=Math.max(y1,y); }
   return {x0,y0,w:x1-x0,h:y1-y0};
 }
-function rot90(pts, r) {
-  let p = pts.map(a => [...a]);
-  for (let k=0;k<((r%4)+4)%4;k++) p = p.map(([x,y]) => [-y,x]);
-  return p;
-}
+function rot90(pts, r) { let p = pts.map(a=>[...a]); for (let k=0;k<((r%4)+4)%4;k++) p = p.map(([x,y])=>[-y,x]); return p; }
 function shapeAt(sh, x, y, r) {
-  const pts = rot90(sh.pts, r);
-  const b = bounds(pts);
+  const pts = rot90(sh.pts, r), b = bounds(pts);
   return pts.map(([px,py]) => [x + px - b.x0 - b.w/2, y + py - b.y0 - b.h/2]);
 }
-function shuffleArray(a) {
-  for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
-  return a;
-}
+function shuffleArray(a) { for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function slotsOf() { return LEVELS[level].slots; }
 
 function setupLevel() {
   const slots = slotsOf();
-  const order = shuffleArray([0,1,2,3,4,5,6]);
-  pieces = SHAPES.map((sh, i) => ({
-    si: i,
-    x: TRAY.x + 78 + (i % 2) * 118 + (Math.random()*24-12),
-    y: TRAY.y + 90 + Math.floor(i / 2) * 108 + (Math.random()*24-12),
-    rot: Math.floor(Math.random()*4),
-    placed: false,
-    order: order[i],   // 目标槽位
-  }));
-  doneCount = 0; sel = -1; hintIdx = -1; hintT = 0;
+  pieces = SHAPES.map((sh, i) => {
+    const order = slots.findIndex(s => s.si === i);   // 目标槽位
+    return {
+      si: i,
+      x: TRAY.x + 78 + (i % 2) * 118 + (Math.random()*24-12),
+      y: TRAY.y + 90 + Math.floor(i / 2) * 108 + (Math.random()*24-12),
+      rot: Math.floor(Math.random()*4),
+      placed: false,
+      order,            // 目标槽位索引（= 答案）
+      tx: GOAL.x + slots[order].x,   // 答案坐标
+      ty: GOAL.y + slots[order].y,
+      tr: ((slots[order].r % 4) + 4) % 4,   // 答案旋转
+    };
+  });
+  doneCount = 0; sel = -1; hintIdx = -1; hintT = 0; showAns = false;
+  document.getElementById('btnShowAns').textContent = '👁 显示答案';
   updateHud();
 }
 
@@ -167,6 +186,25 @@ function updateHud() {
   document.getElementById('hTime').textContent = Math.floor(elapsed);
   document.getElementById('hScore').textContent = score;
   document.getElementById('hHint').textContent = hints;
+}
+
+/* ⚡ 自动归位：把所有未归位碎片飞到答案位置（标准解法演示） */
+function autoAnswer() {
+  if (!started) started = true;
+  let n = 0;
+  pieces.forEach(pc => {
+    if (pc.placed) return;
+    pc.x = pc.tx; pc.y = pc.ty; pc.rot = pc.tr; pc.placed = true; n++;
+  });
+  doneCount = 7;
+  score += 300;
+  started = false;
+  updateHud();
+  showOv('📖 标准答案',
+    `「<b style="color:#f0abfc">${LEVELS[level].name}</b>」的 7 块碎片已全部归位（位置+方向即为答案）。
+     记住颜色对应关系后点「⟲ 重置」拖散重拼，或点「下一个 ➜」看下一图答案。`,
+    level >= LEVELS.length - 1 ? '🔁 从头看答案' : '下一个图案 ➜');
+  toast('⚡ 已显示标准答案');
 }
 
 /* 输入 */
@@ -199,7 +237,6 @@ cv.addEventListener('pointerdown', e => {
   if (i >= 0) {
     const pc = pieces.splice(i,1)[0]; pieces.push(pc); sel = pieces.length - 1;
     drag = { sx: p.x, sy: p.y, ox: pc.x, oy: pc.y };
-    dragMoved = false;
     cv.setPointerCapture(e.pointerId);
     cv.classList.add('dragging');
   } else sel = -1;
@@ -207,7 +244,6 @@ cv.addEventListener('pointerdown', e => {
 cv.addEventListener('pointermove', e => {
   if (!drag || sel < 0) return;
   const p = evPos(e);
-  if (Math.hypot(p.x - drag.sx, p.y - drag.sy) > 6) dragMoved = true;
   pieces[sel].x = drag.ox + (p.x - drag.sx);
   pieces[sel].y = drag.oy + (p.y - drag.sy);
 });
@@ -216,12 +252,9 @@ cv.addEventListener('pointerup', e => {
   if (!drag || sel < 0) return;
   drag = null;
   const pc = pieces[sel];
-  const slot = slotsOf()[pc.order];
-  const gx = GOAL.x + slot.x, gy = GOAL.y + slot.y;
-  const d = Math.hypot(pc.x - gx, pc.y - gy);
-  const targetRot = ((slot.r % 4) + 4) % 4;
-  if (d < SNAP && pc.rot === targetRot) {
-    pc.x = gx; pc.y = gy; pc.placed = true; doneCount++; score += 120;
+  const d = Math.hypot(pc.x - pc.tx, pc.y - pc.ty);
+  if (d < SNAP && pc.rot === pc.tr) {
+    pc.x = pc.tx; pc.y = pc.ty; pc.placed = true; doneCount++; score += 120;
     toast('✨ 贴合！' + SHAPES[pc.si].name + ' 归位');
     if (doneCount >= 7) {
       score += 500 + Math.max(0, 300 - Math.floor(elapsed));
@@ -231,7 +264,7 @@ cv.addEventListener('pointerup', e => {
         `「<b style="color:#f0abfc">${LEVELS[level].name}</b>」拼图完成！用时 <b style="color:#f0abfc">${Math.floor(elapsed)}s</b>，本关 +500 分。`,
         lastLevel ? '🔁 从头再拼' : '下一个图案 ➜');
     }
-  } else if (d < SNAP && pc.rot !== targetRot) {
+  } else if (d < SNAP && pc.rot !== pc.tr) {
     toast('位置对了但方向不对 —— 点「↺ 旋转」或选中按 R');
   } else if (d < SNAP) {
     toast('差一点点，对准虚线轮廓中心');
@@ -244,6 +277,12 @@ function rotate() {
   if (sel < 0 || pieces[sel].placed) { toast('先点选一个未归位的碎片'); return; }
   pieces[sel].rot = (pieces[sel].rot + 1) % 4;
 }
+document.getElementById('btnAnswer').onclick = autoAnswer;
+document.getElementById('btnShowAns').onclick = () => {
+  showAns = !showAns;
+  document.getElementById('btnShowAns').textContent = showAns ? '🙈 隐藏答案' : '👁 显示答案';
+  toast(showAns ? '👁 已叠加答案轮廓（彩色实线=答案位置）' : '已隐藏答案轮廓');
+};
 document.getElementById('btnRot').onclick = rotate;
 document.getElementById('btnHint').onclick = () => {
   if (hints <= 0) return toast('提示用完了');
@@ -257,14 +296,14 @@ document.getElementById('btnShuffle').onclick = () => {
   pieces = [...rest, ...pieces.filter(p => p.placed)];
   sel = -1; toast('🔀 已重排');
 };
-document.getElementById('btnReset').onclick = () => { setupLevel(); toast('⟲ 已重置本图'); };
+document.getElementById('btnReset').onclick = () => { setupLevel(); toast('⟲ 已拖散重置，自己拼一遍吧'); };
 document.getElementById('btnNext').onclick = () => {
   level = (level + 1) % LEVELS.length; setupLevel(); toast('🖼 ' + LEVELS[level].name);
 };
 document.addEventListener('keydown', e => {
-  if (!started) return;
-  if (e.code === 'KeyR') rotate();
-  if (e.code === 'KeyH') document.getElementById('btnHint').click();
+  if (e.code === 'KeyR' && started) rotate();
+  if (e.code === 'KeyH' && started) document.getElementById('btnHint').click();
+  if (e.code === 'KeyA') autoAnswer();
   if (e.code === 'Space') { e.preventDefault(); document.getElementById('btnNext').click(); }
 });
 
@@ -301,17 +340,22 @@ function draw() {
   ctx.fillStyle = '#8f9ac4';
   ctx.fillText('🧺 碎片盘', TRAY.x + 10, TRAY.y + 22);
   ctx.fillStyle = '#c4b5fd';
-  ctx.fillText('🖼 ' + LEVELS[level].name, GOAL.x + 10, GOAL.y + 22);
+  ctx.fillText('🖼 ' + LEVELS[level].name + (showAns ? '（显示答案）' : ''), GOAL.x + 10, GOAL.y + 22);
 
   const slots = slotsOf();
   slots.forEach((s, k) => {
     const pc = pieces.find(p => p.order === k);
-    const sh = SHAPES[pc ? pc.si : k];
+    const sh = SHAPES[s.si];
     const pts = shapeAt(sh, GOAL.x + s.x, GOAL.y + s.y, s.r);
     const filled = pc && pc.placed;
     drawPoly(pts, filled ? 'rgba(168,85,247,.30)' : 'rgba(91,79,168,.10)',
       filled ? '#f0abfc' : '#5b4fa8', filled ? 2.5 : 1.5, filled ? null : [7,6]);
-    if (!filled) {
+    // 答案叠加：给每块答案轮廓上色（与碎片颜色一致）
+    if (showAns && !filled) {
+      drawPoly(pts, COLORS[s.si] + '33', COLORS[s.si], 2, [5,4]);
+      ctx.fillStyle = COLORS[s.si]; ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(SHAPES[s.si].name, pts[0][0]+5, pts[0][1]+15);
+    } else if (!filled) {
       ctx.fillStyle = '#6d63b8'; ctx.font = '11px sans-serif';
       ctx.fillText(String(k+1), pts[0][0]+5, pts[0][1]+15);
     }
@@ -320,8 +364,7 @@ function draw() {
   if (hintT > 0 && hintIdx >= 0) {
     const pc = pieces[hintIdx];
     if (pc && !pc.placed) {
-      const s = slots[pc.order];
-      const pts = shapeAt(SHAPES[pc.si], GOAL.x + s.x, GOAL.y + s.y, s.r);
+      const pts = shapeAt(SHAPES[pc.si], pc.tx, pc.ty, pc.tr);
       drawPoly(pts, 'rgba(250,113,133,.18)', '#fb7185', 2.5, [6,5]);
     }
   }
@@ -356,7 +399,7 @@ document.getElementById('ovBtn').onclick = () => {
   ov.style.display = 'none';
   if (doneCount >= 7) { level = (level + 1) % LEVELS.length; setupLevel(); }
   started = true;
-  toast('🖼 ' + LEVELS[level].name + '：把 7 块碎片拖进虚线轮廓');
+  toast('🖼 ' + LEVELS[level].name + '：拖碎片拼图，或按 A 直接看答案');
 };
 
 let last = 0;
