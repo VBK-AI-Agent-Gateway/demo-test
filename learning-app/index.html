@@ -107,6 +107,25 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .big-btn{padding:15px 46px;border-radius:14px;background:var(--green);color:#fff;font-size:16px;font-weight:900;letter-spacing:1px;box-shadow:0 5px 0 var(--green-d)}
 .big-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--green-d)}
 .done-screen .big-btn{background:var(--blue);box-shadow:0 5px 0 var(--blue-d)}
+
+/* ---- 多角色选择条 ---- */
+.role-bar{background:#fff;border-bottom:1px solid var(--line);padding:8px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.role-picker{display:flex;gap:8px;min-width:max-content}
+.role-chip{display:flex;align-items:center;gap:8px;border:2px solid var(--line);border-radius:999px;padding:5px 12px 5px 6px;background:#fff;transition:.15s}
+.role-chip.on{border-color:var(--blue);background:#ddf4ff;box-shadow:0 2px 0 var(--blue-d)}
+.role-face{font-size:20px;width:30px;height:30px;border-radius:50%;background:#f2f2f2;display:flex;align-items:center;justify-content:center}
+.role-chip.on .role-face{background:#fff}
+.role-meta{display:flex;flex-direction:column;line-height:1.1;text-align:left}
+.role-meta b{font-size:13px;font-weight:900;color:var(--ink)}
+.role-meta i{font-size:10px;font-style:normal;color:var(--gray);font-weight:700}
+.role-play{width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;margin-left:4px;flex:0 0 auto}
+.role-play:active{transform:scale(.9)}
+/* ---- 反馈朗读气泡 ---- */
+.speak-btn{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);border-bottom-width:3px;border-radius:12px;padding:8px 14px;font-size:14px;font-weight:800;background:#fff;color:var(--ink);margin-top:8px}
+.speak-btn:active{transform:translateY(2px)}
+.footer.good .speak-btn,.footer.bad .speak-btn{border-color:rgba(0,0,0,.15)}
+.slow-btn{background:var(--orange);color:#fff;border:none;box-shadow:0 3px 0 #d97e00}
+.slow-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #d97e00}
 </style>
 </head>
 <body>
@@ -132,6 +151,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
     <div class="bar-wrap"><div class="bar-fill" id="lesson-bar"></div></div>
     <div class="hearts">❤️ <span id="hearts">5</span></div>
   </div>
+  <div class="role-bar"><div class="role-picker" id="role-picker"></div></div>
   <div class="exercise" id="exercise"></div>
   <div class="footer" id="footer">
     <div class="footer-inner">
@@ -367,14 +387,91 @@ function show(id){
   for(let i=0;i<els.length;i++)els[i].classList.remove("active");
   document.getElementById(id).classList.add("active");
 }
-function speak(text){
+/* ================= 多角色音频系统 ================= */
+const VOICES=[
+  // 日语角色
+  {id:"hana",lang:"ja",flag:"🌸",name:"Hana",hint:"温柔女声",pitch:1.15,rate:.82,gender:"female"},
+  {id:"kenji",lang:"ja",flag:"🏯",name:"Kenji",hint:"沉稳男声",pitch:.8,rate:.85,gender:"male"},
+  {id:"yuki",lang:"ja",flag:"❄️",name:"Yuki",hint:"活泼少女",pitch:1.5,rate:.9,gender:"female"},
+  // 英语角色
+  {id:"emma",lang:"en",flag:"🎀",name:"Emma",hint:"清晰女声",pitch:1.1,rate:.8,gender:"female"},
+  {id:"oliver",lang:"en",flag:"🎩",name:"Oliver",hint:"英式男声",pitch:.78,rate:.82,gender:"male"},
+  {id:"liam",lang:"en",flag:"🎧",name:"Liam",hint:"阳光男声",pitch:1.0,rate:.88,gender:"male"}
+];
+let curVoiceId=null;
+function langOf(){return track==="ja"?"ja":"en"}
+function voicesForLang(){return VOICES.filter(v=>v.lang===langOf())}
+function getVoice(){
+  const list=voicesForLang();
+  if(!curVoiceId||!list.find(v=>v.id===curVoiceId))curVoiceId=list[0].id;
+  return list.find(v=>v.id===curVoiceId);
+}
+function setVoice(id){curVoiceId=id;try{localStorage.setItem("langleaf_voice",id)}catch(e){}}
+try{const sv=localStorage.getItem("langleaf_voice");if(sv&&VOICES.find(v=>v.id===sv))curVoiceId=sv}catch(e){}
+function pickSystemVoice(langCode,gender){
+  if(!("speechSynthesis" in window))return null;
+  let all=[];try{all=window.speechSynthesis.getVoices()||[]}catch(e){}
+  if(!all.length)return null;
+  const pref=langCode==="ja"
+    ?[/ja[-_]JP/i,/ja[-_]/i,/Japanese/i]
+    :[/en[-_]US/i,/en[-_]GB/i,/English/i];
+  for(let pi=0;pi<pref.length;pi++){
+    let m=all.filter(v=>pref[pi].test(v.lang||"")||pref[pi].test(v.name||""));
+    if(!m.length)continue;
+    if(gender==="male"){
+      const b=m.filter(v=>/male|daniel|david|oliver|alex|guy|kumiko.*male|男子/i.test(v.name||""));
+      if(b.length)m=b;
+    }else if(gender==="female"){
+      const g=m.filter(v=>/female|woman|samantha|karen|zira|kyoko|haruka|siri|aria|jenny|susan|heami|女/i.test(v.name||""));
+      if(g.length)m=g;
+    }
+    return m[0];
+  }
+  return all[0];
+}
+function speak(text,opts){
+  opts=opts||{};
   try{
     if(!("speechSynthesis" in window))return;
     window.speechSynthesis.cancel();
+    if(!text)return;
+    const role=getVoice();
     const u=new SpeechSynthesisUtterance(text);
-    u.lang=(track==="ja")?"ja-JP":"en-US";u.rate=.85;
+    u.lang=role.lang==="ja"?"ja-JP":"en-US";
+    const rateMul=opts.slow?.62:(opts.fast?1.12:1);
+    u.rate=Math.min(1.6,role.rate*rateMul*(opts.rateMul||1));
+    u.pitch=Math.max(.1,Math.min(2,role.pitch+(opts.pitchAdd||0)));
+    u.volume=opts.volume||1;
+    const sv=pickSystemVoice(role.lang,role.gender);
+    if(sv)u.voice=sv;
+    if(opts.onend){u.onend=opts.onend;u.onerror=opts.onend}
     window.speechSynthesis.speak(u);
   }catch(e){}
+}
+/* 角色选择 UI（学习页顶部） */
+function renderRolePicker(){
+  const box=document.getElementById("role-picker");
+  if(!box)return;
+  const list=voicesForLang();
+  const cur=getVoice();
+  box.innerHTML=list.map(v=>{
+    const greet=langOf()==="ja"?"こんにちは":"Hello";
+    return '<button class="role-chip'+(v.id===cur.id?" on":"")+'" data-vid="'+v.id+'">'+
+    '<span class="role-face">'+v.flag+'</span>'+
+    '<span class="role-meta"><b>'+v.name+'</b><i>'+v.hint+'</i></span>'+
+    '<span class="role-play" data-vid="'+v.id+'">▶</span>'+
+    '</button>';
+  }).join("");
+  const chips=box.querySelectorAll(".role-chip");
+  for(let i=0;i<chips.length;i++){
+    chips[i].addEventListener("click",function(e){
+      const vid=this.getAttribute("data-vid");
+      const role=VOICES.find(v=>v.id===vid);
+      setVoice(vid);renderRolePicker();
+      const greet=langOf()==="ja"?("こんにちは、わたしは"+role.name+"です"):("Hello, I am "+role.name);
+      speak(greet);
+    });
+  }
 }
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t}return a}
 
@@ -397,6 +494,7 @@ function footerState(s){
 }
 function renderExercise(){
   setBar();
+  renderRolePicker();
   document.getElementById("hearts").textContent=lesson.hearts;
   footerState(null);
   lesson.sel=null;lesson.answered=false;
@@ -415,11 +513,11 @@ function renderExercise(){
       '</div>';
     html='<div class="ex-title">'+ex.prompt+'</div>'+
       '<div class="listen-box">'+
-      '<button class="speaker" data-say="'+sp+'">🔊</button>'+
-      '<button class="speaker slow" data-say="'+sp+'">🐢</button>'+
+      '<button class="speaker" data-say="'+sp+'" data-speed="normal">🔊</button>'+
+      '<button class="speaker slow" data-say="'+sp+'" data-speed="slow">🐢</button>'+
       '</div>'+
       '<input class="type-input" id="dict-input" placeholder="在此输入你听到的内容" autocomplete="off" autocapitalize="off">'+
-      '<p style="margin-top:10px;font-size:13px;color:var(--gray)">提示：可反复点击 🔊 播放</p>';
+      '<p style="margin-top:10px;font-size:13px;color:var(--gray)">提示：🔊 常速 · 🐢 慢速，可反复播放；点上方角色可换声音</p>';
   }else if(ex.type==="arrange"){
     lesson.tokens=ex.tokens.map((t,i)=>({t:t,i:i,used:false}));
     html='<div class="ex-title">'+ex.prompt+'</div>'+
@@ -441,7 +539,13 @@ function renderExercise(){
   if(ex.type==="match"){renderList("ml",lesson.matchLeft,true);renderList("mr",lesson.matchRight,false)}
   if(ex.type==="dict")setTimeout(function(){const el=document.getElementById("dict-input");if(el)el.focus()},50);
   const spBtns=box.querySelectorAll("[data-say]");
-  for(let i=0;i<spBtns.length;i++)spBtns[i].onclick=function(){speak(this.getAttribute("data-say"))};
+  for(let i=0;i<spBtns.length;i++)spBtns[i].onclick=function(){
+    const sp2=this.getAttribute("data-say");
+    const spd=this.getAttribute("data-speed");
+    if(spd==="slow")speak(sp2,{slow:true});
+    else if(spd==="fast")speak(sp2,{fast:true});
+    else speak(sp2);
+  };
   document.getElementById("btn-check").classList.toggle("ready",ex.type==="mc"||ex.type==="arrange");
 }
 function pickChoice(i){
@@ -450,6 +554,8 @@ function pickChoice(i){
   const bs=document.querySelectorAll(".choice");
   for(let j=0;j<bs.length;j++)bs[j].classList.toggle("sel",j===i);
   document.getElementById("btn-check").classList.add("ready");
+  const ex=lesson.exs[lesson.idx];
+  if(ex.type==="mc"&&ex.choices[i]&&ex.choices[i].say)speak(ex.choices[i].say,{fast:true});
 }
 function renderList(id,arr,isLeft){
   const el=document.getElementById(id);
@@ -542,7 +648,17 @@ function onCheck(){
   document.getElementById("fb-title").textContent=ok?"回答正确":"再试一次，记住了";
   document.getElementById("fb-detail").textContent=detail;
   const say=ex.say||(ex.type==="arrange"?ex.answer.replace(/\s+/g," "):null);
-  if(say)speak(say);
+  const fbText=document.getElementById("fb-text");
+  const oldBtn=fbText.querySelector(".speak-btn");
+  if(oldBtn)oldBtn.remove();
+  if(say){
+    const btn=document.createElement("button");
+    btn.className="speak-btn";
+    btn.innerHTML="🔊 朗读 "+(ok?"":"正确答案");
+    btn.onclick=function(){speak(say)};
+    fbText.appendChild(btn);
+    if(ok)speak(say);else speak(say,{slow:true});
+  }
   setBar();
 }
 function nextExercise(){
@@ -573,6 +689,10 @@ document.addEventListener("keydown",function(e){
   }
 });
 renderTree();
+if("speechSynthesis" in window){
+  window.speechSynthesis.onvoiceschanged=function(){renderRolePicker()};
+  setTimeout(function(){window.speechSynthesis.getVoices()},50);
+}
 </script>
 </body>
 </html>
