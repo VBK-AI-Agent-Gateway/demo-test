@@ -31,7 +31,7 @@ function loadState() {
       const raw = fs.readFileSync(DB_FILE, 'utf8');
       if (raw.trim()) state = Object.assign(state, JSON.parse(raw));
     }
-  } catch (e) { /* ignore corrupt, start fresh */ }
+  } catch (e) { /* 忽略损坏的数据文件，重新初始化 */ }
 }
 function saveState() {
   const tmp = DB_FILE + '.tmp';
@@ -84,7 +84,7 @@ function authUser(req) {
   const m = /^Bearer\s+(.+)$/i.exec(h);
   if (!m) return null;
   const uid = state.tokens[m[1]];
-  return uid != null ? uid : null;
+  return uid !== null && uid !== undefined ? uid : null;
 }
 function findUserByName(name) { return state.users.find(u => u.username === name); }
 function findUser(id) { return state.users.find(u => u.id === id); }

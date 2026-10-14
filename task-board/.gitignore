@@ -1,0 +1,7 @@
+.tools/
+node_modules/
+.t2
+.tsc_out.log
+dist/
+*.log
+__pycache__/

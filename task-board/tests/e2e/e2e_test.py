@@ -7,7 +7,8 @@
      登录 / 表单校验 / 错误提示 / 注册建账号 / 项目空态 / 建项目 /
      任务空态 / 建任务 / 任务改状态(待办->进行中->已完成) / 基本可访问性
 
-运行：python3 e2e_test.py   （退出码 0 = 全部通过）
+运行：python3 tests/e2e/e2e_test.py   （退出码 0 = 全部通过）
+前置：先执行 npm run build 生成 dist/
 """
 import os
 import subprocess
@@ -17,7 +18,7 @@ import urllib.request
 
 from playwright.sync_api import sync_playwright
 
-HERE = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else os.getcwd()
+HERE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) if "__file__" in globals() else os.getcwd()
 API = 8791
 APIU = "http://127.0.0.1:%d" % API
 
@@ -33,9 +34,10 @@ def ck(name, cond, detail=""):
 def start_backend():
     env = dict(os.environ, PORT=str(API),
                DB_FILE=os.path.join(HERE, "e2e_data.json"))
+    env.setdefault("SERVE_DIR", os.path.join(HERE, "dist"))
     if os.path.exists(env["DB_FILE"]):
         os.remove(env["DB_FILE"])
-    proc = subprocess.Popen(["node", os.path.join(HERE, "server.js")],
+    proc = subprocess.Popen(["node", os.path.join(HERE, "src", "server.js")],
                             env=env, cwd=HERE,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     for _ in range(50):
