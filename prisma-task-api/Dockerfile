@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install dependencies first for layer caching
 COPY package.json ./
-RUN npm install --omit=dev=false
+RUN npm install
 
 COPY prisma ./prisma
 COPY src ./src

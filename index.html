@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>prisma-task-api · Express + Prisma + PostgreSQL CRUD API</title>
 <style>
-  :root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--fg:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922}
+  :root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--fg:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--yellow:#d29922}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 -apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}
   header{padding:48px 24px 32px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#161b22,#0d1117)}
@@ -23,11 +23,9 @@
   pre code{background:none;padding:0}
   .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;margin-right:6px}
   .ok{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.4)}
-  .warn{background:rgba(210,153,34,.15);color:var(--yellow);border:1px solid rgba(210,153,34,.4)}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
   .card{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:14px}
   .card b{display:block;margin-bottom:6px;color:var(--accent)}
-  ul{padding-left:20px}
   footer{color:var(--muted);text-align:center;padding:24px;font-size:13px}
   @media(max-width:640px){h1{font-size:22px}table{font-size:13px}pre{font-size:12px}}
 </style>
@@ -141,7 +139,7 @@ curl -X DELETE http://localhost:3000/api/tasks/&lt;TASK_UUID&gt;</code></pre>
     <div class="card"><b>更新</b>PUT 部分更新生效；未知 id → 404</div>
     <div class="card"><b>删除</b>DELETE → 204，随后 GET → 404</div>
     <div class="card"><b>分页</b>25 条数据 page1/2/3 切片正确、total/totalPages、page=0 与 pageSize&gt;100 → 400、相邻页无重叠</div>
-    <div class="card"><b>搜索</b>q 大小写不敏感、命中总数正确、无结果返回空列表；status/priority/projectId 过滤</div>
+    <div class="card"><b>搜索</b>q 大小写不敏感、命中总数正确、无结果返回空列表；status/projectId 过滤</div>
   </div>
 </section>
 

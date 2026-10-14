@@ -1,4 +1,4 @@
-# docker-compose.test.yml — spins up Postgres, migrates, seeds, then runs Supertest suite
+# docker-compose.test.yml — spins up Postgres, migrates, then runs the Supertest suite
 services:
   db:
     image: postgres:16-alpine
