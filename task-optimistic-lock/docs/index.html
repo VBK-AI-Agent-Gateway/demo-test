@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>task-optimistic-lock · 任务乐观锁（409 并发冲突）</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--fg:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 -apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}
+  header{padding:48px 24px 32px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#161b22,#0d1117)}
+  h1{margin:0 0 8px;font-size:28px}
+  .sub{color:var(--muted);max-width:920px}
+  main{max-width:980px;margin:0 auto;padding:32px 24px 80px}
+  section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:24px}
+  h2{margin-top:0;font-size:20px;border-left:3px solid var(--accent);padding-left:10px}
+  h3{font-size:16px;color:var(--accent);margin:22px 0 8px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#21262d}
+  code{background:#21262d;border-radius:4px;padding:2px 6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+  pre{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:14px;overflow:auto}
+  pre code{background:none;padding:0}
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;margin:0 6px 6px 0}
+  .ok{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.4)}
+  .bad{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.4)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
+  .card{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:14px}
+  .card b{display:block;margin-bottom:6px;color:var(--accent)}
+  .flow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;padding:12px 0}
+  .node{background:#0d1117;border:1px solid var(--accent);border-radius:8px;padding:10px 14px;text-align:center;font-size:13px}
+  .node.bad{border-color:var(--red)}
+  .node.good{border-color:var(--green)}
+  .arrow{color:var(--muted);font-size:18px}
+  footer{color:var(--muted);text-align:center;padding:24px;font-size:13px}
+  @media(max-width:640px){h1{font-size:22px}table{font-size:13px}pre{font-size:12px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>task-optimistic-lock</h1>
+  <div class="sub">任务更新的<b>乐观锁 / 版本号</b>实现：更新必须携带读到的 <code>version</code>，服务端原子 CAS 比对——并发冲突返回 <b style="color:var(--red)">409 Conflict</b>，前端弹出「任务已被他人修改，请刷新」并提供一键刷新。附并发测试（两个请求同时改同一任务 → 一 200 一 409）。</div>
+  <p>
+    <span class="tag ok">version 字段乐观锁</span>
+    <span class="tag ok">原子 CAS UPDATE</span>
+    <span class="tag bad">409 CONFLICT</span>
+    <span class="tag ok">前端刷新提示</span>
+    <span class="tag ok">并发集成测试</span>
+    <span class="tag ok">docker compose up</span>
+  </p>
+</header>
+
+<main>
+<section>
+  <h2>冲突检测流程</h2>
+  <div class="flow">
+    <div class="node">读任务<br>拿到 <code>version=3</code></div>
+    <div class="arrow">→</div>
+    <div class="node">PUT 带 <code>version:3</code></div>
+    <div class="arrow">→</div>
+    <div class="node"><code>UPDATE ... WHERE id=? AND version=3</code></div>
+    <div class="arrow">→</div>
+    <div class="node good">changes=1<br>✅ 200 · version→4</div>
+    <div class="node bad">changes=0<br>❌ 409 CONFLICT</div>
+  </div>
+  <div class="flow">
+    <div class="node bad">并发写者先改了行<br>version 已变 4</div>
+    <div class="arrow">→</div>
+    <div class="node bad">409 + details:<br>expectedVersion / currentVersion / task</div>
+    <div class="arrow">→</div>
+    <div class="node">前端 toast<br>「任务已被他人修改」</div>
+    <div class="arrow">→</div>
+    <div class="node good">⟳ 刷新拿 v4<br>再提交</div>
+  </div>
+</section>
+
+<section>
+  <h2>409 响应信封</h2>
+<pre><code>HTTP/1.1 409 Conflict
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "Version conflict: this task was modified by another request. Refresh to get the latest version.",
+    "details": {
+      "expectedVersion": 3,
+      "currentVersion": 4,
+      "task": { "id": "t-...", "title": "最新的标题", "version": 4 }
+    }
+  }
+}</code></pre>
+  <p>校验失败（缺 version / 非法字段）→ <code>400 BAD_REQUEST</code>；未知任务 → <code>404 NOT_FOUND</code>。全部统一信封 <code>{error:{code,message,details?}}</code>。</p>
+</section>
+
+<section>
+  <h2>快速启动</h2>
+<pre><code># 起 API + 看板（SQLite 持久化 + 种子）
+docker compose up --build
+# 看板 UI:  http://localhost:3000/
+# API 索引: http://localhost:3000/api
+
+# 跑并发测试（两条验收）
+npm install &amp;&amp; npm test
+# 或
+docker compose --profile test run --rm test
+
+# 手动验证 409
+curl -X PUT http://localhost:3000/api/tasks/t-1 \
+  -H 'content-type: application/json' -d '{"version":1,"title":"A"}'   # 200
+curl -X PUT http://localhost:3000/api/tasks/t-1 \
+  -H 'content-type: application/json' -d '{"version":1,"title":"B"}'   # 409</code></pre>
+</section>
+
+<section>
+  <h2>API</h2>
+  <table>
+    <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+    <tr><td>GET</td><td><code>/api/tasks</code></td><td>列表（<code>page</code> <code>pageSize</code> <code>q</code>），每项含 <code>version</code></td></tr>
+    <tr><td>GET</td><td><code>/api/tasks/:id</code></td><td>详情（含 <code>version</code>）</td></tr>
+    <tr><td>POST</td><td><code>/api/tasks</code></td><td>创建 <code>{title, description?, status?}</code>，version=1</td></tr>
+    <tr><td>PUT</td><td><code>/api/tasks/:id</code></td><td><b>必须带 version</b>；不匹配 → 409；缺省 → 400；成功 → version+1</td></tr>
+    <tr><td>DELETE</td><td><code>/api/tasks/:id?version=N</code></td><td>带版本守卫删除；不匹配 → 409；204 成功</td></tr>
+    <tr><td>GET</td><td><code>/health</code> · <code>/api</code></td><td>健康检查 · 端点索引</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>并发测试覆盖（Jest + Supertest）</h2>
+  <div class="grid">
+    <div class="card"><b>① 两个请求同时改同一任务</b><code>Promise.all</code> 发两个携带相同 version 的 PUT → 断言状态码集合恰为 <code>{200, 409}</code>；赢家 version+1；输家信封含 expectedVersion/currentVersion；最终 DB version 只 +1、title 为赢家写入值</div>
+    <div class="card"><b>② 5 写者踩踏</b>5 个同 version 请求并发 → 恰好 1 个 200、4 个 409、version 只 +1（CAS 只允许单个胜者）</div>
+    <div class="card"><b>③ 正常路径</b>正确 version → 200 且 version+1；过期 version → 409 且 details.currentVersion 正确；缺 version → 400；未知 id → 404</div>
+    <div class="card"><b>④ 带版本删除</b>过期 ?version → 409；正确 → 204 后 GET 404</div>
+  </div>
+</section>
+
+<section>
+  <h2>前端（看板 UI）</h2>
+  <div class="grid">
+    <div class="card"><b>409 提示</b>更新失败弹 toast「⚠️ 409 版本冲突 · 任务已被他人修改（当前版本 vN），请刷新获取最新版本后再改」，按钮 <b>⟳ 刷新并重试</b> / <b>仅刷新</b></div>
+    <div class="card"><b>⚡ 模拟并发冲突</b>一键对同一任务同时发两个相同 version 的 PUT，直观展示 200 / 409 与刷新提示</div>
+    <div class="card"><b>乐观并发操作</b>编辑标题 / 推进状态 / 带版本删除，全部回传读到的 version，冲突时统一走刷新流程</div>
+    <div class="card"><b>零依赖单文件</b><code>public/index.html</code>（原生 fetch + CSS，无框架、无需构建）</div>
+  </div>
+</section>
+
+<section>
+  <h2>目录结构</h2>
+<pre><code>src/
+  db.js                 # SQLite 建表 + version 列迁移 + 种子
+  routes/tasks.js       # 乐观锁 CAS 更新（核心）+ 列表分页搜索
+  middleware/error.js   # 统一错误信封 + 409 CONFLICT
+  middleware/validate.js# zod 校验（updateBody.version 必填）
+  app.js  server.js
+public/index.html       # 任务看板（409 刷新提示 + 并发演示）
+tests/tasks.test.js     # 并发测试（一 200 一 409 / 5 写者踩踏）
+docker-compose.yml      # api（+ test profile）
+Dockerfile  README.md  jest.config.js  package.json  .env.example</code></pre>
+</section>
+
+<section>
+  <h2>技术栈</h2>
+  <p>Node 20 · Express 4 · better-sqlite3（进程内原子 CAS，无需外部服务）· zod 3 · Jest + Supertest 7 · Docker Compose</p>
+</section>
+</main>
+
+<footer>task-optimistic-lock · 交付说明页（GitHub Pages）</footer>
+</body>
+</html>

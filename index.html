@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>notify-queue · BullMQ 通知队列（重试 + 死信）</title>
+<title>task-optimistic-lock · 任务乐观锁（409 并发冲突）</title>
 <style>
   :root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--fg:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922}
   *{box-sizing:border-box}
@@ -23,12 +23,14 @@
   pre code{background:none;padding:0}
   .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;margin:0 6px 6px 0}
   .ok{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.4)}
+  .bad{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.4)}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
   .card{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:14px}
   .card b{display:block;margin-bottom:6px;color:var(--accent)}
   .flow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;padding:12px 0}
   .node{background:#0d1117;border:1px solid var(--accent);border-radius:8px;padding:10px 14px;text-align:center;font-size:13px}
-  .node.dlq{border-color:var(--red)}
+  .node.bad{border-color:var(--red)}
+  .node.good{border-color:var(--green)}
   .arrow{color:var(--muted);font-size:18px}
   footer{color:var(--muted);text-align:center;padding:24px;font-size:13px}
   @media(max-width:640px){h1{font-size:22px}table{font-size:13px}pre{font-size:12px}}
@@ -36,120 +38,131 @@
 </head>
 <body>
 <header>
-  <h1>notify-queue</h1>
-  <div class="sub">BullMQ + Redis 的<b>通知队列</b>（模拟邮件 / 站内信）：失败自动重试（指数退避）、最大重试次数、<b>死信队列</b>，附 Express 管理 API 与 Jest 集成测试。</div>
+  <h1>task-optimistic-lock</h1>
+  <div class="sub">任务更新的<b>乐观锁 / 版本号</b>实现：更新必须携带读到的 <code>version</code>，服务端原子 CAS 比对——并发冲突返回 <b style="color:var(--red)">409 Conflict</b>，前端弹出「任务已被他人修改，请刷新」并提供一键刷新。附并发测试（两个请求同时改同一任务 → 一 200 一 409）。</div>
   <p>
-    <span class="tag ok">自动重试 · 指数退避</span>
-    <span class="tag ok">最大次数 MAX_ATTEMPTS</span>
-    <span class="tag ok">死信队列 notifications-dlq</span>
-    <span class="tag ok">统一错误信封</span>
+    <span class="tag ok">version 字段乐观锁</span>
+    <span class="tag ok">原子 CAS UPDATE</span>
+    <span class="tag bad">409 CONFLICT</span>
+    <span class="tag ok">前端刷新提示</span>
+    <span class="tag ok">并发集成测试</span>
     <span class="tag ok">docker compose up</span>
   </p>
 </header>
 
 <main>
 <section>
-  <h2>消息流</h2>
+  <h2>冲突检测流程</h2>
   <div class="flow">
-    <div class="node">POST /api/notifications<br>入队</div>
+    <div class="node">读任务<br>拿到 <code>version=3</code></div>
     <div class="arrow">→</div>
-    <div class="node">Queue<br><code>notifications</code></div>
+    <div class="node">PUT 带 <code>version:3</code></div>
     <div class="arrow">→</div>
-    <div class="node">Worker 消费<br>email / inapp 投递</div>
+    <div class="node"><code>UPDATE ... WHERE id=? AND version=3</code></div>
     <div class="arrow">→</div>
-    <div class="node">✅ completed</div>
+    <div class="node good">changes=1<br>✅ 200 · version→4</div>
+    <div class="node bad">changes=0<br>❌ 409 CONFLICT</div>
   </div>
   <div class="flow">
-    <div class="node">❌ 投递失败</div>
+    <div class="node bad">并发写者先改了行<br>version 已变 4</div>
     <div class="arrow">→</div>
-    <div class="node">指数退避重试<br>500ms · 1s · 2s …</div>
+    <div class="node bad">409 + details:<br>expectedVersion / currentVersion / task</div>
     <div class="arrow">→</div>
-    <div class="node">耗尽 MAX_ATTEMPTS<br>state=failed</div>
+    <div class="node">前端 toast<br>「任务已被他人修改」</div>
     <div class="arrow">→</div>
-    <div class="node dlq">💀 死信队列<br><code>notifications-dlq</code></div>
-    <div class="arrow">→</div>
-    <div class="node">POST …/retry<br>可重投</div>
+    <div class="node good">⟳ 刷新拿 v4<br>再提交</div>
   </div>
 </section>
 
 <section>
+  <h2>409 响应信封</h2>
+<pre><code>HTTP/1.1 409 Conflict
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "Version conflict: this task was modified by another request. Refresh to get the latest version.",
+    "details": {
+      "expectedVersion": 3,
+      "currentVersion": 4,
+      "task": { "id": "t-...", "title": "最新的标题", "version": 4 }
+    }
+  }
+}</code></pre>
+  <p>校验失败（缺 version / 非法字段）→ <code>400 BAD_REQUEST</code>；未知任务 → <code>404 NOT_FOUND</code>。全部统一信封 <code>{error:{code,message,details?}}</code>。</p>
+</section>
+
+<section>
   <h2>快速启动</h2>
-<pre><code># 起 Redis + API(:3000) + Worker
+<pre><code># 起 API + 看板（SQLite 持久化 + 种子）
 docker compose up --build
+# 看板 UI:  http://localhost:3000/
+# API 索引: http://localhost:3000/api
 
-# 入队通知
-curl -X POST http://localhost:3000/api/notifications \
-  -H 'content-type: application/json' \
-  -d '{"channel":"email","to":"a@example.com","subject":"Hi","body":"Hello"}'
+# 跑并发测试（两条验收）
+npm install &amp;&amp; npm test
+# 或
+docker compose --profile test run --rm test
 
-# 任务状态 / 队列统计 / 死信列表 / 死信重投
-curl http://localhost:3000/api/notifications/&lt;JOB_ID&gt;
-curl http://localhost:3000/api/notifications
-curl http://localhost:3000/api/dead-letters
-curl -X POST http://localhost:3000/api/dead-letters/&lt;DLQ_ID&gt;/retry
-
-# 跑集成测试（Redis + Jest）
-docker compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from test</code></pre>
+# 手动验证 409
+curl -X PUT http://localhost:3000/api/tasks/t-1 \
+  -H 'content-type: application/json' -d '{"version":1,"title":"A"}'   # 200
+curl -X PUT http://localhost:3000/api/tasks/t-1 \
+  -H 'content-type: application/json' -d '{"version":1,"title":"B"}'   # 409</code></pre>
 </section>
 
 <section>
   <h2>API</h2>
   <table>
     <tr><th>方法</th><th>路径</th><th>说明</th></tr>
-    <tr><td>GET</td><td><code>/health</code></td><td>健康检查（含队列名 / DLQ 名 / 最大次数）</td></tr>
-    <tr><td>GET</td><td><code>/api</code></td><td>端点索引</td></tr>
-    <tr><td>POST</td><td><code>/api/notifications</code></td><td>入队 <code>{channel: email|inapp, to, subject?, body?, failTimes?, alwaysFail?}</code></td></tr>
-    <tr><td>GET</td><td><code>/api/notifications</code></td><td>队列统计 waiting/active/delayed/completed/failed</td></tr>
-    <tr><td>GET</td><td><code>/api/notifications/:id</code></td><td>任务状态（state/attempts/deadLettered/reason）</td></tr>
-    <tr><td>GET</td><td><code>/api/dead-letters</code></td><td>死信列表（DLQ 队列 + 主队列耗尽任务）</td></tr>
-    <tr><td>POST</td><td><code>/api/dead-letters/:id/retry</code></td><td>死信重投（清除失败注入后重新入队）</td></tr>
-    <tr><td>GET</td><td><code>/api/deliveries</code></td><td>内存投递日志（demo）</td></tr>
+    <tr><td>GET</td><td><code>/api/tasks</code></td><td>列表（<code>page</code> <code>pageSize</code> <code>q</code>），每项含 <code>version</code></td></tr>
+    <tr><td>GET</td><td><code>/api/tasks/:id</code></td><td>详情（含 <code>version</code>）</td></tr>
+    <tr><td>POST</td><td><code>/api/tasks</code></td><td>创建 <code>{title, description?, status?}</code>，version=1</td></tr>
+    <tr><td>PUT</td><td><code>/api/tasks/:id</code></td><td><b>必须带 version</b>；不匹配 → 409；缺省 → 400；成功 → version+1</td></tr>
+    <tr><td>DELETE</td><td><code>/api/tasks/:id?version=N</code></td><td>带版本守卫删除；不匹配 → 409；204 成功</td></tr>
+    <tr><td>GET</td><td><code>/health</code> · <code>/api</code></td><td>健康检查 · 端点索引</td></tr>
   </table>
-  <h3>统一错误信封</h3>
-<pre><code>{ "error": { "code": "BAD_REQUEST", "message": "Validation failed", "details": {} } }</code></pre>
 </section>
 
 <section>
-  <h2>重试与死信配置</h2>
+  <h2>并发测试覆盖（Jest + Supertest）</h2>
   <div class="grid">
-    <div class="card"><b>自动重试</b><code>backoff: { type: 'exponential', delay: 500 }</code> → 500ms、1s、2s、4s…（上限 30s）</div>
-    <div class="card"><b>最大次数</b><code>MAX_ATTEMPTS</code>（默认 3，env 可调）。耗尽后 BullMQ 标记 <code>failed</code> 并保留记录</div>
-    <div class="card"><b>死信双保险</b>① 主队列 <code>failed</code> set；② Worker <code>failed</code> 事件把耗尽任务复制进独立队列 <code>notifications-dlq</code>，API 可列表 / 重投</div>
-    <div class="card"><b>失败注入（测试用）</b><code>failTimes: N</code> 前 N 次失败后成功（验证重试）；<code>alwaysFail: true</code> 永远失败（验证死信）</div>
+    <div class="card"><b>① 两个请求同时改同一任务</b><code>Promise.all</code> 发两个携带相同 version 的 PUT → 断言状态码集合恰为 <code>{200, 409}</code>；赢家 version+1；输家信封含 expectedVersion/currentVersion；最终 DB version 只 +1、title 为赢家写入值</div>
+    <div class="card"><b>② 5 写者踩踏</b>5 个同 version 请求并发 → 恰好 1 个 200、4 个 409、version 只 +1（CAS 只允许单个胜者）</div>
+    <div class="card"><b>③ 正常路径</b>正确 version → 200 且 version+1；过期 version → 409 且 details.currentVersion 正确；缺 version → 400；未知 id → 404</div>
+    <div class="card"><b>④ 带版本删除</b>过期 ?version → 409；正确 → 204 后 GET 404</div>
   </div>
 </section>
 
 <section>
-  <h2>集成测试覆盖（Jest）</h2>
+  <h2>前端（看板 UI）</h2>
   <div class="grid">
-    <div class="card"><b>① 正常消费</b>email / inapp 任务入队 → Worker 消费 → <code>state=completed</code>、投递日志记录；API 入队 201、非法 payload 400 信封</div>
-    <div class="card"><b>② 失败重试</b><code>failTimes=MAX_ATTEMPTS-1</code> → 前几次失败、指数退避重试 → 最终成功，<code>attemptsMade≥N</code>；校验 <code>opts.attempts/backoff</code></div>
-    <div class="card"><b>③ 进入死信</b><code>alwaysFail</code> 耗尽次数 → <code>state=failed</code> + <code>failedReason</code> → 出现在 <code>/api/dead-letters</code> → 复制进 <code>notifications-dlq</code> → <code>deadLettered=true</code> → 重投后成功</div>
-    <div class="card"><b>队列统计</b><code>GET /api/notifications</code> 返回 counts 与 maxAttempts</div>
+    <div class="card"><b>409 提示</b>更新失败弹 toast「⚠️ 409 版本冲突 · 任务已被他人修改（当前版本 vN），请刷新获取最新版本后再改」，按钮 <b>⟳ 刷新并重试</b> / <b>仅刷新</b></div>
+    <div class="card"><b>⚡ 模拟并发冲突</b>一键对同一任务同时发两个相同 version 的 PUT，直观展示 200 / 409 与刷新提示</div>
+    <div class="card"><b>乐观并发操作</b>编辑标题 / 推进状态 / 带版本删除，全部回传读到的 version，冲突时统一走刷新流程</div>
+    <div class="card"><b>零依赖单文件</b><code>public/index.html</code>（原生 fetch + CSS，无框架、无需构建）</div>
   </div>
 </section>
 
 <section>
   <h2>目录结构</h2>
 <pre><code>src/
-  queues.js           # 队列工厂：重试策略 / MAX_ATTEMPTS / DLQ 队列
-  worker.js           # Worker 消费：模拟 email/inapp 投递 + 失败注入 + DLQ 转发
-  redis.js            # ioredis 连接（BullMQ 命令/阻塞双连接）
-  app.js              # Express 管理 API（可注入 queue/dlq 便于测试）
-  server.js           # 启动入口（零依赖 .env 读取）
-  middleware/error.js # ApiError + 统一错误信封
-tests/queue.test.js   # 三条验收的集成测试
-docker-compose.yml    # redis + api + worker
-docker-compose.test.yml # redis + jest
+  db.js                 # SQLite 建表 + version 列迁移 + 种子
+  routes/tasks.js       # 乐观锁 CAS 更新（核心）+ 列表分页搜索
+  middleware/error.js   # 统一错误信封 + 409 CONFLICT
+  middleware/validate.js# zod 校验（updateBody.version 必填）
+  app.js  server.js
+public/index.html       # 任务看板（409 刷新提示 + 并发演示）
+tests/tasks.test.js     # 并发测试（一 200 一 409 / 5 写者踩踏）
+docker-compose.yml      # api（+ test profile）
 Dockerfile  README.md  jest.config.js  package.json  .env.example</code></pre>
 </section>
 
 <section>
   <h2>技术栈</h2>
-  <p>Node 20 · BullMQ 5 · Redis 7 · Express 4 · ioredis 5 · zod 3 · Jest + Supertest 7 · Docker Compose</p>
+  <p>Node 20 · Express 4 · better-sqlite3（进程内原子 CAS，无需外部服务）· zod 3 · Jest + Supertest 7 · Docker Compose</p>
 </section>
 </main>
 
-<footer>notify-queue · 交付说明页（GitHub Pages）</footer>
+<footer>task-optimistic-lock · 交付说明页（GitHub Pages）</footer>
 </body>
 </html>
