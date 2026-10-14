@@ -1,0 +1,29 @@
+# docker-compose.test.yml — spins up Postgres, migrates, seeds, then runs Supertest suite
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: taskdb_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d taskdb_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/taskdb_test?schema=public
+      NODE_ENV: test
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "npm install &&
+             npx prisma migrate deploy &&
+             npx jest --runInBand --forceExit"

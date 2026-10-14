@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>prisma-task-api · Express + Prisma + PostgreSQL CRUD API</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--fg:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 -apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}
+  header{padding:48px 24px 32px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#161b22,#0d1117)}
+  h1{margin:0 0 8px;font-size:28px}
+  .sub{color:var(--muted);max-width:900px}
+  main{max-width:980px;margin:0 auto;padding:32px 24px 80px}
+  section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:24px}
+  h2{margin-top:0;font-size:20px;border-left:3px solid var(--accent);padding-left:10px}
+  h3{font-size:16px;color:var(--accent);margin:22px 0 8px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#21262d}
+  code{background:#21262d;border-radius:4px;padding:2px 6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+  pre{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:14px;overflow:auto}
+  pre code{background:none;padding:0}
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;margin-right:6px}
+  .ok{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.4)}
+  .warn{background:rgba(210,153,34,.15);color:var(--yellow);border:1px solid rgba(210,153,34,.4)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .card{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:14px}
+  .card b{display:block;margin-bottom:6px;color:var(--accent)}
+  ul{padding-left:20px}
+  footer{color:var(--muted);text-align:center;padding:24px;font-size:13px}
+  @media(max-width:640px){h1{font-size:22px}table{font-size:13px}pre{font-size:12px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>prisma-task-api</h1>
+  <div class="sub">Express + Prisma + PostgreSQL 的 <b>Project / Task CRUD API</b>：zod 输入校验、统一错误信封、分页、搜索、Prisma 迁移与种子数据、Supertest 集成测试、docker compose 一键启动。</div>
+  <p>
+    <span class="tag ok">验证: zod</span>
+    <span class="tag ok">错误: 统一信封</span>
+    <span class="tag ok">分页 + 搜索</span>
+    <span class="tag ok">迁移 + 种子</span>
+    <span class="tag ok">Supertest 集成测试</span>
+    <span class="tag ok">docker compose up</span>
+  </p>
+</header>
+
+<main>
+<section>
+  <h2>快速启动</h2>
+<pre><code># 启动 PostgreSQL + 迁移 + 种子 + API（端口 3000）
+docker compose up --build
+
+# 跑 Supertest 集成测试（容器内起 Postgres 并执行 Jest）
+docker compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from api
+
+# 本地开发
+cp .env.example .env
+npm install
+npx prisma migrate deploy
+npm run seed
+npm run dev</code></pre>
+</section>
+
+<section>
+  <h2>API 端点</h2>
+  <h3>Projects</h3>
+  <table>
+    <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+    <tr><td>GET</td><td><code>/api/projects</code></td><td>列表 · query: <code>page</code> <code>pageSize</code>(≤100) <code>q</code></td></tr>
+    <tr><td>GET</td><td><code>/api/projects/:id</code></td><td>详情（含 tasks）</td></tr>
+    <tr><td>POST</td><td><code>/api/projects</code></td><td>创建 <code>{name, description?}</code></td></tr>
+    <tr><td>PUT</td><td><code>/api/projects/:id</code></td><td>部分更新</td></tr>
+    <tr><td>DELETE</td><td><code>/api/projects/:id</code></td><td>删除（级联删任务）</td></tr>
+  </table>
+  <h3>Tasks</h3>
+  <table>
+    <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+    <tr><td>GET</td><td><code>/api/tasks</code></td><td>列表 · query: <code>page</code> <code>pageSize</code> <code>q</code> <code>status</code> <code>priority</code> <code>projectId</code></td></tr>
+    <tr><td>GET</td><td><code>/api/tasks/:id</code></td><td>详情（含 project）</td></tr>
+    <tr><td>POST</td><td><code>/api/tasks</code></td><td>创建 <code>{title, projectId, status?, priority?, dueDate?, description?}</code></td></tr>
+    <tr><td>PUT</td><td><code>/api/tasks/:id</code></td><td>部分更新</td></tr>
+    <tr><td>DELETE</td><td><code>/api/tasks/:id</code></td><td>删除</td></tr>
+  </table>
+  <p><code>GET /health</code> 健康检查 · <code>GET /api</code> 端点索引</p>
+</section>
+
+<section>
+  <h2>响应与错误信封</h2>
+  <div class="grid">
+    <div class="card"><b>列表响应</b><pre><code>{
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "pageSize": 10,
+    "total": 25,
+    "totalPages": 3
+  }
+}</code></pre></div>
+    <div class="card"><b>统一错误</b><pre><code>{
+  "error": {
+    "code": "BAD_REQUEST",
+    "message": "Validation failed",
+    "details": { "fieldErrors": {} }
+  }
+}</code></pre>
+    <p style="color:var(--muted);margin:6px 0 0">400 BAD_REQUEST · 404 NOT_FOUND · 422 VALIDATION_ERROR · 500 INTERNAL_ERROR</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>curl 示例</h2>
+<pre><code># 创建项目
+curl -X POST http://localhost:3000/api/projects \
+  -H 'content-type: application/json' \
+  -d '{"name":"Demo","description":"A demo project"}'
+
+# 分页 + 搜索
+curl 'http://localhost:3000/api/projects?page=1&amp;pageSize=5&amp;q=demo'
+
+# 创建任务
+curl -X POST http://localhost:3000/api/tasks \
+  -H 'content-type: application/json' \
+  -d '{"title":"Write docs","projectId":"&lt;PROJECT_UUID&gt;","priority":"HIGH"}'
+
+# 更新任务状态
+curl -X PUT http://localhost:3000/api/tasks/&lt;TASK_UUID&gt; \
+  -H 'content-type: application/json' \
+  -d '{"status":"DONE"}'
+
+# 删除
+curl -X DELETE http://localhost:3000/api/tasks/&lt;TASK_UUID&gt;</code></pre>
+</section>
+
+<section>
+  <h2>集成测试覆盖（Supertest）</h2>
+  <div class="grid">
+    <div class="card"><b>创建</b>项目/任务 201；缺 name/title、空字符串、非法枚举、未知 projectId → 400 信封</div>
+    <div class="card"><b>查询</b>按 id 返回详情含关联；未知 id → 404 信封；非法 uuid → 400</div>
+    <div class="card"><b>更新</b>PUT 部分更新生效；未知 id → 404</div>
+    <div class="card"><b>删除</b>DELETE → 204，随后 GET → 404</div>
+    <div class="card"><b>分页</b>25 条数据 page1/2/3 切片正确、total/totalPages、page=0 与 pageSize&gt;100 → 400、相邻页无重叠</div>
+    <div class="card"><b>搜索</b>q 大小写不敏感、命中总数正确、无结果返回空列表；status/priority/projectId 过滤</div>
+  </div>
+</section>
+
+<section>
+  <h2>目录结构</h2>
+<pre><code>src/
+  app.js                # express app 工厂（测试可直接挂载）
+  server.js             # 启动入口（内置零依赖 .env 读取）
+  lib/prisma.js         # Prisma 单例
+  middleware/validate.js# zod 校验中间件（body/query/params）
+  middleware/error.js   # ApiError + 404 + 统一错误处理 + Prisma 错误映射
+  routes/projects.js    # Project CRUD + 分页 + 搜索
+  routes/tasks.js       # Task CRUD + 分页 + 搜索 + 过滤
+prisma/
+  schema.prisma         # Project / Task + 枚举 + 索引
+  seed.js               # 3 项目 / 12 任务种子
+  migrations/           # prisma migrate 生成的迁移
+tests/api.test.js       # Supertest 集成测试
+docker-compose.yml      # db + api（healthcheck 后 migrate deploy + seed）
+docker-compose.test.yml # db + jest
+Dockerfile  README.md  jest.config.js  package.json</code></pre>
+</section>
+
+<section>
+  <h2>技术栈</h2>
+  <p>Node 20 · Express 4 · Prisma 5 · PostgreSQL 16 · zod 3 · Jest + Supertest 7 · Docker Compose</p>
+</section>
+</main>
+
+<footer>prisma-task-api · 交付说明页（GitHub Pages）</footer>
+</body>
+</html>
