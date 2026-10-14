@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>notify-queue · BullMQ 通知队列（重试 + 死信）</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--fg:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 -apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}
+  header{padding:48px 24px 32px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#161b22,#0d1117)}
+  h1{margin:0 0 8px;font-size:28px}
+  .sub{color:var(--muted);max-width:920px}
+  main{max-width:980px;margin:0 auto;padding:32px 24px 80px}
+  section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:24px}
+  h2{margin-top:0;font-size:20px;border-left:3px solid var(--accent);padding-left:10px}
+  h3{font-size:16px;color:var(--accent);margin:22px 0 8px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#21262d}
+  code{background:#21262d;border-radius:4px;padding:2px 6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+  pre{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:14px;overflow:auto}
+  pre code{background:none;padding:0}
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;margin:0 6px 6px 0}
+  .ok{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.4)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
+  .card{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:14px}
+  .card b{display:block;margin-bottom:6px;color:var(--accent)}
+  .flow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;padding:12px 0}
+  .node{background:#0d1117;border:1px solid var(--accent);border-radius:8px;padding:10px 14px;text-align:center;font-size:13px}
+  .node.dlq{border-color:var(--red)}
+  .arrow{color:var(--muted);font-size:18px}
+  footer{color:var(--muted);text-align:center;padding:24px;font-size:13px}
+  @media(max-width:640px){h1{font-size:22px}table{font-size:13px}pre{font-size:12px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>notify-queue</h1>
+  <div class="sub">BullMQ + Redis 的<b>通知队列</b>（模拟邮件 / 站内信）：失败自动重试（指数退避）、最大重试次数、<b>死信队列</b>，附 Express 管理 API 与 Jest 集成测试。</div>
+  <p>
+    <span class="tag ok">自动重试 · 指数退避</span>
+    <span class="tag ok">最大次数 MAX_ATTEMPTS</span>
+    <span class="tag ok">死信队列 notifications-dlq</span>
+    <span class="tag ok">统一错误信封</span>
+    <span class="tag ok">docker compose up</span>
+  </p>
+</header>
+
+<main>
+<section>
+  <h2>消息流</h2>
+  <div class="flow">
+    <div class="node">POST /api/notifications<br>入队</div>
+    <div class="arrow">→</div>
+    <div class="node">Queue<br><code>notifications</code></div>
+    <div class="arrow">→</div>
+    <div class="node">Worker 消费<br>email / inapp 投递</div>
+    <div class="arrow">→</div>
+    <div class="node">✅ completed</div>
+  </div>
+  <div class="flow">
+    <div class="node">❌ 投递失败</div>
+    <div class="arrow">→</div>
+    <div class="node">指数退避重试<br>500ms · 1s · 2s …</div>
+    <div class="arrow">→</div>
+    <div class="node">耗尽 MAX_ATTEMPTS<br>state=failed</div>
+    <div class="arrow">→</div>
+    <div class="node dlq">💀 死信队列<br><code>notifications-dlq</code></div>
+    <div class="arrow">→</div>
+    <div class="node">POST …/retry<br>可重投</div>
+  </div>
+</section>
+
+<section>
+  <h2>快速启动</h2>
+<pre><code># 起 Redis + API(:3000) + Worker
+docker compose up --build
+
+# 入队通知
+curl -X POST http://localhost:3000/api/notifications \
+  -H 'content-type: application/json' \
+  -d '{"channel":"email","to":"a@example.com","subject":"Hi","body":"Hello"}'
+
+# 任务状态 / 队列统计 / 死信列表 / 死信重投
+curl http://localhost:3000/api/notifications/&lt;JOB_ID&gt;
+curl http://localhost:3000/api/notifications
+curl http://localhost:3000/api/dead-letters
+curl -X POST http://localhost:3000/api/dead-letters/&lt;DLQ_ID&gt;/retry
+
+# 跑集成测试（Redis + Jest）
+docker compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from test</code></pre>
+</section>
+
+<section>
+  <h2>API</h2>
+  <table>
+    <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+    <tr><td>GET</td><td><code>/health</code></td><td>健康检查（含队列名 / DLQ 名 / 最大次数）</td></tr>
+    <tr><td>GET</td><td><code>/api</code></td><td>端点索引</td></tr>
+    <tr><td>POST</td><td><code>/api/notifications</code></td><td>入队 <code>{channel: email|inapp, to, subject?, body?, failTimes?, alwaysFail?}</code></td></tr>
+    <tr><td>GET</td><td><code>/api/notifications</code></td><td>队列统计 waiting/active/delayed/completed/failed</td></tr>
+    <tr><td>GET</td><td><code>/api/notifications/:id</code></td><td>任务状态（state/attempts/deadLettered/reason）</td></tr>
+    <tr><td>GET</td><td><code>/api/dead-letters</code></td><td>死信列表（DLQ 队列 + 主队列耗尽任务）</td></tr>
+    <tr><td>POST</td><td><code>/api/dead-letters/:id/retry</code></td><td>死信重投（清除失败注入后重新入队）</td></tr>
+    <tr><td>GET</td><td><code>/api/deliveries</code></td><td>内存投递日志（demo）</td></tr>
+  </table>
+  <h3>统一错误信封</h3>
+<pre><code>{ "error": { "code": "BAD_REQUEST", "message": "Validation failed", "details": {} } }</code></pre>
+</section>
+
+<section>
+  <h2>重试与死信配置</h2>
+  <div class="grid">
+    <div class="card"><b>自动重试</b><code>backoff: { type: 'exponential', delay: 500 }</code> → 500ms、1s、2s、4s…（上限 30s）</div>
+    <div class="card"><b>最大次数</b><code>MAX_ATTEMPTS</code>（默认 3，env 可调）。耗尽后 BullMQ 标记 <code>failed</code> 并保留记录</div>
+    <div class="card"><b>死信双保险</b>① 主队列 <code>failed</code> set；② Worker <code>failed</code> 事件把耗尽任务复制进独立队列 <code>notifications-dlq</code>，API 可列表 / 重投</div>
+    <div class="card"><b>失败注入（测试用）</b><code>failTimes: N</code> 前 N 次失败后成功（验证重试）；<code>alwaysFail: true</code> 永远失败（验证死信）</div>
+  </div>
+</section>
+
+<section>
+  <h2>集成测试覆盖（Jest）</h2>
+  <div class="grid">
+    <div class="card"><b>① 正常消费</b>email / inapp 任务入队 → Worker 消费 → <code>state=completed</code>、投递日志记录；API 入队 201、非法 payload 400 信封</div>
+    <div class="card"><b>② 失败重试</b><code>failTimes=MAX_ATTEMPTS-1</code> → 前几次失败、指数退避重试 → 最终成功，<code>attemptsMade≥N</code>；校验 <code>opts.attempts/backoff</code></div>
+    <div class="card"><b>③ 进入死信</b><code>alwaysFail</code> 耗尽次数 → <code>state=failed</code> + <code>failedReason</code> → 出现在 <code>/api/dead-letters</code> → 复制进 <code>notifications-dlq</code> → <code>deadLettered=true</code> → 重投后成功</div>
+    <div class="card"><b>队列统计</b><code>GET /api/notifications</code> 返回 counts 与 maxAttempts</div>
+  </div>
+</section>
+
+<section>
+  <h2>目录结构</h2>
+<pre><code>src/
+  queues.js           # 队列工厂：重试策略 / MAX_ATTEMPTS / DLQ 队列
+  worker.js           # Worker 消费：模拟 email/inapp 投递 + 失败注入 + DLQ 转发
+  redis.js            # ioredis 连接（BullMQ 命令/阻塞双连接）
+  app.js              # Express 管理 API（可注入 queue/dlq 便于测试）
+  server.js           # 启动入口（零依赖 .env 读取）
+  middleware/error.js # ApiError + 统一错误信封
+tests/queue.test.js   # 三条验收的集成测试
+docker-compose.yml    # redis + api + worker
+docker-compose.test.yml # redis + jest
+Dockerfile  README.md  jest.config.js  package.json  .env.example</code></pre>
+</section>
+
+<section>
+  <h2>技术栈</h2>
+  <p>Node 20 · BullMQ 5 · Redis 7 · Express 4 · ioredis 5 · zod 3 · Jest + Supertest 7 · Docker Compose</p>
+</section>
+</main>
+
+<footer>notify-queue · 交付说明页（GitHub Pages）</footer>
+</body>
+</html>
