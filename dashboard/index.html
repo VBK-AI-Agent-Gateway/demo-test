@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="PulseBoard - 响应式 SaaS 数据仪表盘演示，含 KPI、趋势图表与最近活动。" />
+  <title>PulseBoard · 响应式数据仪表盘</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主内容</a>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">◆</span>
+        <span class="brand-name">PulseBoard</span>
+      </div>
+
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="sidebar" aria-label="打开导航菜单">
+        <span class="bar" aria-hidden="true"></span>
+        <span class="bar" aria-hidden="true"></span>
+        <span class="bar" aria-hidden="true"></span>
+      </button>
+
+      <nav class="top-actions" aria-label="顶部工具">
+        <label class="search" for="searchInput">
+          <span class="sr-only">搜索</span>
+          <input id="searchInput" type="search" placeholder="搜索指标、报表…" />
+        </label>
+        <button class="avatar" type="button" aria-label="用户菜单：李小明">明</button>
+      </nav>
+    </header>
+
+    <nav class="sidebar" id="sidebar" aria-label="主导航">
+      <ul class="nav-list">
+        <li><a class="nav-link is-active" href="#main" aria-current="page"><span aria-hidden="true">▦</span> 总览</a></li>
+        <li><a class="nav-link" href="#kpis"><span aria-hidden="true">◈</span> 关键指标</a></li>
+        <li><a class="nav-link" href="#trend"><span aria-hidden="true">◠</span> 趋势分析</a></li>
+        <li><a class="nav-link" href="#activity"><span aria-hidden="true">≣</span> 最近活动</a></li>
+        <li><a class="nav-link" href="#footer"><span aria-hidden="true">⚙</span> 设置</a></li>
+      </ul>
+    </nav>
+
+    <main class="main" id="main" tabindex="-1">
+      <section class="hero" aria-labelledby="heroTitle">
+        <div>
+          <h1 id="heroTitle">运营总览</h1>
+          <p class="muted">欢迎回来，李小明。以下是过去 7 天的关键数据。</p>
+        </div>
+        <div class="hero-actions">
+          <button class="btn btn-ghost" type="button">导出 CSV</button>
+          <button class="btn btn-primary" type="button">生成报表</button>
+        </div>
+      </section>
+
+      <section class="kpis" id="kpis" aria-label="关键指标">
+        <article class="card kpi">
+          <p class="kpi-label">总收入</p>
+          <p class="kpi-value">¥1,284,530</p>
+          <p class="kpi-delta up">▲ 12.4% 环比</p>
+        </article>
+        <article class="card kpi">
+          <p class="kpi-label">活跃用户</p>
+          <p class="kpi-value">48,210</p>
+          <p class="kpi-delta up">▲ 6.8% 环比</p>
+        </article>
+        <article class="card kpi">
+          <p class="kpi-label">转化率</p>
+          <p class="kpi-value">3.72%</p>
+          <p class="kpi-delta down">▼ 0.4pt 环比</p>
+        </article>
+        <article class="card kpi">
+          <p class="kpi-label">平均客单价</p>
+          <p class="kpi-value">¥266</p>
+          <p class="kpi-delta up">▲ 2.1% 环比</p>
+        </article>
+      </section>
+
+      <section class="charts" aria-label="图表">
+        <article class="card chart-card" id="trend" aria-labelledby="trendTitle">
+          <h2 id="trendTitle">收入趋势（近 7 天）</h2>
+          <div class="chart" role="img" aria-label="折线图：近 7 天收入从 12 万增长到 21 万">
+            <svg viewBox="0 0 560 220" preserveAspectRatio="none" aria-hidden="true">
+              <g class="grid">
+                <line x1="40" y1="20" x2="540" y2="20" />
+                <line x1="40" y1="70" x2="540" y2="70" />
+                <line x1="40" y1="120" x2="540" y2="120" />
+                <line x1="40" y1="170" x2="540" y2="170" />
+                <line x1="40" y1="200" x2="540" y2="200" />
+              </g>
+              <polyline class="line" points="40,160 123,140 206,150 289,110 372,95 455,70 540,45" />
+              <g class="dots">
+                <circle cx="40" cy="160" r="4" /><circle cx="123" cy="140" r="4" />
+                <circle cx="206" cy="150" r="4" /><circle cx="289" cy="110" r="4" />
+                <circle cx="372" cy="95" r="4" /><circle cx="455" cy="70" r="4" />
+                <circle cx="540" cy="45" r="4" />
+              </g>
+            </svg>
+            <ul class="x-axis" aria-hidden="true">
+              <li>周一</li><li>周二</li><li>周三</li><li>周四</li><li>周五</li><li>周六</li><li>周日</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="card chart-card" aria-labelledby="channelTitle">
+          <h2 id="channelTitle">渠道分布（本周）</h2>
+          <div class="chart bars" role="img" aria-label="柱状图：自然流量 68，付费广告 52，社交 40，邮件 28，其它 16">
+            <div class="bar-row"><span>自然</span><div class="bar-track"><div class="bar-fill" style="--w:68%"></div></div><b>68</b></div>
+            <div class="bar-row"><span>广告</span><div class="bar-track"><div class="bar-fill" style="--w:52%"></div></div><b>52</b></div>
+            <div class="bar-row"><span>社交</span><div class="bar-track"><div class="bar-fill" style="--w:40%"></div></div><b>40</b></div>
+            <div class="bar-row"><span>邮件</span><div class="bar-track"><div class="bar-fill" style="--w:28%"></div></div><b>28</b></div>
+            <div class="bar-row"><span>其它</span><div class="bar-track"><div class="bar-fill" style="--w:16%"></div></div><b>16</b></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="card table-card" id="activity" aria-labelledby="activityTitle">
+        <h2 id="activityTitle">最近活动</h2>
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">最近 6 条团队活动记录</caption>
+            <thead>
+              <tr><th scope="col">时间</th><th scope="col">成员</th><th scope="col">事件</th><th scope="col">状态</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>09:41</td><td>王芳</td><td>发布 v2.3 版本公告</td><td><span class="badge ok">成功</span></td></tr>
+              <tr><td>09:12</td><td>陈杰</td><td>导出 Q3 财务报表</td><td><span class="badge ok">成功</span></td></tr>
+              <tr><td>08:57</td><td>刘婷</td><td>同步 CRM 客户数据</td><td><span class="badge warn">进行中</span></td></tr>
+              <tr><td>08:33</td><td>赵磊</td><td>新增 3 个渠道跟踪</td><td><span class="badge ok">成功</span></td></tr>
+              <tr><td>08:20</td><td>孙悦</td><td>重置 API 密钥</td><td><span class="badge err">失败</span></td></tr>
+              <tr><td>07:58</td><td>周涛</td><td>备份生产数据库</td><td><span class="badge ok">成功</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer" id="footer">
+      <p>© 2025 PulseBoard 演示项目 · 语义化 HTML + 三档断点 + 无后端</p>
+    </footer>
+  </div>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
