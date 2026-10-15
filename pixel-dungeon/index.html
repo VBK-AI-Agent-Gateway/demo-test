@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>像素地牢探险 · Pixel Dungeon</title>
+<style>
+  :root{
+    --bg:#0a0d1a;--panel:#131a30;--line:#2a3560;--fg:#e9eeff;--muted:#94a3d0;
+    --accent:#ffb020;--accent2:#ff5d73;--good:#2ee6a6;--hp:#ff5d73;--mp:#4f8cff;
+    --wall:#26304f;--wall2:#1b2340;--floor:#0f1428;--gold:#ffc53d;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{
+    background:radial-gradient(900px 500px at 50% -10%, rgba(255,176,32,.12), transparent 60%),
+               radial-gradient(700px 600px at 80% 120%, rgba(79,140,255,.12), transparent 60%), var(--bg);
+    color:var(--fg);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-user-select:none;user-select:none;overflow:hidden;touch-action:manipulation;
+  }
+  header{text-align:center;padding:12px 12px 6px}
+  h1{font-size:clamp(21px,5vw,32px);margin:0;letter-spacing:2px;font-weight:900;
+     background:linear-gradient(90deg,#ffd98a,#ff9d3d);-webkit-background-clip:text;background-clip:text;color:transparent;
+     text-shadow:0 0 22px rgba(255,176,32,.35)}
+  .sub{color:var(--muted);font-size:13px;letter-spacing:2px}
+
+  #wrap{display:flex;flex-direction:column;align-items:center;gap:9px;padding:2px 10px 8px;width:100%;max-width:640px}
+
+  /* status bars */
+  .bars{display:flex;gap:8px;width:100%;max-width:560px;justify-content:center;flex-wrap:wrap}
+  .bar{flex:1;min-width:130px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 11px}
+  .bar .lab{font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+  .bar .lab b{color:var(--fg);font-variant-numeric:tabular-nums}
+  .track{height:9px;border-radius:6px;background:#0a0f1f;margin-top:5px;overflow:hidden;border:1px solid var(--line)}
+  .track i{display:block;height:100%;border-radius:6px;transition:width .2s}
+  .track.hp i{background:linear-gradient(90deg,#ff7a5c,var(--hp))}
+  .track.mp i{background:linear-gradient(90deg,#6aa8ff,var(--mp))}
+  .track.xp i{background:linear-gradient(90deg,#ffd98a,var(--accent))}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;padding:7px 13px;font-weight:800;font-variant-numeric:tabular-nums}
+  .chip .g{color:var(--gold)}
+  .stat-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+
+  /* game board */
+  #boardWrap{position:relative;width:min(94vw,52vh,560px);aspect-ratio:1;
+    background:var(--floor);border:2px solid var(--line);border-radius:14px;overflow:hidden;
+    box-shadow:0 0 0 4px rgba(255,176,32,.06),0 22px 55px rgba(0,0,0,.6),inset 0 0 50px rgba(0,0,0,.6)}
+  canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+
+  /* log */
+  #log{width:min(94vw,560px);max-height:74px;overflow-y:auto;background:rgba(6,9,20,.72);
+    border:1px solid var(--line);border-radius:10px;padding:7px 11px;font-size:12.5px;color:var(--muted);line-height:1.5}
+  #log div{padding:1px 0}
+  #log .hi{color:var(--accent)} #log .bad{color:var(--accent2)} #log .ok{color:var(--good)}
+
+  /* overlay */
+  #overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:13px;background:rgba(3,5,12,.86);backdrop-filter:blur(6px);text-align:center;padding:18px;z-index:5}
+  #overlay.hide{display:none}
+  #overlay .big{font-size:clamp(24px,7vw,40px);font-weight:900;letter-spacing:2px;
+    background:linear-gradient(90deg,#ffd98a,#ff9d3d);-webkit-background-clip:text;background-clip:text;color:transparent}
+  #overlay .msg{color:var(--muted);max-width:330px;font-size:14px}
+  #overlay .score{font-size:18px;color:#fff} #overlay .score b{color:var(--gold);font-size:28px}
+  .btn{border:none;cursor:pointer;border-radius:999px;font-weight:800;font-size:16px;padding:13px 32px;
+    background:linear-gradient(120deg,var(--accent),#ff8a3d);color:#2a1500;
+    box-shadow:0 10px 26px rgba(255,138,61,.4);transition:transform .06s}
+  .btn:active{transform:translateY(2px)}
+  .btn.ghost{background:transparent;border:2px solid var(--line);color:var(--fg);box-shadow:none;padding:11px 24px}
+  .btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+  /* toolbar */
+  .toolbar{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
+  .tool{background:var(--panel);border:1px solid var(--line);color:var(--fg);border-radius:999px;
+    padding:8px 15px;font-size:13.5px;cursor:pointer}
+  .tool:active{background:rgba(255,176,32,.25)}
+  .tool.on{background:linear-gradient(120deg,var(--accent),#ff8a3d);color:#2a1500;font-weight:800;border-color:transparent}
+
+  .hint{color:var(--muted);font-size:12.5px;text-align:center;line-height:1.7}
+  kbd{background:rgba(255,176,32,.15);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12px;color:#ffe0a0}
+
+  .err{display:none;background:rgba(255,93,93,.14);border:1px solid rgba(255,93,93,.5);color:#ffb3b3;
+    padding:9px 14px;border-radius:10px;font-size:13.5px;max-width:560px;margin:6px auto}
+  .err[hidden]{display:none}
+
+  /* touch dpad */
+  #touch{display:none;grid-template-columns:repeat(3,62px);grid-template-rows:repeat(3,56px);gap:8px;justify-content:center}
+  #touch button{border:1px solid var(--line);background:var(--panel);color:var(--fg);font-size:23px;
+    border-radius:13px;cursor:pointer;box-shadow:0 5px 13px rgba(0,0,0,.4)}
+  #touch button:active{background:rgba(255,176,32,.35)}
+  #touch .up{grid-area:1/2}#touch .left{grid-area:2/1}#touch .a{grid-area:2/2;background:rgba(255,176,32,.2);font-size:16px;font-weight:800}
+  #touch .right{grid-column:3;grid-row:2}#touch .down{grid-area:3/2}
+  @media (hover:none) and (pointer:coarse){ #touch{display:grid} }
+
+  @media (max-width:640px){
+    #boardWrap{width:min(95vw,48vh,460px)}
+    header{padding:9px 8px 4px} .sub{font-size:11.5px}
+    .chip{padding:6px 11px;font-size:14px}
+    .bar{min-width:120px;padding:6px 9px}
+    #touch{grid-template-columns:repeat(3,56px);grid-template-rows:repeat(3,52px)}
+    .tool{padding:7px 13px;font-size:13px}
+  }
+  @media (max-width:420px){
+    #boardWrap{width:min(96vw,42vh,380px)}
+    #log{max-height:64px}
+    h1{letter-spacing:1px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>像素地牢探险</h1>
+  <div class="sub">PIXEL DUNGEON · 探索 · 战斗 · 夺宝</div>
+</header>
+
+<div id="err" class="err" hidden></div>
+
+<div id="wrap">
+  <div class="bars">
+    <div class="bar"><div class="lab"><span>生命 HP</span><b id="hpTxt">100/100</b></div>
+      <div class="track hp"><i id="hpBar" style="width:100%"></i></div></div>
+    <div class="bar"><div class="lab"><span>法力 MP</span><b id="mpTxt">50/50</b></div>
+      <div class="track mp"><i id="mpBar" style="width:100%"></i></div></div>
+    <div class="bar"><div class="lab"><span>经验 Lv.<span id="lvTxt">1</span></span><b id="xpTxt">0/40</b></div>
+      <div class="track xp"><i id="xpBar" style="width:0%"></i></div></div>
+  </div>
+  <div class="stat-row">
+    <span class="chip">💰 <span class="g" id="gold">0</span></span>
+    <span class="chip">🗡 攻 <span id="atk">12</span></span>
+    <span class="chip">🛡 防 <span id="def">3</span></span>
+    <span class="chip">🗺 层数 <span id="depth">1</span></span>
+    <span class="chip">💀 击杀 <span id="kills">0</span></span>
+  </div>
+
+  <div id="boardWrap">
+    <canvas id="game"></canvas>
+    <div id="overlay">
+      <div class="big" id="ovTitle">像素地牢探险</div>
+      <div class="msg" id="ovMsg">在随机地牢中探索，击败史莱姆与骷髅，捡起药水与宝箱，下楼梯深入更深层。<br>移动会触发战斗，走到门/楼梯可推进。</div>
+      <div class="score" id="ovScore" style="display:none">得分 <b id="ovFinal">0</b></div>
+      <div class="btns">
+        <button class="btn" id="btnStart">开始冒险</button>
+        <button class="btn ghost" id="btnSound" style="display:none">音效：开</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="log" aria-live="polite"></div>
+
+  <div class="toolbar">
+    <button class="tool" id="tPotion">🧪 药水(0)</button>
+    <button class="tool" id="tRest">😴 休息</button>
+    <button class="tool" id="tMap">👁 视野</button>
+    <button class="tool" id="tSound">音效：开</button>
+    <button class="tool" id="tRestart">↺ 重开</button>
+  </div>
+
+  <div id="touch">
+    <button class="up" data-d="up" aria-label="上">▲</button>
+    <button class="left" data-d="left" aria-label="左">◀</button>
+    <button class="a" data-d="act" aria-label="行动">门</button>
+    <button class="right" data-d="right" aria-label="右">▶</button>
+    <button class="down" data-d="down" aria-label="下">▼</button>
+  </div>
+
+  <div class="hint">
+    键盘：<kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 或 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动 ·
+    <kbd>空格</kbd> 与脚下互动(门/楼梯) · <kbd>H</kbd> 喝药水 · <kbd>R</kbd> 休息 · <kbd>N</kbd> 重开<br>
+    手机：滑动 / 点方向键 · 走到宝箱自动拾取 · 撞怪自动战斗
+  </div>
+</div>
+
+<script>
+"use strict";
+(function(){
+try{
+/* ================= error guard ================= */
+const errBox=document.getElementById("err");
+function showErr(m){ if(errBox){errBox.hidden=false; errBox.textContent="⚠ "+m;} }
+window.addEventListener("error",e=>showErr("运行错误: "+(e.message||"unknown")));
+window.addEventListener("unhandledrejection",()=>showErr("发生了一个错误，游戏仍可继续。"));
+
+/* ================= config ================= */
+const N=15;                    // grid size (15x15)
+const LS="pixel_dungeon_best";
+const WALL=0, FLOOR=1, DOOR=2, STAIRS=3, CHEST=4;
+let best=0; try{best=parseInt(localStorage.getItem(LS)||"0",10)||0;}catch(e){best=0;}
+let fovFull=false;             // 视野全开 cheat/toggle
+let soundOn=true;
+let started=false, paused=false, dead=false;
+
+/* ================= audio ================= */
+let actx=null;
+function beep(f,d,type){ if(!soundOn)return; try{
+  if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==="suspended")actx.resume();
+  const o=actx.createOscillator(),g=actx.createGain();
+  o.type=type||"square"; o.frequency.value=f;
+  g.gain.setValueAtTime(.0001,actx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.13,actx.currentTime+.01);
+  g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+d);
+  o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+d+.02);
+}catch(e){}}
+
+/* ================= state ================= */
+let map=[];        // 2D tile grid
+let seen=[];       // fog of war (visited)
+let vis=[];        // currently visible
+let px,py;         // player pos
+let player, enemies, items, depth, kills, gold, turnMsgs;
+let particles=[];
+
+function rnd(n){return Math.floor(Math.random()*n);}
+
+/* ============ dungeon generation (rooms + corridors) ============ */
+function genMap(){
+  // start all walls
+  map=[]; seen=[]; vis=[];
+  for(let y=0;y<N;y++){ map.push(new Array(N).fill(WALL)); seen.push(new Array(N).fill(false)); vis.push(new Array(N).fill(false)); }
+  const rooms=[];
+  const roomCount=5+rnd(3);
+  for(let t=0;t<40 && rooms.length<roomCount;t++){
+    const w=3+rnd(3), h=3+rnd(3);
+    const x=1+rnd(N-w-2), y=1+rnd(N-h-2);
+    let ok=true;
+    for(const r of rooms){ if(x<r.x+r.w+1 && x+w+1>r.x && y<r.y+r.h+1 && y+h+1>r.y){ok=false;break;} }
+    if(!ok) continue;
+    rooms.push({x,y,w,h});
+    for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++) map[yy][xx]=FLOOR;
+  }
+  // carve corridors between consecutive rooms
+  for(let i=1;i<rooms.length;i++){
+    const a={x:Math.floor(rooms[i-1].x+rooms[i-1].w/2), y:Math.floor(rooms[i-1].y+rooms[i-1].h/2)};
+    const b={x:Math.floor(rooms[i].x+rooms[i].w/2), y:Math.floor(rooms[i].y+rooms[i].h/2)};
+    let x=a.x,y=a.y;
+    while(x!==b.x){ map[y][x]=map[y][x]===WALL?FLOOR:map[y][x]; x+= x<b.x?1:-1; }
+    while(y!==b.y){ map[y][x]=map[y][x]===WALL?FLOOR:map[y][x]; y+= y<b.y?1:-1; }
+  }
+  // pick player start = center of first room
+  const r0=rooms[0];
+  px=Math.floor(r0.x+r0.w/2); py=Math.floor(r0.y+r0.h/2);
+  map[py][px]=FLOOR;
+  // stairs in farthest room
+  let far=rooms[0], fd=-1;
+  for(const r of rooms){ const cx=Math.floor(r.x+r.w/2),cy=Math.floor(r.y+r.h/2);
+    const d=Math.abs(cx-px)+Math.abs(cy-py); if(d>fd){fd=d;far=r;} }
+  const sx=Math.floor(far.x+far.w/2), sy=Math.floor(far.y+far.h/2);
+  if(!(sx===px&&sy===py)) map[sy][sx]=STAIRS;
+  // scatter doors on corridor mouth (a floor tile adjacent to exactly 2 opposite floors & 2 walls approx)
+  for(let y=1;y<N-1;y++)for(let x=1;x<N-1;x++){
+    if(map[y][x]!==FLOOR) continue;
+    if(Math.random()<0.04 && (x!==px||y!==py) && map[y][x]!==STAIRS){
+      const hor=(map[y][x-1]!==WALL&&map[y][x+1]!==WALL)&&(map[y-1][x]===WALL&&map[y+1][x]===WALL);
+      const ver=(map[y-1][x]!==WALL&&map[y+1][x]!==WALL)&&(map[y][x-1]===WALL&&map[y][x+1]===WALL);
+      if(hor||ver) map[y][x]=DOOR;
+    }
+  }
+  // scatter chests
+  const chestN=2+rnd(2);
+  let placed=0,guard=0;
+  while(placed<chestN && guard<200){
+    guard++;
+    const x=1+rnd(N-2), y=1+rnd(N-2);
+    if(map[y][x]===FLOOR && !(x===px&&y===py) && !(x===sx&&y===sy)){ map[y][x]=CHEST; placed++; }
+  }
+  // spawn enemies
+  enemies=[];
+  const ec=4+rnd(4)+Math.floor(depth*0.7);
+  guard=0;
+  while(enemies.length<ec && guard<300){
+    guard++;
+    const x=1+rnd(N-2), y=1+rnd(N-2);
+    if(map[y][x]===FLOOR && !(x===px&&y===py) && map[y][x]!==CHEST && map[y][x]!==STAIRS){
+      const kind=Math.random()<0.5?"slime":(Math.random()<0.6?"skeleton":"bat");
+      const base={slime:{hp:14,atk:5,xp:8},skeleton:{hp:22,atk:8,xp:14},bat:{hp:10,atk:6,xp:6}}[kind];
+      const scale=1+(depth-1)*0.25;
+      enemies.push({x,y,kind,hp:Math.round(base.hp*scale),max:Math.round(base.hp*scale),
+        atk:Math.round(base.atk*scale),xp:Math.round(base.xp*scale)});
+    }
+  }
+  // spawn a potion item sometimes on floor
+  items=[];
+  if(Math.random()<0.7){
+    const x=1+rnd(N-2),y=1+rnd(N-2);
+    if(map[y][x]===FLOOR && !(x===px&&y===py)) items.push({x,y,kind:"potion"});
+  }
+}
+
+/* ============ visibility (raycast FOV) ============ */
+function computeVis(){
+  for(let y=0;y<N;y++)vis[y].fill(false);
+  vis[py][px]=true; seen[py][px]=true;
+  const R=fovFull?N:6;
+  for(let a=0;a<360;a+=3){
+    const rad=a*Math.PI/180, dx=Math.cos(rad), dy=Math.sin(rad);
+    let x=px+0.5, y=py+0.5;
+    for(let s=0;s<R;s++){
+      x+=dx; y+=dy;
+      const cx=Math.floor(x), cy=Math.floor(y);
+      if(cx<0||cy<0||cx>=N||cy>=N) break;
+      vis[cy][cx]=true; seen[cy][cx]=true;
+      if(map[cy][cx]===WALL) break;
+    }
+  }
+}
+
+/* ============ helpers ============ */
+function enemyAt(x,y){ return enemies.find(e=>e.x===x&&e.y===y); }
+function itemAt(x,y){ return items.find(i=>i.x===x&&i.y===y); }
+
+function log(msg,cls){
+  const box=document.getElementById("log");
+  const d=document.createElement("div");
+  if(cls)d.className=cls;
+  d.textContent=msg;
+  box.appendChild(d);
+  while(box.children.length>40) box.removeChild(box.firstChild);
+  box.scrollTop=box.scrollHeight;
+}
+
+function spawnParticles(cx,cy,color){
+  for(let i=0;i<10;i++){
+    const a=Math.random()*Math.PI*2, sp=.4+Math.random();
+    particles.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,color});
+  }
+}
+
+/* ============ combat ============ */
+function playerAttack(e){
+  const dmg=Math.max(1,player.atk+rnd(5)-1 - Math.floor(e.kind==="skeleton"?2:0));
+  e.hp-=dmg;
+  spawnParticles(e.x+.5,e.y+.5,"#ff5d73");
+  beep(220,.06,"square");
+  log("你 命中 "+(e.kind==="slime"?"史莱姆":e.kind==="skeleton"?"骷髅":"蝙蝠")+"，造成 "+dmg+" 伤害","hi");
+  if(e.hp<=0){
+    enemies=enemies.filter(x=>x!==e);
+    kills++;
+    gold+=4+rnd(8)+depth*2;
+    gainXP(e.xp);
+    log("击杀了 "+(e.kind==="slime"?"史莱姆":e.kind==="skeleton"?"骷髅":"蝙蝠")+"！ 获得 "+e.xp+" 经验","ok");
+    beep(520,.09,"triangle");
+    checkLevelUp();
+  }
+}
+function enemyAttack(e){
+  const dmg=Math.max(1,e.atk+rnd(4)-player.def);
+  player.hp-=dmg;
+  spawnParticles(px+.5,py+.5,"#ff8a3d");
+  beep(140,.07,"sawtooth");
+  log((e.kind==="slime"?"史莱姆":e.kind==="skeleton"?"骷髅":"蝙蝠")+" 反击，你受到 "+dmg+" 伤害","bad");
+  if(player.hp<=0){ player.hp=0; gameOver(); }
+}
+function enemyTurn(){
+  for(const e of enemies){
+    const dx=px-e.x, dy=py-e.y;
+    const dist=Math.abs(dx)+Math.abs(dy);
+    if(dist===1){ enemyAttack(e); if(dead)return; continue; }
+    if(dist>6) continue;
+    // step toward player
+    let nx=e.x, ny=e.y;
+    if(Math.abs(dx)>Math.abs(dy)) nx+= Math.sign(dx); else ny+=Math.sign(dy);
+    if(canWalk(nx,ny)) { e.x=nx; e.y=ny; }
+    else{
+      const altx=e.x+(Math.abs(dx)>Math.abs(dy)?0:Math.sign(dx));
+      const alty=e.y+(Math.abs(dx)>Math.abs(dy)?Math.sign(dy):0);
+      if(canWalk(altx,alty)){e.x=altx;e.y=alty;}
+    }
+  }
+}
+function canWalk(x,y){
+  if(x<0||y<0||x>=N||y>=N) return false;
+  const t=map[y][x];
+  if(t===WALL) return false;
+  if(enemyAt(x,y)) return false;
+  return true;
+}
+
+/* ============ xp / level ============ */
+function gainXP(n){ player.xp+=n; }
+function xpNeed(){ return 30+player.lv*25; }
+function checkLevelUp(){
+  while(player.xp>=xpNeed()){
+    player.xp-=xpNeed();
+    player.lv++;
+    player.maxhp+=16; player.hp=player.maxhp;
+    player.maxmp+=8; player.mp=player.maxmp;
+    player.atk+=3; player.def+=2;
+    log("升级！ Lv."+player.lv+" 生命/攻击/防御提升","hi");
+    beep(660,.12,"triangle"); setTimeout(()=>beep(880,.14,"triangle"),110);
+  }
+}
+
+/* ============ actions ============ */
+function move(dx,dy){
+  if(!started||paused||dead) return;
+  const nx=px+dx, ny=py+dy;
+  if(nx<0||ny<0||nx>=N||ny>=N) return;
+  const t=map[ny][nx];
+  if(t===WALL){ beep(90,.04,"square"); return; }
+  const e=enemyAt(nx,ny);
+  if(e){ playerAttack(e); enemyTurn(); computeVis(); draw(); updateHud(); return; }
+  px=nx; py=ny;
+  // tile interactions
+  if(t===DOOR){ map[py][px]=FLOOR; log("推开了一扇门",""); beep(300,.05,"triangle"); }
+  else if(t===CHEST){
+    const loot=(10+rnd(20))*depth;
+    gold+=loot;
+    if(Math.random()<0.5){ player.potion++; }
+    if(Math.random()<0.25){ player.atk+=1; log("宝箱里有锋利武器！攻击+1","hi"); }
+    log("打开宝箱，获得 "+loot+" 金币"+(player.potion>0?" 和药水":""),"ok");
+    map[py][px]=FLOOR;
+    beep(700,.1,"triangle");
+  }
+  else if(t===STAIRS){ log("发现楼梯！按 空格/门 下楼","hi"); }
+  enemyTurn();
+  computeVis(); draw(); updateHud();
+}
+function interact(){
+  if(!started||paused||dead) return;
+  if(map[py][px]===STAIRS){ descend(); return; }
+  if(map[py][px]===DOOR){ map[py][px]=FLOOR; log("推开门",""); beep(300,.05,"triangle"); enemyTurn(); computeVis(); draw(); return; }
+  log("这里没有可互动的对象","");
+}
+function descend(){
+  depth++;
+  log("下到第 "+depth+" 层！敌人更强了","hi");
+  beep(400,.1,"triangle");
+  genMap(); computeVis(); draw(); updateHud();
+}
+function drinkPotion(){
+  if(!started||dead) return;
+  if(player.potion<=0){ log("没有药水了","bad"); return; }
+  player.potion--;
+  const heal=Math.round(player.maxhp*0.4);
+  player.hp=Math.min(player.maxhp, player.hp+heal);
+  log("喝下药水，恢复 "+heal+" 点生命","ok");
+  beep(560,.1,"sine");
+  updateHud(); draw();
+}
+function rest(){
+  if(!started||dead) return;
+  // only if no adjacent enemy
+  const adj=enemies.some(e=>Math.abs(e.x-px)+Math.abs(e.y-py)<=2);
+  if(adj){ log("附近有敌人，无法休息！","bad"); return; }
+  player.hp=Math.min(player.maxhp,player.hp+Math.round(player.maxhp*.18));
+  player.mp=Math.min(player.maxmp,player.mp+Math.round(player.maxmp*.3));
+  log("你休息了一会，恢复少量生命","ok");
+  beep(440,.08,"sine");
+  updateHud();
+}
+
+/* ============ game flow ============ */
+function newGame(){
+  depth=1; kills=0; gold=0;
+  player={hp:100,maxhp:100,mp:50,maxmp:50,xp:0,lv:1,atk:12,def:3,potion:1};
+  genMap();
+  computeVis();
+  document.getElementById("log").innerHTML="";
+  log("你踏入了地牢第 1 层…","hi");
+  dead=false; paused=false; started=true;
+  updateHud(); draw();
+}
+function gameOver(){
+  dead=true; started=false;
+  const score=kills*10+gold+depth*25+player.lv*30;
+  if(score>best){ best=score; try{localStorage.setItem(LS,String(best));}catch(e){} }
+  beep(160,.25,"sawtooth"); setTimeout(()=>beep(110,.3,"sawtooth"),130);
+  log("你倒下了… 本次得分 "+score,"bad");
+  showOverlay("冒险结束","探索到第 "+depth+" 层，击杀 "+kills+"，最终得分：","重来一次",score,true);
+}
+function showOverlay(title,msg,btn,score,showScore){
+  const ov=document.getElementById("overlay");
+  ov.classList.remove("hide");
+  document.getElementById("ovTitle").textContent=title;
+  document.getElementById("ovMsg").innerHTML=msg;
+  document.getElementById("btnStart").textContent=btn;
+  const sc=document.getElementById("ovScore");
+  if(showScore){ sc.style.display="block"; document.getElementById("ovFinal").textContent=score; }
+  else sc.style.display="none";
+}
+
+/* ============ hud ============ */
+function updateHud(){
+  const p=player;
+  document.getElementById("hpTxt").textContent=p.hp+"/"+p.maxhp;
+  document.getElementById("hpBar").style.width=(p.hp/p.maxhp*100)+"%";
+  document.getElementById("mpTxt").textContent=p.mp+"/"+p.maxmp;
+  document.getElementById("mpBar").style.width=(p.mp/p.maxmp*100)+"%";
+  document.getElementById("lvTxt").textContent=p.lv;
+  document.getElementById("xpTxt").textContent=p.xp+"/"+xpNeed();
+  document.getElementById("xpBar").style.width=(p.xp/xpNeed()*100)+"%";
+  document.getElementById("gold").textContent=gold;
+  document.getElementById("atk").textContent=p.atk;
+  document.getElementById("def").textContent=p.def;
+  document.getElementById("depth").textContent=depth;
+  document.getElementById("kills").textContent=kills;
+  document.getElementById("tPotion").textContent="🧪 药水("+p.potion+")";
+}
+
+/* ============ rendering ============ */
+const cv=document.getElementById("game");
+const ctx=cv.getContext("2d");
+let CELL=32;
+function resize(){
+  const rect=cv.getBoundingClientRect();
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const w=Math.max(1,Math.floor(rect.width*dpr)), h=Math.max(1,Math.floor(rect.height*dpr));
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}
+  CELL=cv.width/N;
+}
+window.addEventListener("resize",()=>{resize();draw();});
+
+function tileColor(t){
+  switch(t){
+    case FLOOR:return "#0f1428";
+    case DOOR:return "#5a3d22";
+    case STAIRS:return "#7a4a12";
+    case CHEST:return "#8a5a1a";
+    default:return "#0a0d1a";
+  }
+}
+function draw(){
+  resize();
+  const W=cv.width,H=cv.height;
+  ctx.fillStyle="#05070f"; ctx.fillRect(0,0,W,H);
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const t=map[y][x];
+    if(!seen[y][x]){
+      ctx.fillStyle="#05070f"; ctx.fillRect(x*CELL,y*CELL,CELL,CELL);
+      continue;
+    }
+    const dim=!vis[y][x];
+    ctx.fillStyle = t===WALL ? (dim?"#161d36":"#26304f") : tileColor(t);
+    ctx.fillRect(x*CELL,y*CELL,CELL,CELL);
+    if(t===WALL){
+      ctx.fillStyle=dim?"#1b2340":"#2f3a63";
+      ctx.fillRect(x*CELL,y*CELL,CELL,2);
+    }
+    if(t===DOOR && vis[y][x]){ ctx.fillStyle="#caa06a"; ctx.fillRect(x*CELL+CELL*.4,y*CELL+CELL*.2,CELL*.2,CELL*.6); }
+    if(t===STAIRS && vis[y][x]){ ctx.fillStyle="#ffcf6a"; ctx.font="bold "+(CELL*.6)+"px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("≡",x*CELL+CELL/2,y*CELL+CELL/2); }
+    if(t===CHEST && vis[y][x]){ ctx.fillStyle="#ffcf6a"; ctx.fillRect(x*CELL+CELL*.22,y*CELL+CELL*.3,CELL*.56,CELL*.4); ctx.fillStyle="#5a3d12"; ctx.fillRect(x*CELL+CELL*.22,y*CELL+CELL*.46,CELL*.56,CELL*.1); }
+    // grid line
+    if(!dim){ ctx.strokeStyle="rgba(255,255,255,.03)"; ctx.strokeRect(x*CELL,y*CELL,CELL,CELL); }
+  }
+  // items (potions)
+  for(const it of items){
+    if(!vis[it.y][it.x]) continue;
+    ctx.fillStyle="#2ee6a6"; ctx.beginPath();
+    ctx.arc(it.x*CELL+CELL/2,it.y*CELL+CELL/2,CELL*.2,0,Math.PI*2); ctx.fill();
+  }
+  // enemies
+  for(const e of enemies){
+    if(!vis[e.y][e.x]) continue;
+    const cx=e.x*CELL+CELL/2, cy=e.y*CELL+CELL/2;
+    ctx.save();
+    ctx.shadowColor = e.kind==="slime"?"#2ee6a6":e.kind==="skeleton"?"#cdd6ff":"#b06aff";
+    ctx.shadowBlur=CELL*.4;
+    ctx.fillStyle = e.kind==="slime"?"#2ee6a6":e.kind==="skeleton"?"#cdd6ff":"#b06aff";
+    if(e.kind==="slime"){ ctx.beginPath(); ctx.ellipse(cx,cy+CELL*.1,CELL*.32,CELL*.26,0,0,Math.PI*2); ctx.fill(); }
+    else if(e.kind==="skeleton"){ ctx.fillRect(cx-CELL*.24,cy-CELL*.2,CELL*.48,CELL*.4); ctx.fillStyle="#0a0d1a"; ctx.fillRect(cx-CELL*.12,cy-CELL*.06,CELL*.08,CELL*.08); ctx.fillRect(cx+CELL*.04,cy-CELL*.06,CELL*.08,CELL*.08); }
+    else { ctx.beginPath(); ctx.ellipse(cx,cy,CELL*.3,CELL*.2,0,0,Math.PI*2); ctx.fill(); }
+    ctx.restore();
+    // hp bar
+    if(e.hp<e.max){
+      ctx.fillStyle="#000"; ctx.fillRect(cx-CELL*.3,cy-CELL*.44,CELL*.6,CELL*.1);
+      ctx.fillStyle="#ff5d73"; ctx.fillRect(cx-CELL*.3,cy-CELL*.44,CELL*.6*(e.hp/e.max),CELL*.1);
+    }
+  }
+  // player
+  const pxx=px*CELL+CELL/2, pyy=py*CELL+CELL/2;
+  ctx.save();
+  ctx.shadowColor="#ffcf6a"; ctx.shadowBlur=CELL*.7;
+  ctx.fillStyle="#ffcf6a";
+  ctx.beginPath(); ctx.arc(pxx,pyy,CELL*.3,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle="#2a1500"; ctx.beginPath(); ctx.arc(pxx,pyy,CELL*.12,0,Math.PI*2); ctx.fill();
+  // vignette fog on visible-but-dim handled above
+  // particles
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx*CELL*.06; p.y+=p.vy*CELL*.06; p.life-=.04;
+    if(p.life<=0){particles.splice(i,1);continue;}
+    ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.color;
+    ctx.fillRect(p.x*CELL,p.y*CELL,CELL*.16,CELL*.16); ctx.globalAlpha=1;
+  }
+}
+
+/* ============ input ============ */
+const KEY={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
+  w:[0,-1],s:[0,1],a:[-1,0],d:[1,0],W:[0,-1],S:[0,1],A:[-1,0],D:[1,0]};
+document.addEventListener("keydown",ev=>{
+  try{
+    const k=ev.key;
+    if(KEY[k]){ ev.preventDefault(); move(KEY[k][0],KEY[k][1]); }
+    else if(k===" "){ ev.preventDefault(); interact(); }
+    else if(k==="h"||k==="H"){ ev.preventDefault(); drinkPotion(); }
+    else if(k==="r"||k==="R"){ ev.preventDefault(); rest(); }
+    else if(k==="n"||k==="N"){ ev.preventDefault(); document.getElementById("btnStart").click(); }
+  }catch(e){showErr("输入错误: "+e.message);}
+});
+// swipe
+let sx=0,sy=0,touching=false;
+const bw=document.getElementById("boardWrap");
+bw.addEventListener("touchstart",e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY;touching=true;},{passive:true});
+bw.addEventListener("touchend",e=>{
+  if(!touching)return; touching=false;
+  const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+  if(Math.abs(dx)<18&&Math.abs(dy)<18)return;
+  if(Math.abs(dx)>Math.abs(dy)) move(dx>0?1:-1,0); else move(0,dy>0?1:-1);
+},{passive:true});
+// dpad
+const DM={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
+document.querySelectorAll("#touch button").forEach(b=>{
+  const go=ev=>{ ev.preventDefault();
+    if(b.dataset.d==="act"){ interact(); return; }
+    move(DM[b.dataset.d][0],DM[b.dataset.d][1]);
+  };
+  b.addEventListener("touchstart",go,{passive:false});
+  b.addEventListener("mousedown",go);
+});
+
+/* ============ toolbar ============ */
+document.getElementById("tPotion").addEventListener("click",drinkPotion);
+document.getElementById("tRest").addEventListener("click",rest);
+document.getElementById("tMap").addEventListener("click",()=>{
+  fovFull=!fovFull;
+  document.getElementById("tMap").classList.toggle("on",fovFull);
+  log(fovFull?"视野全开":"恢复战争迷雾","");
+  computeVis();draw();
+});
+document.getElementById("tRestart").addEventListener("click",()=>document.getElementById("btnStart").click());
+function syncSound(){
+  document.getElementById("tSound").textContent="音效："+(soundOn?"开":"关");
+  const bs=document.getElementById("btnSound"); if(bs)bs.textContent="音效："+(soundOn?"开":"关");
+}
+document.getElementById("tSound").addEventListener("click",()=>{soundOn=!soundOn;syncSound();if(soundOn)beep(600,.05,"triangle");});
+syncSound();
+
+/* ============ start button ============ */
+document.getElementById("btnStart").addEventListener("click",()=>{
+  try{
+    document.getElementById("overlay").classList.add("hide");
+    newGame();
+    beep(520,.07,"triangle");
+  }catch(e){showErr("启动失败: "+e.message);}
+});
+
+/* ============ boot ============ */
+try{
+  resize();
+  // draw a placeholder before start
+  genMap(); player={hp:100,maxhp:100,mp:50,maxmp:50,xp:0,lv:1,atk:12,def:3,potion:1};
+  depth=1;kills=0;gold=0; started=false;
+  computeVis(); updateHud(); draw();
+  showOverlay("像素地牢探险","在随机地牢中探索，击败史莱姆与骷髅，捡起药水与宝箱，下楼梯深入更深层。<br>移动会触发战斗，走到门/楼梯可推进。","开始冒险",0,false);
+}catch(e){showErr("初始化失败: "+e.message);}
+}catch(e){ showErr("致命错误: "+(e&&e.message?e.message:e)); }
+})();
+</script>
+</body>
+</html>

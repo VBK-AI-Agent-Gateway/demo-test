@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初中物理分层教学 & 个性化辅导 · 学生学习助手</title>
+<meta name="description" content="初三物理分层辅导工具：学困生/中等生/优等生三层材料生成（微课、阶梯练习、答题模板、探究任务），学生端一对一启发式答疑不直接给答案，自动记录疑问点与薄弱知识点。AI仅辅助，教师把关。">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">🔭 初中物理分层教学 & 个性化辅导 <span class="sub">人教版 · 中考考纲 · 三层学生助手</span></div>
+  <div class="top-r">
+    <button class="btn ghost" id="btn-log">📝 答疑记录</button>
+    <button class="btn ghost" id="btn-help">❓ 说明</button>
+  </div>
+</header>
+
+<div class="banner">📌 <b>引导思考优先，严禁直接给出完整答案；AI仅辅助，学习效果由物理老师最终把关。</b>超纲/争议问题标注【建议老师线下讲解】。</div>
+
+<!-- 场景切换 -->
+<div class="scene-sw">
+  <button class="active" data-s="teacher">👩‍🏫 场景A · 老师端（生成分层材料）</button>
+  <button data-s="student">🧑‍🎓 场景B · 学生端（一对一答疑）</button>
+</div>
+
+<main class="wrap">
+  <!-- 左：输入 -->
+  <section class="panel form-panel">
+    <div id="pane-teacher">
+      <h2>🧑‍🏫 老师端 · 分层材料生成</h2>
+      <div class="f-row">
+        <label>学生层次 <span class="req">（必选，决定输出难度）</span></label>
+        <div class="seg" id="seg-level">
+          <button data-l="学困生">🌱 学困生</button>
+          <button class="active" data-l="中等生">⚡ 中等生</button>
+          <button data-l="优等生">🚀 优等生</button>
+        </div>
+        <div class="meta-line" id="level-meta"></div>
+      </div>
+      <div class="f-row">
+        <label>知识点/课题</label>
+        <select id="sel-topic"></select>
+      </div>
+      <div class="f-row">
+        <label>输出材料类型（可多选）</label>
+        <div class="checks">
+          <label><input type="checkbox" id="ck-micro" checked> 🎬 分层知识点讲解（微课文案）</label>
+          <label><input type="checkbox" id="ck-prac" checked> 📝 分层阶梯练习（答案置末尾）</label>
+          <label><input type="checkbox" id="ck-tpl"> 📐 中考答题模板（计算/实验/简答）</label>
+          <label><input type="checkbox" id="ck-task"> 🔬 探究任务单 / 开放思考题</label>
+          <label><input type="checkbox" id="ck-check"> ✅ 知识点自查清单</label>
+        </div>
+      </div>
+      <div class="f-row">
+        <label>补充要求（选填）</label>
+        <textarea id="in-note" placeholder="如：该生浮力单位换算总错 / 加强误差分析 / 对齐某次考试错题"></textarea>
+      </div>
+      <button class="btn primary big" id="btn-gen">⚡ 生成分层材料</button>
+      <p class="hint">练习题答案统一放在材料末尾，方便学生先独立完成；材料贴合初中课标，不超纲。</p>
+    </div>
+
+    <div id="pane-student" style="display:none">
+      <h2>🧑‍🎓 学生端 · 一对一答疑（启发式）</h2>
+      <div class="f-row">
+        <label>你的层次 <span class="req">（必须确认）</span></label>
+        <div class="seg" id="seg-slevel">
+          <button data-l="学困生">🌱 学困生</button>
+          <button class="active" data-l="中等生">⚡ 中等生</button>
+          <button data-l="优等生">🚀 优等生</button>
+        </div>
+      </div>
+      <div class="f-row">
+        <label>把你的问题贴进来（可以抄题、说思路）</label>
+        <textarea id="in-q" placeholder="例：这道浮力题不会做——把题目和你的想法写在这（中等生）"></textarea>
+      </div>
+      <button class="btn primary big" id="btn-ask">🙋 提交我的疑问</button>
+      <div class="btn-row">
+        <button class="btn small" id="btn-hint">💡 再给一点提示</button>
+        <button class="btn small" id="btn-stuck">😓 我还是不会（要提示）</button>
+        <button class="btn small" id="btn-concept">🤔 我有概念疑问</button>
+        <button class="btn small" id="btn-reset">🔄 换一题</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn small" id="btn-outscope">超出初中范围？</button>
+        <button class="btn small" id="btn-show-answers">🔓 我做完了，看答案</button>
+      </div>
+      <div class="warn-strip" style="margin-top:14px">规则：AI只引导不直接给完整答案；多次卡住才分步提示，每次一小步；疑问点自动记录供老师查看。</div>
+      <div class="meta-line" id="s-meta"></div>
+    </div>
+  </section>
+
+  <!-- 右：输出 -->
+  <section class="panel out-panel">
+    <div class="out-bar">
+      <h2 id="out-title">输出预览</h2>
+      <div class="out-acts">
+        <button class="btn" id="btn-copy">📋 复制</button>
+        <button class="btn" id="btn-md">⬇ 导出 Markdown</button>
+        <button class="btn" id="btn-print">🖨 打印</button>
+      </div>
+    </div>
+    <div class="warn-strip" id="warn-strip">📌 以下内容 <b>AI仅辅助</b>：学生端答疑只引导不给完整答案；老师端材料供教师审核后使用；答案置末尾请勿提前翻看。</div>
+    <div class="output" id="output">
+      <div class="empty">👈 老师端：选层次+知识点生成分层材料；<br>学生端：贴出问题，AI用启发式提问引导你自己推导。</div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">人教版初中物理 · 三层学生（学困/中等/优等）· 引导优先 · 不超纲 · 教师最终把关</footer>
+
+<div class="mask" id="mask" style="display:none"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast" style="display:none"></div>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/app.js"></script>

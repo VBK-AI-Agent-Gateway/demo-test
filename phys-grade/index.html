@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初三物理作业批改工作台 · AI初评辅助</title>
+<meta name="description" content="初三物理作业批改辅助工具：客观题自动判定与错因归类，主观题按中考评分细则分项采分，计算题按步骤给分，自动生成学情汇总报告。AI初评仅供教师参考。">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">🔬 初三物理作业批改工作台 <span class="sub">人教版 · 中考评分规范 · AI初评辅助</span></div>
+  <div class="top-r">
+    <button class="btn ghost" id="btn-demo">🧩 填入示例</button>
+    <button class="btn ghost" id="btn-history">🕘 历史</button>
+    <button class="btn ghost" id="btn-help">❓ 说明</button>
+  </div>
+</header>
+
+<div class="banner">⚠️ <b>AI初评结果，仅供教师参考，主观大题务必由物理老师终审。</b>本工具只做辅助批改与学情分析，不替代教师打分定性判断；不存储学生个人信息。</div>
+
+<main class="wrap">
+  <!-- 左：输入 -->
+  <section class="panel form-panel">
+    <h2>批改输入</h2>
+    <div class="f-row">
+      <label>批改模式</label>
+      <div class="seg" id="seg-mode">
+        <button class="active" data-m="single">📄 单份学生作业</button>
+        <button data-m="batch">👥 全班批量</button>
+      </div>
+    </div>
+    <div class="f-row" id="row-stu">
+      <label>学生姓名 / 编号（选填，隐私保护，不外传）</label>
+      <input type="text" id="in-stu" placeholder="如：九(3)班 张同学 / 21号">
+    </div>
+    <div class="f-row">
+      <label>① 参考答案 + 评分细则</label>
+      <textarea id="in-answer" placeholder="粘贴官方参考答案与评分细则（每题分值、采分点）。&#10;若没有细则：点下方按钮自动生成中考规范分项标准。"></textarea>
+      <div class="btn-row">
+        <button class="btn small" id="btn-criteria">🧾 生成分项评分标准</button>
+        <button class="btn small" id="btn-clear-ans">清空</button>
+      </div>
+      <div class="crit-box" id="crit-box" style="display:none"></div>
+    </div>
+    <div class="f-row">
+      <label>② 学生作答内容</label>
+      <textarea id="in-student" placeholder="粘贴学生作业原文，含题号，如：&#10;1. B&#10;2. A&#10;9. 解：G=mg=2kg×10N/kg=20N …"></textarea>
+    </div>
+    <div class="f-row batch-row" id="row-batch" style="display:none">
+      <label>批量格式（每位学生用分隔行）</label>
+      <textarea id="in-batch" placeholder="=== 学生A ===&#10;作答内容……&#10;=== 学生B ===&#10;作答内容……"></textarea>
+      <div class="btn-row"><button class="btn small" id="btn-parse-batch">解析名单</button></div>
+      <div class="meta-line" id="batch-meta"></div>
+    </div>
+    <div class="f-row">
+      <label>题型覆盖（勾选本次作业包含的题型）</label>
+      <div class="checks">
+        <label><input type="checkbox" id="ck-obj" checked> 客观题（选择/判断/填空）</label>
+        <label><input type="checkbox" id="ck-sub" checked> 主观题（简答/实验/计算）</label>
+        <label><input type="checkbox" id="ck-calc" checked> 计算题按步骤给分</label>
+      </div>
+    </div>
+    <button class="btn primary big" id="btn-grade">⚡ 开始批改（AI初评）</button>
+    <p class="hint">客观题自动判对错+归因；主观题按采分点分项给分（得分/亮点/问题/评语）；末尾自动生成学情汇总。</p>
+  </section>
+
+  <!-- 右：批改结果 -->
+  <section class="panel out-panel">
+    <div class="out-bar">
+      <h2 id="out-title">批改结果（初评）</h2>
+      <div class="out-acts">
+        <button class="btn" id="btn-copy">📋 复制结果</button>
+        <button class="btn" id="btn-md">⬇ 导出 Markdown</button>
+        <button class="btn" id="btn-print">🖨 打印</button>
+      </div>
+    </div>
+    <div class="warn-strip">📌 以下为 <b>AI 初评</b>，分数仅作参考：客观题判定可复核；主观大题须按细则人工终审；争议项已标注【请老师人工复核】。</div>
+    <div class="result" id="result">
+      <div class="empty">👈 粘贴参考答案与学生作答，点击「开始批改」。<br>系统将逐题判定、主观题分项采分，并生成学情汇总报告。</div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">人教版初中物理 · 中考评分规范 · 公式/单位/控制变量从严 · AI辅助，教师终审</footer>
+
+<div class="mask" id="mask" style="display:none"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast" style="display:none"></div>
+
+<script src="js/data.js"></script>
+<script src="js/grader.js"></script>
+<script src="js/app.js"></script>

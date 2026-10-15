@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 智能网关 · 数字大屏</title>
+<style>
+  :root{
+    --bg:#050b16;--panel:rgba(9,20,38,.72);--line:rgba(64,156,255,.28);
+    --cyan:#3fd7ff;--blue:#2f7bff;--green:#2ee6a6;--gold:#ffc53d;--red:#ff5d5d;
+    --purple:#a78bfa;--fg:#d7ecff;--muted:#6f8db3;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(1200px 600px at 20% -10%, rgba(47,123,255,.18), transparent 60%),
+      radial-gradient(1000px 700px at 90% 110%, rgba(63,215,255,.14), transparent 60%),
+      var(--bg);
+    color:var(--fg);
+    font:14px/1.5 "PingFang SC","Microsoft YaHei",-apple-system,"Segoe UI",sans-serif;
+    overflow:hidden;
+  }
+  /* grid background */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:linear-gradient(rgba(63,215,255,.05) 1px, transparent 1px),
+                     linear-gradient(90deg, rgba(63,215,255,.05) 1px, transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(1200px 800px at 50% 40%, #000 40%, transparent 100%);
+  }
+  /* scanline */
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.14) 2px 3px);
+    opacity:.35;mix-blend-mode:overlay;
+  }
+  #screen{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;padding:10px 14px}
+
+  /* ===== header ===== */
+  header{
+    height:58px;flex:0 0 auto;display:flex;align-items:center;gap:18px;
+    padding:0 16px;position:relative;
+    background:linear-gradient(90deg, rgba(47,123,255,.10), rgba(63,215,255,.06), rgba(47,123,255,.10));
+    border-bottom:1px solid var(--line);
+  }
+  header::before,header::after{
+    content:"";position:absolute;bottom:-1px;width:120px;height:3px;
+    background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+  }
+  header::before{left:6%} header::after{right:6%}
+  h1{
+    font-size:24px;letter-spacing:4px;font-weight:800;
+    background:linear-gradient(90deg,#8ff0ff,#2f7bff);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 26px rgba(63,215,255,.35);white-space:nowrap;
+  }
+  h1 .sub{font-size:13px;letter-spacing:2px;color:var(--muted);-webkit-text-fill-color:var(--muted);margin-left:10px}
+  .head-right{margin-left:auto;display:flex;align-items:center;gap:16px;font-variant-numeric:tabular-nums}
+  #clock{font-size:20px;color:var(--cyan);font-weight:700;letter-spacing:1px}
+  #date{font-size:12.5px;color:var(--muted)}
+  .live{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--green)}
+  .live .dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:blink 1.4s infinite}
+  @keyframes blink{50%{opacity:.25}}
+
+  /* ===== KPI row ===== */
+  #kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:12px;flex:0 0 auto}
+  .kpi{
+    position:relative;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;overflow:hidden;
+  }
+  .kpi::after{
+    content:"";position:absolute;left:0;top:0;width:3px;height:100%;
+    background:linear-gradient(180deg,var(--cyan),transparent);
+  }
+  .kpi .k-label{font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center}
+  .kpi .k-val{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2;
+    color:#fff;text-shadow:0 0 18px rgba(63,215,255,.5);letter-spacing:.5px}
+  .kpi .k-val .unit{font-size:14px;color:var(--muted);font-weight:600;margin-left:4px}
+  .kpi .k-trend{font-size:12px;margin-top:2px}
+  .up{color:var(--green)} .down{color:var(--red)} .flat{color:var(--muted)}
+  .kpi.gold .k-val{color:#ffe9a8;text-shadow:0 0 18px rgba(255,197,61,.5)}
+  .kpi.green .k-val{color:#b8ffe6;text-shadow:0 0 18px rgba(46,230,166,.5)}
+
+  /* ===== main grid ===== */
+  #main{flex:1;min-height:0;display:grid;grid-template-columns:1.05fr 1.4fr 1.05fr;gap:12px;margin-top:12px}
+  .col{display:flex;flex-direction:column;gap:12px;min-height:0}
+  .panel{
+    position:relative;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    display:flex;flex-direction:column;min-height:0;overflow:hidden;
+  }
+  .panel .p-head{
+    display:flex;align-items:center;gap:8px;padding:9px 13px;font-size:14px;font-weight:700;
+    border-bottom:1px solid rgba(64,156,255,.18);color:#bfe3ff;flex:0 0 auto;
+  }
+  .panel .p-head .tick{width:4px;height:16px;background:var(--cyan);box-shadow:0 0 8px var(--cyan);border-radius:2px}
+  .panel .p-head .more{margin-left:auto;font-size:12px;color:var(--muted);font-weight:400}
+  .panel .p-body{flex:1;min-height:0;position:relative;padding:8px}
+  .panel .p-body canvas{display:block;width:100%;height:100%}
+
+  /* trend chart */
+  #trendPanel{flex:1.25}
+  /* donut */
+  #donutPanel{flex:1}
+  /* map */
+  #mapPanel{flex:1.55}
+  #streamPanel{flex:1}
+  #rankPanel{flex:1}
+  #alertPanel{flex:1}
+
+  /* ===== map ===== */
+  #mapPanel .p-body{padding:0}
+  #mapCanvas{position:absolute;inset:0;width:100%;height:100%}
+  .map-stats{
+    position:absolute;left:12px;bottom:10px;display:flex;gap:16px;font-size:12.5px;color:var(--muted);
+    background:rgba(5,12,24,.55);padding:6px 12px;border:1px solid rgba(64,156,255,.2);border-radius:8px;
+  }
+  .map-stats b{color:var(--cyan)}
+
+  /* ===== stream log ===== */
+  #logStream{position:absolute;inset:0;padding:6px 10px;overflow:hidden;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+  .log-line{display:flex;gap:8px;padding:3.5px 4px;border-bottom:1px dashed rgba(64,156,255,.10);
+    animation:slideIn .35s ease-out;white-space:nowrap;overflow:hidden}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+  .log-line .t{color:var(--muted);flex:0 0 auto}
+  .log-line .m{color:#8fd0ff;flex:0 0 auto}
+  .log-line .u{color:#c9d8ee;flex:1;overflow:hidden;text-overflow:ellipsis}
+  .log-line .ms{flex:0 0 auto;font-variant-numeric:tabular-nums}
+  .ok{color:var(--green)} .warn{color:var(--gold)} .err{color:var(--red)}
+  .badge{border-radius:4px;padding:0 5px;font-size:11px}
+  .badge.ok{background:rgba(46,230,166,.12)} .badge.err{background:rgba(255,93,93,.12)} .badge.warn{background:rgba(255,197,61,.12)}
+
+  /* ===== rank bars (HTML) ===== */
+  #rankList{position:absolute;inset:8px;display:flex;flex-direction:column;gap:9px;justify-content:space-around}
+  .rank-row{display:grid;grid-template-columns:18px 92px 1fr 54px;gap:8px;align-items:center;font-size:12.5px}
+  .rank-row .idx{color:var(--gold);font-weight:800;text-align:center}
+  .rank-row .nm{color:#cfe4ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rank-row .bar{height:12px;background:rgba(64,156,255,.10);border-radius:6px;overflow:hidden;position:relative}
+  .rank-row .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:6px;
+    background:linear-gradient(90deg,var(--blue),var(--cyan));box-shadow:0 0 10px rgba(63,215,255,.5);
+    transition:width .8s cubic-bezier(.2,.7,.3,1)}
+  .rank-row .v{text-align:right;color:var(--cyan);font-variant-numeric:tabular-nums}
+
+  /* ===== alerts ===== */
+  #alertList{position:absolute;inset:8px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+  .alert{display:flex;gap:9px;align-items:flex-start;padding:8px 10px;border-radius:8px;
+    background:rgba(9,20,38,.6);border-left:3px solid var(--gold);font-size:12.5px;
+    animation:slideIn .4s ease-out}
+  .alert.crit{border-left-color:var(--red)} .alert.info{border-left-color:var(--cyan)}
+  .alert .ai{font-size:15px;line-height:1.3}
+  .alert .ab{flex:1;min-width:0}
+  .alert .at{color:#d7ecff}
+  .alert .ad{color:var(--muted);font-size:11.5px}
+  .alert .am{margin-left:auto;color:var(--muted);font-size:11px;white-space:nowrap}
+
+  /* ===== responsive 3 breakpoints ===== */
+  @media (max-width:1280px){
+    h1{font-size:20px;letter-spacing:3px}
+    .kpi .k-val{font-size:26px}
+    #main{grid-template-columns:1fr 1.3fr 1fr}
+  }
+  @media (max-width:900px){
+    body{overflow:auto}
+    #screen{height:auto;min-height:100%}
+    header{height:auto;padding:10px 12px;flex-wrap:wrap;gap:8px}
+    h1{font-size:18px}
+    #kpis{grid-template-columns:repeat(3,1fr)}
+    #main{grid-template-columns:1fr}
+    .panel{min-height:260px}
+    #mapPanel{min-height:320px}
+  }
+  @media (max-width:640px){
+    #screen{padding:8px}
+    #kpis{grid-template-columns:repeat(2,1fr);gap:8px}
+    .kpi .k-val{font-size:24px}
+    h1{font-size:16px;letter-spacing:2px}
+    #clock{font-size:16px}
+    .head-right{gap:10px}
+    .panel{min-height:230px}
+    #mapPanel{min-height:280px}
+    .rank-row{grid-template-columns:16px 74px 1fr 46px;gap:6px}
+  }
+  @media (max-width:420px){
+    #kpis{grid-template-columns:1fr 1fr}
+    .kpi{padding:10px}
+    .kpi .k-val{font-size:22px}
+    h1 .sub{display:none}
+    .log-line{font-size:11.5px;gap:6px}
+  }
+</style>
+</head>
+<body>
+<div id="screen">
+  <header>
+    <h1>AI 智能网关数字大屏<span class="sub">AI GATEWAY · DATA VISUALIZATION</span></h1>
+    <div class="head-right">
+      <span class="live"><span class="dot"></span>LIVE</span>
+      <div style="text-align:right">
+        <div id="clock">00:00:00</div>
+        <div id="date">2025-01-01 周一</div>
+      </div>
+    </div>
+  </header>
+
+  <section id="kpis">
+    <div class="kpi"><div class="k-label">📈 今日请求量</div><div class="k-val" id="kReq">0</div><div class="k-trend up" id="kReqT">↑ --%</div></div>
+    <div class="kpi"><div class="k-label">⚡ 实时 QPS</div><div class="k-val" id="kQps">0</div><div class="k-trend flat" id="kQpsT">峰值 --</div></div>
+    <div class="kpi"><div class="k-label">⏱ 平均延迟</div><div class="k-val" id="kLat">0<span class="unit">ms</span></div><div class="k-trend up" id="kLatT">↓ --ms</div></div>
+    <div class="kpi gold"><div class="k-label">🪙 Token 消耗</div><div class="k-val" id="kTok">0</div><div class="k-trend" id="kTokT" style="color:var(--gold)">今日累计</div></div>
+    <div class="kpi"><div class="k-label">🛡 错误率</div><div class="k-val" id="kErr">0%</div><div class="k-trend up" id="kErrT">健康</div></div>
+    <div class="kpi green"><div class="k-label">🧩 在线模型</div><div class="k-val" id="kMod">0</div><div class="k-trend up" id="kModT">全部可用</div></div>
+  </section>
+
+  <section id="main">
+    <!-- LEFT -->
+    <div class="col">
+      <div class="panel" id="trendPanel">
+        <div class="p-head"><span class="tick"></span>24h 请求趋势<span class="more">次 / 时</span></div>
+        <div class="p-body"><canvas id="trend"></canvas></div>
+      </div>
+      <div class="panel" id="donutPanel">
+        <div class="p-head"><span class="tick"></span>渠道调用占比<span class="more">实时</span></div>
+        <div class="p-body"><canvas id="donut"></canvas></div>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="col">
+      <div class="panel" id="mapPanel">
+        <div class="p-head"><span class="tick"></span>全球网关节点 · 流量拓扑<span class="more" id="nodeCount">-- 节点</span></div>
+        <div class="p-body">
+          <canvas id="map"></canvas>
+          <div class="map-stats">
+            <span>在线节点 <b id="mOnline">0</b></span>
+            <span>边缘加速 <b id="mEdge">0</b></span>
+            <span>吞吐 <b id="mThru">0</b>/s</span>
+            <span>成功率 <b id="mSucc">0%</b></span>
+          </div>
+        </div>
+      </div>
+      <div class="panel" id="streamPanel">
+        <div class="p-head"><span class="tick"></span>实时请求流<span class="more">滚动刷新</span></div>
+        <div class="p-body"><div id="logStream"></div></div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col">
+      <div class="panel" id="rankPanel">
+        <div class="p-head"><span class="tick"></span>模型调用排行<span class="more">今日 TOP8</span></div>
+        <div class="p-body"><div id="rankList"></div></div>
+      </div>
+      <div class="panel" id="alertPanel">
+        <div class="p-head"><span class="tick"></span>告警 / 事件中心<span class="more" id="alertMore">--</span></div>
+        <div class="p-body"><div id="alertList"></div></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   AI 智能网关数字大屏 — 单文件 Canvas/SVG 数据可视化 demo
+   所有数据均为前端模拟，每 1~2s 推进，无外部依赖、无 CDN
+============================================================ */
+
+/* ---------------- utils ---------------- */
+const $ = (id) => document.getElementById(id);
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const rand = (a,b)=>a+Math.random()*(b-a);
+const randi = (a,b)=>Math.floor(rand(a,b+1));
+const pick = (arr)=>arr[Math.floor(Math.random()*arr.length)];
+function fmt(n){
+  if (n>=1e8) return (n/1e8).toFixed(2)+"亿";
+  if (n>=1e4) return (n/1e4).toFixed(1)+"万";
+  return Math.round(n).toString();
+}
+function dpr(canvas){
+  const r = Math.min(window.devicePixelRatio||1, 2);
+  const rect = canvas.getBoundingClientRect();
+  const w = Math.max(1, Math.floor(rect.width*r)), h = Math.max(1, Math.floor(rect.height*r));
+  if (canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; }
+  return {ctx:canvas.getContext("2d"), w, h, r};
+}
+
+/* ---------------- clock ---------------- */
+const WEEK = ["日","一","二","三","四","五","六"];
+function tickClock(){
+  const d = new Date(), p = (x)=>String(x).padStart(2,"0");
+  $("clock").textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  $("date").textContent = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} 周${WEEK[d.getDay()]}`;
+}
+setInterval(tickClock, 1000); tickClock();
+
+/* ---------------- state ---------------- */
+const state = {
+  reqToday: randi(1200000, 1800000),
+  qps: randi(2600, 4200),
+  qpsPeak: 0,
+  latency: randi(180, 320),
+  latencyBase: randi(180, 320),
+  tokens: randi(9e7, 1.4e8),
+  errRate: rand(0.05, 0.35),
+  models: 36,
+  succ: 99.6,
+  // 24h trend (24 points, index 0=0:00)
+  trend: Array.from({length:24},(_,h)=>{
+    const base = 3000 + Math.sin((h-6)/24*Math.PI*2)*1800 + (h>=9&&h<=21? 3200:0);
+    return Math.max(800, base + rand(-700,700));
+  }),
+  // channels donut
+  channels: [
+    {n:"GPT-4o", v:34, c:"#3fd7ff"},
+    {n:"Claude", v:24, c:"#2f7bff"},
+    {n:"通义千问", v:16, c:"#2ee6a6"},
+    {n:"DeepSeek", v:14, c:"#ffc53d"},
+    {n:"其他", v:12, c:"#a78bfa"},
+  ],
+  // model rank
+  rank: [
+    {n:"gpt-4o-mini", v:412000},{n:"deepseek-v3", v:356000},
+    {n:"claude-3.5", v:298000},{n:"qwen-max", v:245000},
+    {n:"gpt-4o", v:201000},{n:"glm-4-plus", v:168000},
+    {n:"moonshot-v1", v:122000},{n:"llama-3.1", v:96000},
+  ],
+  // nodes (normalized 0..1 positions, rough world map clusters)
+  nodes: [],
+  // particles between nodes
+  particles: [],
+  logs: [],
+  alerts: [],
+};
+
+/* node layout: 6 regions + hub */
+const NODE_DEFS = [
+  {n:"华北·北京", x:.74, y:.34, hub:true},
+  {n:"华东·上海", x:.78, y:.42},
+  {n:"华南·深圳", x:.74, y:.52},
+  {n:"新加坡",    x:.70, y:.66},
+  {n:"法兰克福",  x:.52, y:.30},
+  {n:"伦敦",      x:.47, y:.26},
+  {n:"弗吉尼亚",  x:.22, y:.36},
+  {n:"硅谷",      x:.14, y:.42},
+  {n:"圣保罗",    x:.30, y:.74},
+  {n:"悉尼",      x:.88, y:.78},
+  {n:"东京",      x:.86, y:.38},
+  {n:"孟买",      x:.64, y:.54},
+];
+state.nodes = NODE_DEFS.map((d,i)=>({...d, id:i, load: rand(.3,.9), on:true}));
+
+const MODELS = ["gpt-4o-mini","deepseek-v3","claude-3.5","qwen-max","gpt-4o","glm-4-plus","moonshot-v1","llama-3.1"];
+const ROUTES = ["/v1/chat/completions","/v1/embeddings","/v1/audio/transcriptions","/v1/images/generations","/v1/rerank","/api/agent/run"];
+const NODE_NAMES = NODE_DEFS.map(d=>d.n);
+
+/* ---------------- KPI update ---------------- */
+function trendHTML(el, txt, dir){
+  el.className = "k-trend " + (dir||"flat");
+  el.textContent = txt;
+}
+function updateKPI(){
+  $("kReq").textContent = fmt(state.reqToday);
+  const r1 = rand(6, 18);
+  trendHTML($("kReqT"), "↑ " + r1.toFixed(1) + "% 同比", "up");
+  $("kQps").textContent = state.qps.toLocaleString();
+  trendHTML($("kQpsT"), "峰值 " + Math.max(state.qpsPeak, state.qps).toLocaleString(), state.qps>3500?"down":"flat");
+  $("kLat").innerHTML = Math.round(state.latency) + '<span class="unit">ms</span>';
+  const dl = state.latency - state.latencyBase;
+  trendHTML($("kLatT"), (dl<=0?"↓ ":"↑ ") + Math.abs(Math.round(dl)) + "ms 较基线", dl<=0?"up":"down");
+  $("kTok").textContent = fmt(state.tokens);
+  $("kErr").innerHTML = state.errRate.toFixed(2) + '<span class="unit">%</span>';
+  trendHTML($("kErrT"), state.errRate<0.3 ? "✓ 健康" : "⚠ 偏高", state.errRate<0.3?"up":"down");
+  $("kMod").textContent = state.models;
+  trendHTML($("kModT"), "全部可用", "up");
+  // map stats
+  $("mOnline").textContent = state.nodes.filter(n=>n.on).length + "/" + state.nodes.length;
+  $("mEdge").textContent = randi(80, 140);
+  $("mThru").textContent = state.qps.toLocaleString();
+  $("mSucc").textContent = state.succ.toFixed(2) + "%";
+  $("nodeCount").textContent = state.nodes.length + " 节点";
+}
+
+/* ---------------- trend chart (area + line) ---------------- */
+function drawTrend(){
+  const {ctx,w,h} = dpr($("trend"));
+  ctx.clearRect(0,0,w,h);
+  const pad = {l:34,r:8,t:12,b:20};
+  const data = state.trend;
+  const max = Math.max(...data)*1.15, min = 0;
+  const X = (i)=> pad.l + (w-pad.l-pad.r) * (i/(data.length-1));
+  const Y = (v)=> h-pad.b - (h-pad.t-pad.b) * ((v-min)/(max-min));
+
+  // grid
+  ctx.strokeStyle = "rgba(64,156,255,.14)"; ctx.lineWidth = 1;
+  ctx.fillStyle = "#6f8db3"; ctx.font = `${Math.max(9, Math.round(h*0.055))}px sans-serif`;
+  for (let g=0; g<=4; g++){
+    const v = min + (max-min)*g/4;
+    const y = Y(v);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w-pad.r, y); ctx.stroke();
+    ctx.textAlign = "right"; ctx.fillText(fmt(v), pad.l-4, y+3);
+  }
+  // x labels
+  ctx.textAlign = "center";
+  for (let i=0; i<24; i+=4){
+    ctx.fillText(String(i).padStart(2,"0")+":00", X(i), h-5);
+  }
+
+  // area gradient
+  const grad = ctx.createLinearGradient(0, pad.t, 0, h-pad.b);
+  grad.addColorStop(0, "rgba(63,215,255,.45)");
+  grad.addColorStop(1, "rgba(63,215,255,.02)");
+  ctx.beginPath();
+  ctx.moveTo(X(0), Y(data[0]));
+  for (let i=1;i<data.length;i++) ctx.lineTo(X(i), Y(data[i]));
+  ctx.lineTo(X(data.length-1), h-pad.b); ctx.lineTo(X(0), h-pad.b); ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+
+  // line
+  ctx.beginPath();
+  ctx.moveTo(X(0), Y(data[0]));
+  for (let i=1;i<data.length;i++) ctx.lineTo(X(i), Y(data[i]));
+  ctx.strokeStyle = "#3fd7ff"; ctx.lineWidth = Math.max(1.5, h*0.008);
+  ctx.shadowColor = "#3fd7ff"; ctx.shadowBlur = 10;
+  ctx.stroke(); ctx.shadowBlur = 0;
+
+  // points + moving highlight
+  const hl = Math.floor((Date.now()/500) % data.length);
+  for (let i=0;i<data.length;i++){
+    if (i%3!==0 && i!==hl) continue;
+    ctx.beginPath(); ctx.arc(X(i), Y(data[i]), i===hl? h*0.018+2 : h*0.011+1, 0, Math.PI*2);
+    ctx.fillStyle = i===hl ? "#fff" : "#3fd7ff";
+    if (i===hl){ ctx.shadowColor="#3fd7ff"; ctx.shadowBlur=14; }
+    ctx.fill(); ctx.shadowBlur=0;
+  }
+}
+
+/* ---------------- donut chart ---------------- */
+function drawDonut(){
+  const {ctx,w,h} = dpr($("donut"));
+  ctx.clearRect(0,0,w,h);
+  const cx = w*0.30, cy = h/2, R = Math.min(w*0.24, h*0.40), r0 = R*0.60;
+  const total = state.channels.reduce((s,c)=>s+c.v,0);
+  let a0 = -Math.PI/2;
+  const fs = Math.max(9, Math.round(h*0.06));
+  for (const c of state.channels){
+    const a1 = a0 + c.v/total*Math.PI*2;
+    ctx.beginPath(); ctx.arc(cx,cy,R,a0,a1); ctx.arc(cx,cy,r0,a1,a0,true); ctx.closePath();
+    ctx.fillStyle = c.c; ctx.shadowColor = c.c; ctx.shadowBlur = 8; ctx.fill(); ctx.shadowBlur=0;
+    a0 = a1;
+  }
+  // center
+  ctx.beginPath(); ctx.arc(cx,cy,r0*0.82,0,Math.PI*2);
+  ctx.fillStyle = "rgba(5,11,22,.9)"; ctx.fill();
+  ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.font=`700 ${Math.round(h*0.14)}px sans-serif`;
+  ctx.fillText(Math.round(state.qps/60)+"", cx, cy+Math.round(h*0.05));
+  ctx.fillStyle="#6f8db3"; ctx.font=`${fs}px sans-serif`;
+  ctx.fillText("次/分", cx, cy+Math.round(h*0.16));
+
+  // legend
+  const lx = w*0.58, ly = h*0.18, step = h*0.16;
+  ctx.textAlign="left";
+  state.channels.forEach((c,i)=>{
+    const y = ly + i*step;
+    ctx.fillStyle = c.c; ctx.fillRect(lx, y-fs*0.7, fs*0.8, fs*0.8);
+    ctx.fillStyle="#cfe4ff"; ctx.font=`${fs}px sans-serif`;
+    ctx.fillText(c.n, lx+fs*1.2, y);
+    ctx.fillStyle=c.c; ctx.textAlign="right";
+    ctx.fillText(c.v+"%", w-8, y); ctx.textAlign="left";
+  });
+}
+
+/* ---------------- map + particles ---------------- */
+function drawMap(t){
+  const cv = $("map");
+  const {ctx,w,h} = dpr(cv);
+  ctx.clearRect(0,0,w,h);
+
+  // dotted "world" backdrop: pseudo continents via clusters of dots
+  ctx.fillStyle = "rgba(64,156,255,.18)";
+  const step = Math.max(7, Math.round(w/110));
+  for (let x=step; x<w; x+=step){
+    for (let y=step; y<h; y+=step){
+      // pseudo land mask
+      const nx=x/w, ny=y/h;
+      const inLand =
+        (nx>0.05&&nx<0.35&&ny>0.22&&ny<0.72) ||        // americas
+        (nx>0.42&&nx<0.62&&ny>0.15&&ny<0.75) ||        // europe/africa
+        (nx>0.60&&nx<0.95&&ny>0.15&&ny<0.70) ||        // asia
+        (nx>0.78&&nx<0.95&&ny>0.68&&ny<0.9);           // oceania
+      if (!inLand) continue;
+      const flick = 0.5 + 0.5*Math.sin(t/700 + x*0.05 + y*0.05);
+      ctx.globalAlpha = 0.25 + flick*0.4;
+      ctx.fillRect(x, y, Math.max(1.5, step*0.35), Math.max(1.5, step*0.35));
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  const N = state.nodes;
+  const P = (n)=>({x: n.x*w, y: n.y*h});
+
+  // links (hub = node 0 Beijing)
+  ctx.lineWidth = 1;
+  for (let i=1;i<N.length;i++){
+    const a = P(N[0]), b = P(N[i]);
+    ctx.strokeStyle = "rgba(63,215,255,.22)";
+    ctx.beginPath(); ctx.moveTo(a.x,a.y);
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2 - Math.abs(b.x-a.x)*0.12;
+    ctx.quadraticCurveTo(mx,my,b.x,b.y); ctx.stroke();
+  }
+
+  // particles along quadratic bezier hub->node
+  for (const p of state.particles){
+    const a = P(N[p.from]), b = P(N[p.to]);
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2 - Math.abs(b.x-a.x)*0.12;
+    const u = p.t;
+    const x = (1-u)*(1-u)*a.x + 2*(1-u)*u*mx + u*u*b.x;
+    const y = (1-u)*(1-u)*a.y + 2*(1-u)*u*my + u*u*b.y;
+    ctx.beginPath();
+    ctx.arc(x,y, p.size, 0, Math.PI*2);
+    const glow = ctx.createRadialGradient(x,y,0,x,y,p.size*4);
+    glow.addColorStop(0, p.color);
+    glow.addColorStop(1, "rgba(63,215,255,0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(x,y,p.size*4,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,p.size,0,Math.PI*2);
+    ctx.fillStyle = "#fff"; ctx.fill();
+  }
+
+  // nodes
+  for (const n of N){
+    const p = P(n);
+    const pulse = 1 + 0.35*Math.sin(t/400 + n.id);
+    // outer ring
+    ctx.beginPath(); ctx.arc(p.x, p.y, (n.hub?12:8)*pulse, 0, Math.PI*2);
+    ctx.strokeStyle = n.hub? "rgba(46,230,166,.7)" : "rgba(63,215,255,.5)";
+    ctx.lineWidth = 1.5; ctx.stroke();
+    // core
+    const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,n.hub?7:5);
+    g.addColorStop(0,"#fff"); g.addColorStop(1, n.hub?"#2ee6a6":"#3fd7ff");
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,n.hub?7:5,0,Math.PI*2); ctx.fill();
+    // label
+    ctx.fillStyle = "rgba(215,236,255,.9)";
+    ctx.font = `${Math.max(9, Math.round(h*0.045))}px sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText(n.n, p.x, p.y - (n.hub?18:14));
+    ctx.fillStyle = "#6f8db3";
+    ctx.fillText(Math.round(n.load*100)+"%", p.x, p.y + (n.hub?26:20));
+  }
+}
+function stepParticles(dt){
+  const P = state.particles;
+  for (const p of P){ p.t += dt*p.speed; }
+  for (let i=P.length-1;i>=0;i--) if (P[i].t>=1) P.splice(i,1);
+  const want = 16;
+  if (state.particles.length < want && Math.random()<0.5){
+    state.particles.push({
+      from:0, to: randi(1, state.nodes.length-1),
+      t:0, speed: rand(0.18,0.5),
+      size: rand(1.6,2.8),
+      color: pick(["rgba(63,215,255,.9)","rgba(46,230,166,.9)","rgba(255,197,61,.85)"]),
+    });
+  }
+}
+
+/* ---------------- log stream ---------------- */
+function makeLog(){
+  const st = Math.random()<0.92 ? 200 : (Math.random()<0.6?429:500);
+  const model = pick(MODELS);
+  const route = pick(ROUTES);
+  const node = pick(NODE_NAMES);
+  const ms = st===200 ? randi(80, 900) : randi(1200, 4200);
+  const d = new Date(), p=(x)=>String(x).padStart(2,"0");
+  const time = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  return {time, model, route, node, ms, st};
+}
+function logHTML(l){
+  const cls = l.st===200?"ok":(l.st===429?"warn":"err");
+  return `<div class="log-line">
+    <span class="t">${l.time}</span>
+    <span class="badge ${cls}">${l.st}</span>
+    <span class="m">${l.model}</span>
+    <span class="u">${l.route} · ${l.node}</span>
+    <span class="ms ${cls}">${l.ms}ms</span>
+  </div>`;
+}
+function pushLog(){
+  const stream = $("logStream");
+  const l = makeLog();
+  const div = document.createElement("div");
+  div.innerHTML = logHTML(l);
+  stream.insertBefore(div.firstChild, stream.firstChild);
+  while (stream.children.length > 40) stream.removeChild(stream.lastChild);
+}
+
+/* ---------------- rank bars ---------------- */
+function renderRank(){
+  state.rank.sort((a,b)=>b.v-a.v);
+  const max = state.rank[0].v;
+  $("rankList").innerHTML = state.rank.map((r,i)=>`
+    <div class="rank-row">
+      <span class="idx">${i+1}</span>
+      <span class="nm" title="${r.n}">${r.n}</span>
+      <span class="bar"><i style="width:${(r.v/max*100).toFixed(1)}%"></i></span>
+      <span class="v">${fmt(r.v)}</span>
+    </div>`).join("");
+}
+
+/* ---------------- alerts ---------------- */
+const ALERT_POOL = [
+  {lvl:"info", i:"ℹ️", t:"网关自动扩容完成", d:"华东集群新增 2 个推理实例"},
+  {lvl:"warn", i:"⚠️", t:"某模型 P95 延迟升高", d:"deepseek-v3 P95 达 2.4s，已路由降级"},
+  {lvl:"crit", i:"🚨", t:"上游 429 限流", d:"gpt-4o 触发限流，熔断器打开并重试至备用通道"},
+  {lvl:"info", i:"🔒", t:"证书轮换成功", d:"边缘节点 TLS 证书自动续期"},
+  {lvl:"warn", i:"⚠️", t:"Token 配额告警", d:"租户 tenant-07 今日 Token 用量超 85%"},
+  {lvl:"info", i:"✅", t:"健康检查通过", d:"12 个区域网关全部 200 OK"},
+  {lvl:"crit", i:"🚨", t:"错误率突增", d:"短时错误率 1.8%，已触发回滚策略"},
+  {lvl:"info", i:"🧭", t:"灰度发布", d:"路由策略 v12 灰度 10% 流量"},
+];
+function timeAgo(m){ return m<1?"刚刚":(m<60?m+"分钟前":Math.floor(m/60)+"小时前"); }
+function renderAlerts(){
+  $("alertList").innerHTML = state.alerts.map(a=>`
+    <div class="alert ${a.lvl}">
+      <span class="ai">${a.i}</span>
+      <span class="ab"><div class="at">${a.t}</div><div class="ad">${a.d}</div></span>
+      <span class="am">${timeAgo(a.ago)}</span>
+    </div>`).join("");
+  $("alertMore").textContent = state.alerts.length + " 条";
+}
+function pushAlert(){
+  const a = {...pick(ALERT_POOL), ago:0};
+  state.alerts.unshift(a);
+  state.alerts = state.alerts.slice(0,6);
+}
+// seed alerts
+for (let i=0;i<5;i++){ const a={...pick(ALERT_POOL), ago: randi(1,59)}; state.alerts.push(a); }
+state.alerts.sort((x,y)=>x.ago-y.ago);
+
+/* ---------------- data tick ---------------- */
+function tickData(){
+  state.reqToday += Math.round(state.qps * 1.5 * rand(0.9,1.1));
+  state.qps = clamp(Math.round(state.qps + rand(-260, 270)), 1400, 6200);
+  state.qpsPeak = Math.max(state.qpsPeak, state.qps);
+  state.latency = clamp(state.latency + rand(-22,22), 90, 640);
+  state.tokens += Math.round(rand(40000, 180000));
+  state.errRate = clamp(state.errRate + rand(-0.05,0.05), 0.01, 1.8);
+  state.succ = clamp(100 - state.errRate, 97, 100);
+  // trend evolve: current hour cell jitters
+  const nowH = new Date().getHours();
+  state.trend[nowH] = clamp(state.trend[nowH] + rand(-250, 320), 600, 12000);
+  // channels jitter
+  state.channels.forEach(c=>{ c.v = clamp(c.v + rand(-1.2,1.2), 5, 55); });
+  const sum = state.channels.reduce((s,c)=>s+c.v,0);
+  state.channels.forEach(c=>{ c.v = c.v/sum*100; });
+  // rank grows
+  state.rank.forEach(r=>{ r.v += randi(200, 4000); });
+  // node load
+  state.nodes.forEach(n=>{ n.load = clamp(n.load + rand(-0.08,0.08), 0.1, 0.98); });
+  updateKPI();
+  renderRank();
+}
+
+/* ---------------- boot loops ---------------- */
+renderRank(); updateKPI();
+// seed logs
+for (let i=0;i<14;i++) pushLog();
+
+setInterval(tickData, 1500);          // data tick
+setInterval(pushLog, 800);            // log stream
+setInterval(pushAlert, 7000);         // alerts
+setInterval(()=>{ state.alerts.forEach(a=>a.ago++); renderAlerts(); }, 60000);
+renderAlerts();
+
+/* main rAF loop: charts + particles */
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now-last)/1000); last = now;
+  drawTrend();
+  drawDonut();
+  drawMap(now);
+  stepParticles(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.addEventListener("resize", ()=>{ /* canvases re-measure via dpr() */ });
+</script>
+</body>
+</html>

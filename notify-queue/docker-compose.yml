@@ -1,0 +1,35 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379
+      PORT: "3000"
+      NODE_ENV: production
+      MAX_ATTEMPTS: "3"
+    ports:
+      - "3000:3000"
+    command: ["node", "src/server.js"]
+
+  worker:
+    build: .
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: production
+      MAX_ATTEMPTS: "3"
+    command: ["node", "src/worker.js"]

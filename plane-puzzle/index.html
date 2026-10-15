@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✈️ 飞机拼图小工厂 — 拆解组装学知识</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; }
+  body {
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+    background:linear-gradient(180deg,#8fd3ff 0%, #d8f1ff 60%, #eaf7ff 100%);
+    color:#173b5c; overflow-x:hidden;
+  }
+  .wrap { max-width:1100px; margin:0 auto; padding:14px 14px 40px; }
+  header { text-align:center; padding:10px 0 4px; }
+  header h1 { font-size:26px; letter-spacing:2px; color:#0b5ca8; text-shadow:0 2px 0 #fff; }
+  header p { font-size:14px; color:#2c6ea5; margin-top:4px; }
+  .levelbar { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:14px 0 8px; }
+  .levelbtn {
+    border:none; cursor:pointer; border-radius:14px; padding:8px 14px;
+    font-size:14px; font-weight:bold; color:#0b5ca8; background:#ffffffcc;
+    box-shadow:0 3px 0 #b9dff5; transition:.15s;
+  }
+  .levelbtn.active { background:#ffb703; color:#5b3600; box-shadow:0 3px 0 #d99100; transform:translateY(-1px); }
+  .levelbtn.done::after { content:" ✅"; }
+  .board {
+    position:relative; width:100%; aspect-ratio:16/9;
+    background:radial-gradient(ellipse at 50% 120%, #cdeeff 0%, #eaf8ff 70%);
+    border:4px solid #7fc4ef; border-radius:20px;
+    box-shadow:inset 0 0 40px #bfe6ff, 0 8px 0 #59a9d8;
+    overflow:hidden; touch-action:none;
+  }
+  .board .cloud { position:absolute; font-size:34px; opacity:.75; pointer-events:none; animation:float 9s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  .silhouette { position:absolute; pointer-events:none; }
+  .ghost { fill:none; stroke:#173b5c; stroke-width:2; stroke-dasharray:8 6; opacity:.45; }
+  .ghost-ok { stroke:#12a05a; opacity:.7; }
+  .slot { cursor:pointer; }
+  .placed-piece { cursor:pointer; animation:pop .35s ease; }
+  @keyframes pop { 0%{transform:scale(.3);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+  .traybar { margin-top:10px; font-size:13px; color:#2c6ea5; text-align:center; }
+  .tray {
+    margin-top:8px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center;
+    background:#ffffffaa; border:3px dashed #8ecdf0; border-radius:18px; padding:14px; min-height:96px;
+  }
+  .traypiece {
+    width:110px; padding:8px 6px; border-radius:14px; background:#fff; cursor:grab;
+    box-shadow:0 4px 0 #b9dff5; text-align:center; user-select:none; transition:.15s;
+    border:3px solid transparent;
+  }
+  .traypiece:hover { transform:translateY(-3px); }
+  .traypiece.dragging { opacity:.35; }
+  .traypiece svg { width:74px; height:46px; display:block; margin:0 auto; }
+  .traypiece .pname { font-size:13px; font-weight:bold; color:#0b5ca8; margin-top:4px; }
+  .hud { display:flex; justify-content:space-between; align-items:center; margin-top:12px; flex-wrap:wrap; gap:8px; }
+  .hud .score { font-weight:bold; color:#0b5ca8; }
+  .btn {
+    border:none; cursor:pointer; border-radius:14px; padding:10px 18px; font-size:15px; font-weight:bold;
+    background:#ffb703; color:#5b3600; box-shadow:0 4px 0 #d99100; transition:.12s;
+  }
+  .btn:active { transform:translateY(3px); box-shadow:0 1px 0 #d99100; }
+  .btn.ghost { background:#fff; color:#0b5ca8; box-shadow:0 4px 0 #b9dff5; }
+  /* 模态 */
+  .overlay {
+    position:fixed; inset:0; background:#0b3553aa; display:none;
+    align-items:center; justify-content:center; z-index:50; padding:16px;
+  }
+  .overlay.show { display:flex; }
+  .card {
+    background:linear-gradient(180deg,#ffffff,#f2fbff); border-radius:22px; max-width:520px; width:100%;
+    padding:22px 22px 20px; text-align:center; box-shadow:0 12px 0 #0b5ca8; animation:pop .3s ease;
+    border:4px solid #7fc4ef;
+  }
+  .card .big { font-size:54px; }
+  .card h2 { color:#0b5ca8; font-size:22px; margin:6px 0; }
+  .card .know {
+    background:#e8f6ff; border-left:6px solid #ffb703; border-radius:10px;
+    padding:12px 14px; text-align:left; font-size:15px; line-height:1.75; color:#173b5c; margin:12px 0;
+  }
+  .card .know b { color:#0b5ca8; }
+  .card .say { font-size:30px; letter-spacing:6px; color:#12a05a; margin:6px 0; }
+  .card .actions { display:flex; gap:10px; justify-content:center; margin-top:14px; flex-wrap:wrap; }
+  .tip { background:#fff6d9; border-radius:10px; padding:8px 10px; font-size:14px; color:#7a5b00; margin-top:8px; }
+  .wrong { animation:shake .35s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 75%{transform:translateX(7px)} }
+  .trophy { font-size:15px; color:#0b5ca8; margin-top:10px; }
+  footer { text-align:center; font-size:12px; color:#4a7fa5; margin-top:18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>✈️ 飞机拼图小工厂</h1>
+    <p>把零件拖到虚线位置上，装好一架飞机，还能学到每个零件的本领！</p>
+  </header>
+
+  <div class="levelbar" id="levelbar"></div>
+
+  <div class="board" id="board">
+    <span class="cloud" style="left:6%;top:12%">☁️</span>
+    <span class="cloud" style="right:10%;top:8%;animation-delay:2s">☁️</span>
+    <span class="cloud" style="right:24%;top:30%;animation-delay:4s">⛅</span>
+    <svg class="silhouette" id="sil" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+
+  <div class="traybar" id="traybar">👇 下面是要安装的零件，拖到上面虚线位置（也可以先点零件、再点虚线位置）</div>
+  <div class="tray" id="tray"></div>
+
+  <div class="hud">
+    <div class="score" id="score">⭐ 0 分</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn ghost" id="btnReset">🔄 重新开始本关</button>
+      <button class="btn ghost" id="btnAll">📖 看全部知识卡</button>
+    </div>
+  </div>
+  <div class="trophy" id="trophy"></div>
+  <footer>适合小朋友 · 拖一拖、拼一拼、学一学 ✈️</footer>
+</div>
+
+<!-- 零件讲解弹窗 -->
+<div class="overlay" id="ovInfo">
+  <div class="card">
+    <div class="big" id="infoIcon">🔧</div>
+    <h2 id="infoName"></h2>
+    <div class="know" id="infoKnow"></div>
+    <div class="actions">
+      <button class="btn" id="btnSay">🔊 读给我听</button>
+      <button class="btn ghost" id="btnInfoClose">知道啦 ✔</button>
+    </div>
+  </div>
+</div>
+
+<!-- 过关弹窗 -->
+<div class="overlay" id="ovWin">
+  <div class="card">
+    <div class="big">🎉</div>
+    <h2 id="winTitle">飞机装好啦！</h2>
+    <div class="say" id="winPlane">✈️🛩️🛫</div>
+    <div class="know" id="winKnow"></div>
+    <div class="actions">
+      <button class="btn" id="btnNext">下一架 ➜</button>
+      <button class="btn ghost" id="btnAgain">再玩一次</button>
+    </div>
+  </div>
+</div>
+
+<!-- 全部知识卡 -->
+<div class="overlay" id="ovBook">
+  <div class="card" style="max-width:680px">
+    <h2>📖 飞机零件知识大全</h2>
+    <div class="know" id="bookKnow" style="max-height:55vh; overflow:auto"></div>
+    <div class="actions"><button class="btn" id="btnBookClose">关闭 ✖</button></div>
+  </div>
+</div>
+
+<script>
+/* ================= 关卡数据 ================= */
+const LEVELS = [
+  {
+    name:"🛩️ 螺旋桨小飞机", emoji:"🛩️",
+    summary:"机翼产生升力把飞机托上天，机身装人装货，尾翼掌握方向，起落架让飞机稳稳停在地面，发动机推着飞机跑，螺旋桨拉飞机向前冲！",
+    parts:[
+      {id:"prop", name:"螺旋桨", icon:"🌀",
+       know:"<b>螺旋桨：</b>像家里的电风扇叶片一样快速转圈，把空气往后推，飞机就被<b>往前拉</b>着跑了！",
+       slot:{x:14,y:46}, path:"M0,-28 C10,-10 10,10 0,28 C-10,10 -10,-10 0,-28 Z M-28,0 C-10,-10 10,-10 28,0 C10,10 -10,10 -28,0 Z", color:"#e4572e"},
+      {id:"wing", name:"机翼", icon:"🪽",
+       know:"<b>机翼：</b>飞机的&quot;手臂&quot;。空气流过弯弯的翼面，上面快下面慢，产生<b>升力</b>，把几十吨的飞机托上天！",
+       slot:{x:48,y:57}, path:"M-85,-16 Q-60,-34 0,-30 Q60,-34 85,-16 Q60,10 0,14 Q-60,10 -85,-16 Z", color:"#2a9d8f"},
+      {id:"body", name:"机身", icon:"🧍",
+       know:"<b>机身：</b>飞机的<b>身体</b>，像一辆大巴士。飞行员在里面开飞机，乘客和行李也坐在里面。",
+       slot:{x:50,y:47}, path:"M-95,-16 Q-95,-30 -70,-30 L60,-26 Q100,-22 108,0 Q100,22 60,26 L-70,30 Q-95,30 -95,16 Z", color:"#e9c46a"},
+      {id:"tail", name:"尾翼", icon:"🎩",
+       know:"<b>尾翼：</b>飞机的<b>尾巴舵</b>，在飞机屁股上。往上翘、往下压、左右摆，飞机就能<b>爬高、俯冲、转弯</b>。",
+       slot:{x:88,y:36}, path:"M-4,4 L34,-34 L48,-34 L48,4 Z M-40,-6 L14,-6 L14,8 L-40,8 Z", color:"#577590"},
+      {id:"gear", name:"起落架", icon:"🛞",
+       know:"<b>起落架：</b>飞机的<b>小脚丫</b>，带橡皮轮子。起飞前在地上跑，降落时接住飞机，不让机身撞到地上。",
+       slot:{x:52,y:78}, path:"M-16,-20 L-6,4 M16,-20 L6,4 M-16,-16 A16,16 0 1,0 16,-16 A16,16 0 1,0 -16,-16", color:"#4d4d4d"},
+      {id:"engine", name:"发动机", icon:"🔥",
+       know:"<b>发动机：</b>飞机的<b>心脏</b>！它烧燃料发出强大的力气，带动螺旋桨转动，飞机才有劲儿飞。",
+       slot:{x:31,y:47}, path:"M-20,-14 L14,-14 Q24,-14 24,0 Q24,14 14,14 L-20,14 Q-26,14 -26,0 Q-26,-14 -20,-14 Z", color:"#f77f00"}
+    ]
+  },
+  {
+    name:"🛫 大客机", emoji:"🛫",
+    summary:"大客机用喷气发动机吸进空气、喷出气流来飞行；机翼下挂着发动机，还会翘起&quot;小翅膀&quot;省油；机身像长长的火车载着乘客；尾翼上的竖舵管方向；机头的雷达罩帮飞行员看天气；坚固的起落架有好多轮子。",
+    parts:[
+      {id:"radar", name:"雷达罩", icon:"📡",
+       know:"<b>雷达罩：</b>飞机<b>鼻尖</b>的白色帽子，里面藏着雷达。它能提前发现<b>雷雨云</b>，告诉飞行员绕着走。",
+       slot:{x:10,y:47}, path:"M-30,-18 Q-8,-24 4,-16 L4,16 Q-8,24 -30,18 Q-40,0 -30,-18 Z", color:"#f4f1de"},
+      {id:"jet", name:"喷气发动机", icon:"💨",
+       know:"<b>喷气发动机：</b>大口<b>吸空气</b>，点火烧热，再用力向后<b>喷气</b>。根据&quot;作用力=反作用力&quot;，飞机就被推着往前飞。",
+       slot:{x:44,y:70}, path:"M-26,-14 L16,-14 Q28,-14 28,0 Q28,14 16,14 L-26,14 Q-34,14 -34,0 Q-34,-14 -26,-14 Z M-14,-14 L-14,14 M4,-14 L4,14", color:"#457b9d"},
+      {id:"wing", name:"机翼（带小翼）", icon:"🪽",
+       know:"<b>机翼：</b>产生<b>升力</b>。翼尖翘起来的<b>小翼</b>像书里折起来的角，能把乱糟糟的气流&quot;捋顺&quot;，<b>更省油</b>！",
+       slot:{x:48,y:56}, path:"M-95,-14 Q-50,-30 0,-26 Q50,-30 95,-14 Q50,8 0,12 Q-50,8 -95,-14 Z M80,-18 L96,-44 L104,-40 L92,-14 Z", color:"#2a9d8f"},
+      {id:"body", name:"机身", icon:"🧍",
+       know:"<b>机身：</b>又长又圆像<b>火车车厢</b>，一层坐乘客、一层放行李。用又轻又结实的铝合金做成。",
+       slot:{x:50,y:46}, path:"M-110,-18 Q-110,-34 -80,-34 L70,-30 Q115,-26 124,0 Q115,26 70,30 L-80,34 Q-110,34 -110,18 Z", color:"#e9c46a"},
+      {id:"tailfin", name:"垂直尾翼", icon:"🎩",
+       know:"<b>垂直尾翼：</b>竖起来的<b大翅膀</b>。里面藏着方向舵，往左往右一摆，飞机就乖乖<b>转弯</b>。",
+       slot:{x:88,y:33}, path:"M-6,6 L28,-40 L44,-40 L44,6 Z", color:"#c1121f"},
+      {id:"tailwing", name:"水平尾翼", icon:"➖",
+       know:"<b>水平尾翼：</b>平平的<b>小翅膀</b>。飞机机头抬高或压低时，它会反着用力，让飞机<b>飞得平稳</b>不点头。",
+       slot:{x:89,y:52}, path:"M-44,-8 L20,-8 Q34,-8 34,0 Q34,8 20,8 L-44,8 Q-52,0 -44,-8 Z", color:"#6d597a"},
+      {id:"gear", name:"起落架", icon:"🛞",
+       know:"<b>起落架：</b>结实的<b>小脚丫</b>，大客机有好多轮子（十几到二十几个），降落时稳稳接住几十吨的飞机。",
+       slot:{x:56,y:78}, path:"M-22,-18 L-14,2 M22,-18 L14,2 M-30,-14 A11,11 0 1,0 -8,-14 A11,11 0 1,0 -30,-14 M8,-14 A11,11 0 1,0 30,-14 A11,11 0 1,0 8,-14", color:"#4d4d4d"}
+    ]
+  },
+  {
+    name:"🚁 直升机", emoji:"🚁",
+    summary:"直升机的旋翼像一把大风扇，转动时把空气往下推，空气反过来把直升机往上顶，所以它不用跑道就能起飞；尾桨在机尾转圈，抵消旋翼的&quot;扭劲儿&quot;，还能让机头左右转；机身坐着乘客；起落架的小轮子让它在地上滑行。",
+    parts:[
+      {id:"rotor", name:"旋翼", icon:"🌀",
+       know:"<b>旋翼：</b>直升机的<b>大风扇帽子</b>。快速转动把空气<b>往下推</b>，空气反推它<b>向上</b>，直升机就腾空而起，还能<b>悬停</b>在原地不动！",
+       slot:{x:44,y:17}, path:"M-92,-6 Q-40,-16 0,-8 Q40,-16 92,-6 Q40,4 0,8 Q-40,4 -92,-6 Z M-6,-10 L6,-10 L6,16 L-6,16 Z", color:"#e4572e"},
+      {id:"mast", name:"旋翼轴", icon:"📏",
+       know:"<b>旋翼轴：</b>连接发动机和旋翼的<b>传动轴</b>，把发动机的力气传给旋翼，让它转起来。",
+       slot:{x:44,y:33}, path:"M-7,-16 L7,-16 L7,16 L-7,16 Z M-12,-16 L12,-16 L12,-8 L-12,-8 Z", color:"#8d99ae"},
+      {id:"body", name:"机身（座舱）", icon:"🪟",
+       know:"<b>机身：</b>圆圆的<b>玻璃房子</b>，飞行员和乘客坐在里面，视野非常棒，像坐在大玻璃球里。",
+       slot:{x:48,y:56}, path:"M-70,-4 Q-70,-30 -30,-30 L30,-26 Q70,-22 76,4 Q76,28 30,30 L-30,30 Q-70,28 -70,-4 Z", color:"#e9c46a"},
+      {id:"boom", name:"尾梁", icon:"🪵",
+       know:"<b>尾梁：</b>伸得<b>长长的尾巴</b>，把尾桨送到离旋翼尽量远的地方，杠杆原理让小尾桨也能管住大方向。",
+       slot:{x:80,y:56}, path:"M-56,-8 L44,-12 Q56,-12 56,0 Q56,12 44,12 L-56,8 Q-64,0 -56,-8 Z", color:"#4d908e"},
+      {id:"tailrotor", name:"尾桨", icon:"⚙️",
+       know:"<b>尾桨：</b>机尾的小风扇。旋翼转动时机身想打转，尾桨向侧面<b>吹风</b>把尾巴<b>拽住</b>；它吹风多一点、少一点，机头就<b>左转、右转</b>。",
+       slot:{x:96,y:48}, path:"M0,-20 C7,-7 7,7 0,20 C-7,7 -7,-7 0,-20 Z M-20,0 C-7,-7 7,-7 20,0 C7,7 -7,7 -20,0 Z M-2,-3 L2,-3 L2,3 L-2,3 Z", color:"#f77f00"},
+      {id:"skid", name:"起落架（滑橇）", icon:"🛷",
+       know:"<b>滑橇起落架：</b>像雪橇一样的<b>两根长条</b>，轻便又结实，落在草地上也不怕颠。",
+       slot:{x:48,y:82}, path:"M-56,-10 L44,-10 Q56,-10 56,-2 M-40,-10 L-40,10 M40,-10 L40,10 M-56,10 L56,10", color:"#4d4d4d"}
+    ]
+  },
+  {
+    name:"🚀 火箭飞机（概念机）", emoji:"🚀",
+    summary:"火箭发动机不吸空气、自带燃料和氧化剂，能在太空里也工作，把飞机推向极快的速度；尖尖的机头像铅笔一样钻开空气；三角形机翼适合超音速飞行；尾翼保持稳定；太空舱保护飞行员；机翼下还能挂助推火箭！",
+    parts:[
+      {id:"rocket", name:"火箭发动机", icon:"🚀",
+       know:"<b>火箭发动机：</b>自己带<b>燃料+氧气</b>，不需要吸空气，尾部喷出超烫的<b>火焰</b>，推力巨大，飞机能飞得比声音还快！",
+       slot:{x:16,y:50}, path:"M8,-14 L26,-14 Q34,-14 34,0 Q34,14 26,14 L8,14 L-14,22 L-8,0 L-14,-22 Z", color:"#d62828"},
+      {id:"nose", name:"尖机头", icon:"🎯",
+       know:"<b>尖机头：</b>像<b>铅笔尖</b>一样尖，能把前方的空气&quot;切开&quot;，减小阻力，飞得又快又稳。",
+       slot:{x:12,y:44}, path:"M44,0 L-8,-18 Q-24,-14 -24,0 Q-24,14 -8,18 Z", color:"#f4f1de"},
+      {id:"delta", name:"三角机翼", icon:"🔺",
+       know:"<b>三角翼：</b>三角形的大翅膀，<b>超音速</b>时最给力，既结实又能提供升力，还能当燃料箱装燃料。",
+       slot:{x:52,y:60}, path:"M-60,-14 L30,-14 L70,34 L-40,34 Q-56,10 -60,-14 Z", color:"#2a9d8f"},
+      {id:"body", name:"机身", icon:"🧍",
+       know:"<b>机身：</b>细细长长的<b>雪茄形</b>身体，里面装飞行员、燃料和仪器，表面光滑得像镜子。",
+       slot:{x:52,y:46}, path:"M-100,-14 Q-100,-26 -76,-26 L60,-22 Q104,-18 112,0 Q104,18 60,22 L-76,26 Q-100,26 -100,14 Z", color:"#e9c46a"},
+      {id:"fin", name:"尾翼", icon:"🎩",
+       know:"<b>尾翼：</b>高速飞行时帮飞机<b>保持笔直</b>，不打滚、不翻跟头，像箭的羽毛一样稳。",
+       slot:{x:88,y:34}, path:"M-6,6 L26,-34 L42,-34 L42,6 Z M-40,-6 L12,-6 L12,8 L-40,8 Z", color:"#577590"},
+      {id:"booster", name:"助推火箭", icon:"🧨",
+       know:"<b>助推火箭：</b>挂在机翼下的<b>一次性小火箭</b>，起飞时一起点火，帮飞机在短时间内冲上超高速。",
+       slot:{x:52,y:76}, path:"M-30,-10 L20,-10 Q30,-10 30,0 Q30,10 20,10 L-30,10 Q-38,0 -30,-10 Z M-30,-10 L-44,0 L-30,10", color:"#9b2226"}
+    ]
+  }
+];
+
+/* ================= 状态 ================= */
+const board = document.getElementById('board');
+const sil = document.getElementById('sil');
+const tray = document.getElementById('tray');
+const scoreEl = document.getElementById('score');
+const trophyEl = document.getElementById('trophy');
+let level = 0, score = 0, placed = {}, selPiece = null;
+let done = JSON.parse(localStorage.getItem('plane_puzzle_done') || '[]');
+
+const $ = id => document.getElementById(id);
+function say(t){ try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.lang='zh-CN'; u.rate=.9; speechSynthesis.speak(u);}catch(e){} }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+/* 生成轮廓 SVG（虚线槽） */
+function renderBoard(){
+  const L = LEVELS[level];
+  let html = '';
+  L.parts.forEach(p=>{
+    const ok = placed[p.id];
+    const t = `translate(${p.slot.x*6.4}, ${p.slot.y*3.6})`;
+    if(!ok){
+      html += `<g class="slot" data-id="${p.id}" transform="${t}">
+        <path d="${p.path}" class="ghost" fill="${p.color}22"></path>
+      </g>`;
+    } else {
+      html += `<g class="placed-piece" data-id="${p.id}" transform="${t}">
+        <path d="${p.path}" fill="${p.color}" stroke="#173b5c" stroke-width="2"></path>
+        <title>${p.name}</title>
+      </g>`;
+    }
+  });
+  sil.innerHTML = html;
+}
+
+/* 零件托盘 */
+function renderTray(){
+  const L = LEVELS[level];
+  tray.innerHTML = '';
+  L.parts.filter(p=>!placed[p.id]).forEach(p=>{
+    const d = document.createElement('div');
+    d.className = 'traypiece';
+    d.dataset.id = p.id;
+    d.innerHTML = `<svg viewBox="-60 -35 120 70"><path d="${p.path}" fill="${p.color}" stroke="#173b5c" stroke-width="2"></path></svg><div class="pname">${p.icon} ${p.name}</div>`;
+    tray.appendChild(d);
+  });
+  if(tray.children.length===0){
+    tray.innerHTML = '<div style="font-size:15px;color:#12a05a;padding:20px">🎉 全部零件都装上啦！</div>';
+  }
+}
+
+/* 关卡条 */
+function renderLevels(){
+  const bar = $('levelbar');
+  bar.innerHTML = LEVELS.map((L,i)=>
+    `<button class="levelbtn ${i===level?'active':''} ${done.includes(i)?'done':''}" data-i="${i}">${L.name}</button>`).join('');
+}
+
+function renderHud(){
+  scoreEl.textContent = '⭐ ' + score + ' 分';
+  trophyEl.textContent = done.length ? `🏆 已通关 ${done.length}/${LEVELS.length} 架飞机` : '';
+}
+
+function renderAll(){ renderLevels(); renderBoard(); renderTray(); renderHud(); }
+
+/* ================= 放置逻辑 ================= */
+function tryPlace(pid, slotId){
+  if(pid !== slotId){ // 放错
+    const g = sil.querySelector(`.slot[data-id="${slotId}"]`);
+    if(g){ g.classList.add('wrong'); setTimeout(()=>g.classList.remove('wrong'),400); }
+    const tp = tray.querySelector(`.traypiece[data-id="${pid}"]`);
+    if(tp){ tp.classList.add('wrong'); setTimeout(()=>tp.classList.remove('wrong'),400); }
+    say('哎呀，这个位置不对哦，再试试！');
+    return false;
+  }
+  placed[pid] = true;
+  const P = LEVELS[level].parts.find(p=>p.id===pid);
+  score += 10; renderAll();
+  showInfo(P, ()=>{ checkWin(); });
+  return true;
+}
+
+function checkWin(){
+  const L = LEVELS[level];
+  if(Object.keys(placed).length === L.parts.length){
+    score += 50; renderHud();
+    if(!done.includes(level)){ done.push(level); localStorage.setItem('plane_puzzle_done', JSON.stringify(done)); }
+    renderLevels();
+    $('winTitle').textContent = L.name + ' 拼好啦！';
+    $('winKnow').innerHTML = '<b>这架飞机的本领：</b>' + L.summary;
+    $('ovWin').classList.add('show');
+    say('太棒了！' + L.name + '拼装完成！');
+  }
+}
+
+/* 零件知识弹窗 */
+function showInfo(P, cb){
+  $('infoIcon').textContent = P.icon;
+  $('infoName').textContent = P.name + ' 装好了！';
+  $('infoKnow').innerHTML = P.know;
+  $('ovInfo').classList.add('show');
+  $('ovInfo').dataset.txt = P.name + '。' + P.know.replace(/<[^>]+>/g,'');
+  $('ovInfo')._cb = cb;
+}
+$('btnInfoClose').onclick = () => { $('ovInfo').classList.remove('show'); const cb=$('ovInfo')._cb; $('ovInfo')._cb=null; if(cb) cb(); };
+$('btnSay').onclick = () => say($('ovInfo').dataset.txt || '');
+$('ovInfo').addEventListener('click', e=>{ if(e.target===$('ovInfo')) $('btnInfoClose').click(); });
+
+/* ================= 拖拽 / 点选 ================= */
+let dragId = null, dragEl = null;
+function onDown(e){
+  const tp = e.target.closest('.traypiece');
+  if(tp){
+    dragId = tp.dataset.id; dragEl = tp;
+    tp.classList.add('dragging');
+    tp.setPointerCapture && tp.setPointerCapture(e.pointerId);
+  }
+}
+function onMove(e){
+  if(!dragEl) return;
+  e.preventDefault();
+}
+function onUp(e){
+  if(!dragEl) return;
+  const id = dragId; dragEl.classList.remove('dragging');
+  dragEl = null; dragId = null;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const slotG = el && el.closest && el.closest('.slot');
+  if(slotG){ tryPlace(id, slotG.dataset.id); }
+}
+tray.addEventListener('pointerdown', onDown);
+window.addEventListener('pointermove', onMove, {passive:false});
+window.addEventListener('pointerup', onUp);
+
+/* 点选：点零件 -> 点槽位 */
+tray.addEventListener('click', e=>{
+  const tp = e.target.closest('.traypiece');
+  if(tp){
+    if(selPiece===tp){ tp.style.borderColor='transparent'; selPiece=null; return; }
+    if(selPiece) selPiece.style.borderColor='transparent';
+    selPiece = tp; tp.style.borderColor='#ffb703';
+    traybarHint('已选中 <b>'+tp.querySelector('.pname').textContent+'</b>，现在点上面匹配的虚线位置 👉');
+  }
+});
+sil.addEventListener('click', e=>{
+  const g = e.target.closest('.slot');
+  if(g && selPiece){
+    tryPlace(selPiece.dataset.id, g.dataset.id);
+    if(selPiece) selPiece.style.borderColor='transparent';
+    selPiece=null;
+    traybarHint('👇 把零件拖到虚线位置（或点零件、再点虚线位置）');
+  }
+});
+function traybarHint(html){ $('traybar').innerHTML = html; }
+
+/* ================= 按钮 ================= */
+$('btnReset').onclick = () => { placed={}; selPiece=null; renderAll(); traybarHint('👇 把零件拖到虚线位置（或点零件、再点虚线位置）'); };
+$('btnAgain').onclick = () => { $('ovWin').classList.remove('show'); $('btnReset').click(); };
+$('btnNext').onclick = () => {
+  $('ovWin').classList.remove('show');
+  level = (level+1)%LEVELS.length;
+  placed = {}; selPiece=null; renderAll();
+  traybarHint('👇 新的飞机：'+LEVELS[level].name+'，把零件拖到虚线位置吧！');
+};
+$('btnAll').onclick = () => {
+  $('bookKnow').innerHTML = LEVELS.map((L,i)=>
+    `<p style="margin:6px 0 2px"><b style="color:#0b5ca8">${L.name}</b></p>` +
+    L.parts.map(p=>`<p>• ${p.icon} <b>${p.name.replace(/（.*?）/,'')}</b>：${p.know.replace(/<b>.*?<\/b>/,'').replace(/&quot;/g,'"')}</p>`).join('')
+  ).join('<hr style="border:none;border-top:1px dashed #b9dff5;margin:8px 0">');
+  $('ovBook').classList.add('show');
+};
+$('btnBookClose').onclick = () => $('ovBook').classList.remove('show');
+
+/* 关卡切换 */
+$('levelbar').addEventListener('click', e=>{
+  const b = e.target.closest('.levelbtn');
+  if(!b) return;
+  level = +b.dataset.i; placed={}; selPiece=null; renderAll();
+  traybarHint('👇 ' + LEVELS[level].name + '：把零件拖到虚线位置吧！');
+});
+
+renderAll();
+</script>
+</body>
+</html>

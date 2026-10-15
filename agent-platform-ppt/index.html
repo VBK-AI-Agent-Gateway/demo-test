@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>个人智能体助手平台 · 业务介绍 PPT</title>
+<style>
+  :root{
+    --bg:#070b18;--panel:#0d1330;--ink:#eaf0ff;--muted:#8fa3d9;
+    --accent:#4f8cff;--accent2:#22d3ee;--accent3:#a78bfa;--ok:#2ee6a6;--warn:#ffc53d;
+    --line:rgba(79,140,255,.35);
+    --grad:linear-gradient(120deg,#4f8cff,#22d3ee);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--ink);overflow:hidden;
+    font:16px/1.7 -apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    -webkit-user-select:none;user-select:none;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:radial-gradient(rgba(79,140,255,.10) 1px, transparent 1px);
+    background-size:34px 34px;
+    mask-image:radial-gradient(1200px 800px at 50% 40%,#000 30%,transparent 100%);
+  }
+
+  /* ===== deck ===== */
+  #deck{position:relative;z-index:1;height:100%;width:100%}
+  .slide{
+    position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;
+    padding:6vh 8vw 12vh;opacity:0;transform:translateX(40px);
+    transition:opacity .45s ease, transform .45s cubic-bezier(.2,.7,.3,1);
+  }
+  .slide.active{display:flex;opacity:1;transform:none}
+  .slide.prev{transform:translateX(-40px)}
+
+  .kicker{color:var(--accent2);font-size:15px;letter-spacing:5px;margin-bottom:10px;text-transform:uppercase}
+  h2.title{font-size:clamp(28px,4.6vw,54px);line-height:1.2;font-weight:800;margin-bottom:8px}
+  h2.title .hl{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .rule{width:90px;height:5px;border-radius:4px;background:var(--grad);margin:14px 0 24px;box-shadow:0 0 18px rgba(79,140,255,.6)}
+  .sub{color:var(--muted);font-size:clamp(15px,1.7vw,20px);max-width:900px}
+
+  /* ===== cover (slide 0) ===== */
+  .cover{align-items:flex-start;justify-content:center;text-align:left}
+  .cover .badge{display:inline-flex;gap:8px;align-items:center;padding:7px 16px;border:1px solid var(--line);
+    border-radius:999px;color:var(--accent2);font-size:14px;letter-spacing:2px;background:rgba(79,140,255,.08)}
+  .cover h1{font-size:clamp(34px,6vw,76px);line-height:1.12;font-weight:900;margin:22px 0 10px;letter-spacing:1px}
+  .cover h1 .hl{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .cover .tag{font-size:clamp(16px,2.2vw,26px);color:var(--muted);margin-bottom:26px}
+  .cover .meta{display:flex;gap:26px;flex-wrap:wrap;color:var(--muted);font-size:14.5px}
+  .cover .meta b{color:var(--ink)}
+  .orb{position:absolute;right:8vw;top:50%;transform:translateY(-50%);width:min(340px,32vw);aspect-ratio:1;
+    background:radial-gradient(circle at 35% 30%, rgba(34,211,238,.9), rgba(79,140,255,.55) 45%, rgba(167,139,250,.25) 70%, transparent 74%);
+    border-radius:50%;filter:blur(2px);opacity:.9;animation:float 6s ease-in-out infinite;pointer-events:none}
+  .orb::after{content:"";position:absolute;inset:-16%;border:1.5px dashed rgba(34,211,238,.45);border-radius:50%;animation:spin 24s linear infinite}
+  @keyframes float{50%{transform:translateY(calc(-50% - 22px))}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ===== generic grid cards ===== */
+  .grid{display:grid;gap:18px;margin-top:6px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .card{
+    background:linear-gradient(160deg, rgba(13,19,48,.92), rgba(9,13,32,.92));
+    border:1px solid var(--line);border-radius:16px;padding:20px 20px 18px;position:relative;overflow:hidden;
+    box-shadow:0 12px 30px rgba(0,0,0,.35);
+  }
+  .card::before{content:"";position:absolute;left:0;top:0;width:100%;height:3px;background:var(--grad);opacity:.85}
+  .card .ic{font-size:30px;margin-bottom:8px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.4))}
+  .card h3{font-size:clamp(16px,1.7vw,21px);margin-bottom:6px}
+  .card p{color:var(--muted);font-size:clamp(13px,1.35vw,15.5px);line-height:1.65}
+  .card ul{margin:6px 0 0 18px;color:var(--muted);font-size:clamp(13px,1.35vw,15px)}
+  .card li{margin:3px 0}
+
+  /* ===== TOC ===== */
+  .toc{display:grid;grid-template-columns:1fr 1fr;gap:14px 30px;margin-top:8px;max-width:960px}
+  .toc .item{display:flex;gap:14px;align-items:baseline;padding:10px 6px;border-bottom:1px dashed rgba(79,140,255,.25);cursor:pointer;transition:.15s}
+  .toc .item:hover{transform:translateX(6px)}
+  .toc .num{font-size:26px;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;min-width:44px}
+  .toc .nm{font-size:clamp(15px,1.8vw,20px)}
+  .toc .ds{color:var(--muted);font-size:13px;display:block}
+
+  /* ===== arch diagram (SVG-ish css) ===== */
+  .arch{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+  .layer{display:flex;gap:12px;align-items:stretch}
+  .lname{flex:0 0 90px;display:flex;align-items:center;justify-content:center;font-weight:700;
+    background:rgba(79,140,255,.14);border:1px solid var(--line);border-radius:10px;color:var(--accent2);font-size:14.5px;text-align:center}
+  .cells{display:flex;gap:10px;flex:1;flex-wrap:wrap}
+  .cell{flex:1;min-width:120px;background:rgba(13,19,48,.9);border:1px solid var(--line);border-radius:10px;
+    padding:11px 12px;font-size:14px;text-align:center;color:#cfe0ff}
+  .cell b{display:block;color:#fff;font-size:14.5px}
+  .cell small{color:var(--muted);font-size:12px}
+  .flowarrow{text-align:center;color:var(--accent2);font-size:18px;letter-spacing:8px;opacity:.8}
+
+  /* ===== metrics ===== */
+  .metric{text-align:center;padding:22px 12px}
+  .metric .big{font-size:clamp(34px,5vw,64px);font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1}
+  .metric .lb{color:var(--muted);font-size:14.5px;margin-top:8px}
+
+  /* ===== pricing ===== */
+  .price .amt{font-size:clamp(28px,3.6vw,46px);font-weight:900;color:#fff;margin:6px 0}
+  .price .amt small{font-size:15px;color:var(--muted);font-weight:600}
+  .price .tag{position:absolute;top:14px;right:14px;background:var(--grad);color:#04101f;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px}
+  .price ul{margin:8px 0 0 18px;color:var(--muted);font-size:14.5px}
+  .price li{margin:4px 0}
+  .price.hot{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2),0 16px 40px rgba(34,211,238,.25)}
+
+  /* ===== roadmap ===== */
+  .road{display:flex;gap:0;margin-top:14px;position:relative}
+  .road::before{content:"";position:absolute;left:0;right:0;top:34px;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent3));border-radius:4px;opacity:.7}
+  .step{flex:1;text-align:center;position:relative;padding:0 8px}
+  .step .dot{width:20px;height:20px;border-radius:50%;background:#fff;border:4px solid var(--accent2);margin:26px auto 14px;position:relative;z-index:2;box-shadow:0 0 14px var(--accent2)}
+  .step.done .dot{background:var(--ok);border-color:var(--ok)}
+  .step h4{font-size:clamp(14px,1.6vw,18px);margin-bottom:6px}
+  .step .when{color:var(--accent2);font-size:13px;letter-spacing:1px}
+  .step p{color:var(--muted);font-size:13px;margin-top:6px;line-height:1.55}
+
+  /* ===== scene split ===== */
+  .split{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center;margin-top:6px}
+  .quotecard{background:linear-gradient(160deg,rgba(34,211,238,.12),rgba(79,140,255,.08));border-left:5px solid var(--accent2);
+    border-radius:0 16px 16px 0;padding:22px 24px;font-size:clamp(15px,1.8vw,21px);line-height:1.7}
+  .quotecard .who{display:block;margin-top:12px;color:var(--muted);font-size:14px}
+
+  /* ===== compare table ===== */
+  table.cmp{width:100%;border-collapse:collapse;margin-top:8px;font-size:clamp(13px,1.5vw,16px)}
+  table.cmp th,table.cmp td{border:1px solid var(--line);padding:11px 12px;text-align:center}
+  table.cmp th{background:rgba(79,140,255,.16);color:#fff}
+  table.cmp td:first-child,table.cmp th:first-child{text-align:left;color:var(--muted)}
+  table.cmp .yes{color:var(--ok);font-weight:800}
+  table.cmp .no{color:#ff7b7b}
+  table.cmp tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+  table.cmp .own{background:rgba(34,211,238,.10)!important;color:#bdf3ff;font-weight:700}
+
+  /* ===== closing ===== */
+  .closing{align-items:center;text-align:center;justify-content:center}
+  .cta{margin-top:26px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+  .btn{padding:13px 30px;border-radius:999px;font-weight:700;font-size:16px;border:none;cursor:pointer;
+    background:var(--grad);color:#04101f;box-shadow:0 10px 26px rgba(79,140,255,.4)}
+  .btn.ghost{background:transparent;border:2px solid var(--line);color:var(--ink);box-shadow:none}
+  .qr{width:130px;height:130px;margin:22px auto 0;border-radius:14px;border:1px solid var(--line);
+    background:
+      repeating-conic-gradient(#0d1330 0 25%, #16204a 0 50%) 0 0/26px 26px,
+      #0d1330;position:relative}
+  .qr::after{content:"扫码了解 / 预约演示";position:absolute;left:0;right:0;bottom:-30px;color:var(--muted);font-size:13px}
+
+  /* ===== nav UI ===== */
+  #hud{position:fixed;z-index:40;left:0;right:0;bottom:0;pointer-events:none}
+  #bar{height:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:width .35s ease;box-shadow:0 0 12px var(--accent2)}
+  #hudRow{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;pointer-events:auto;
+    background:linear-gradient(0deg, rgba(7,11,24,.92), transparent)}
+  .navbtn{width:44px;height:36px;border-radius:10px;border:1px solid var(--line);background:rgba(13,19,48,.8);
+    color:var(--ink);font-size:17px;cursor:pointer;transition:.15s}
+  .navbtn:hover{background:rgba(79,140,255,.25)}
+  #pageNo{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums;letter-spacing:1px}
+  #tools{display:flex;gap:8px;align-items:center}
+  #brandMini{color:var(--muted);font-size:13px;letter-spacing:2px;display:none}
+  @media(min-width:900px){#brandMini{display:block}}
+
+  /* ===== thumbnails ===== */
+  #thumbs{position:fixed;inset:0;z-index:60;background:rgba(4,7,16,.96);display:none;overflow:auto;padding:26px}
+  #thumbs.show{display:block}
+  #thumbs h3{color:var(--accent2);letter-spacing:3px;margin-bottom:18px;font-weight:700}
+  .tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+  .thumb{aspect-ratio:16/10;border:1px solid var(--line);border-radius:12px;background:linear-gradient(160deg,#0d1330,#090d20);
+    padding:16px;cursor:pointer;display:flex;flex-direction:column;justify-content:center;transition:.15s;position:relative;overflow:hidden}
+  .thumb:hover{border-color:var(--accent2);transform:translateY(-4px);box-shadow:0 14px 30px rgba(0,0,0,.5)}
+  .thumb .tn{color:var(--accent2);font-size:12px;letter-spacing:1px}
+  .thumb .tt{font-size:17px;font-weight:800;margin-top:6px}
+  .thumb .td{color:var(--muted);font-size:12.5px;margin-top:6px;line-height:1.5}
+  .thumb.cur{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2)}
+
+  /* ===== responsive ===== */
+  @media (max-width:900px){
+    .slide{padding:5vh 6vw 13vh}
+    .grid.g4{grid-template-columns:repeat(2,1fr)}
+    .g3{grid-template-columns:1fr 1fr}
+    .split{grid-template-columns:1fr}
+    .orb{display:none}
+    .toc{grid-template-columns:1fr}
+    .road{flex-direction:column;gap:14px}
+    .road::before{left:14px;right:auto;top:0;bottom:0;width:4px;height:auto}
+    .step{display:flex;gap:14px;text-align:left;align-items:flex-start}
+    .step .dot{margin:4px 0 0}
+  }
+  @media (max-width:640px){
+    body{font-size:15px}
+    .grid.g3,.grid.g4,.grid.g2{grid-template-columns:1fr}
+    .slide{padding:4vh 5vw 14vh;justify-content:flex-start;padding-top:7vh;overflow-y:auto}
+    h2.title{font-size:clamp(24px,7vw,34px)}
+    .cover h1{font-size:clamp(30px,10vw,44px)}
+    .card{padding:16px}
+    .metric .big{font-size:clamp(30px,11vw,44px)}
+    .lname{flex:0 0 70px;font-size:12.5px}
+    .cell{min-width:100px}
+    table.cmp th,table.cmp td{padding:8px 6px}
+    #pageNo{font-size:13px}
+  }
+  @media (max-width:420px){
+    .cover .meta{gap:14px;font-size:13px}
+    .toc .num{font-size:22px;min-width:36px}
+    .navbtn{width:40px}
+    .thumb{padding:12px}
+  }
+</style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- 0 COVER -->
+  <section class="slide cover active" data-t="封面" data-d="个人智能体助手平台">
+    <div class="orb" aria-hidden="true"></div>
+    <span class="badge">● BUSINESS DECK · 2025</span>
+    <h1>个人智能体助手平台<br><span class="hl">AgentHub · 让每个人都拥有 AI 分身</span></h1>
+    <div class="tag">一站式多智能体编排 · 工具调用 · 知识增强 · 工作流自动化</div>
+    <div class="meta">
+      <span>汇报人：<b>产品与增长团队</b></span>
+      <span>日期：<b>2025 年</b></span>
+      <span>版本：<b>V1.0 业务介绍</b></span>
+      <span>按 <b>→ / 空格</b> 翻页 · <b>T</b> 目录 · <b>F</b> 全屏</span>
+    </div>
+  </section>
+
+  <!-- 1 TOC -->
+  <section class="slide" data-t="目录" data-d="10 个章节导航">
+    <div class="kicker">CONTENTS</div>
+    <h2 class="title">目录 <span class="hl">Agenda</span></h2>
+    <div class="rule"></div>
+    <div class="toc" id="tocBox"></div>
+  </section>
+
+  <!-- 2 pain -->
+  <section class="slide" data-t="市场与痛点" data-d="个人用户的 AI 困境">
+    <div class="kicker">01 · MARKET & PAIN</div>
+    <h2 class="title">人人都在用 AI，<span class="hl">但"好用"的仍是少数</span></h2>
+    <div class="rule"></div>
+    <div class="grid g4">
+      <div class="card"><div class="ic">🧩</div><h3>工具割裂</h3><p>写作、日程、检索、自动化分散在十几个 App，来回复制粘贴。</p></div>
+      <div class="card"><div class="ic">🧠</div><h3>没有记忆</h3><p>每次对话从零开始，不懂你的偏好、项目与长期上下文。</p></div>
+      <div class="card"><div class="ic">🔌</div><h3>不会动手</h3><p>只会"说"不会"做"，订票、整理、跑脚本仍要自己来。</p></div>
+      <div class="card"><div class="ic">💸</div><h3>成本不透明</h3><p>多模型多订阅叠加，个人用户难以掌控 token 与费用。</p></div>
+    </div>
+    <p class="sub" style="margin-top:18px">→ 我们要交付的不是一个聊天框，而是一个<strong style="color:#fff">能长期记住你、能替你调用工具与服务</strong>的个人智能体平台。</p>
+  </section>
+
+  <!-- 3 positioning -->
+  <section class="slide" data-t="产品定位" data-d="三层价值主张">
+    <div class="kicker">02 · POSITIONING</div>
+    <h2 class="title">产品定位：<span class="hl">个人的 AI 操作系统</span></h2>
+    <div class="rule"></div>
+    <div class="grid g3">
+      <div class="card"><div class="ic">🎯</div><h3>一句话定位</h3><p>面向个人与小团队的<strong style="color:#fff">多智能体助手平台</strong>：一个入口，多个人格化 Agent 协同，替你完成从"想"到"做"的闭环。</p></div>
+      <div class="card"><div class="ic">👤</div><h3>目标用户</h3><ul><li>知识工作者 / 自由职业者</li><li>创作者与自媒体</li><li>独立开发者 / 小微团队</li><li>高频多任务的效率控</li></ul></div>
+      <div class="card"><div class="ic">💎</div><h3>核心价值</h3><ul><li>长期记忆的"数字分身"</li><li>可编排、可托管的任务执行</li><li>模型无关 + 成本可控</li></ul></div>
+    </div>
+    <div class="quotecard" style="margin-top:20px">"把散落各处的 AI 能力，收敛为一个懂你、陪你、替你干活的智能体。"
+      <span class="who">— 产品愿景</span></div>
+  </section>
+
+  <!-- 4 capabilities -->
+  <section class="slide" data-t="核心能力" data-d="六大能力矩阵">
+    <div class="kicker">03 · CAPABILITIES</div>
+    <h2 class="title">核心能力：<span class="hl">六大引擎</span></h2>
+    <div class="rule"></div>
+    <div class="grid g3">
+      <div class="card"><div class="ic">🤖</div><h3>多智能体编排</h3><p>写作、研究、编程、日程等多 Agent 并行/串行协作，主管 Agent 自动拆解任务分发。</p></div>
+      <div class="card"><div class="ic">🛠️</div><h3>工具 & MCP 调用</h3><p>内置 100+ 工具，兼容 MCP 协议，一键接入浏览器、文件、日历、数据库与第三方 API。</p></div>
+      <div class="card"><div class="ic">📚</div><h3>个人知识库</h3><p>笔记/文档/网页自动向量化，RAG 检索带引用回答，越用越懂你。</p></div>
+      <div class="card"><div class="ic">⚙️</div><h3>工作流自动化</h3><p>可视化编排定时代理：早报、竞品监控、周报生成、社媒分发全自动。</p></div>
+      <div class="card"><div class="ic">🧬</div><h3>长期记忆</h3><p>用户画像 + 事件记忆双通道，跨会话保持偏好、项目与语气一致性。</p></div>
+      <div class="card"><div class="ic">🔐</div><h3>安全与隐私</h3><p>本地优先存储、端到端加密、细粒度权限与审计日志，敏感数据可脱敏。</p></div>
+    </div>
+  </section>
+
+  <!-- 5 architecture -->
+  <section class="slide" data-t="平台架构" data-d="四层技术架构">
+    <div class="kicker">04 · ARCHITECTURE</div>
+    <h2 class="title">平台架构：<span class="hl">四层解耦</span></h2>
+    <div class="rule"></div>
+    <div class="arch">
+      <div class="layer"><div class="lname">接入层</div><div class="cells">
+        <div class="cell"><b>Web / 桌面端</b><small>全平台客户端</small></div>
+        <div class="cell"><b>移动端 App</b><small>iOS / Android</small></div>
+        <div class="cell"><b>IM 插件</b><small>微信 / Slack</small></div>
+        <div class="cell"><b>OpenAPI</b><small>开发者接入</small></div>
+      </div></div>
+      <div class="flowarrow">▼</div>
+      <div class="layer"><div class="lname">智能体层</div><div class="cells">
+        <div class="cell"><b>主控 Agent</b><small>意图理解 · 任务拆解</small></div>
+        <div class="cell"><b>专家 Agent 池</b><small>写作/研究/代码/生活</small></div>
+        <div class="cell"><b>记忆服务</b><small>画像 + 事件记忆</small></div>
+        <div class="cell"><b>知识库 RAG</b><small>向量检索 · 引用</small></div>
+      </div></div>
+      <div class="flowarrow">▼</div>
+      <div class="layer"><div class="lname">能力层</div><div class="cells">
+        <div class="cell"><b>工具 / MCP 网关</b><small>100+ 工具统一鉴权</small></div>
+        <div class="cell"><b>工作流引擎</b><small>定时 · 触发 · 编排</small></div>
+        <div class="cell"><b>模型路由</b><small>多模型降级与成本策略</small></div>
+        <div class="cell"><b>沙箱执行</b><small>代码/脚本安全运行</small></div>
+      </div></div>
+      <div class="flowarrow">▼</div>
+      <div class="layer"><div class="lname">基座层</div><div class="cells">
+        <div class="cell"><b>云 / 私有化部署</b><small>弹性算力</small></div>
+        <div class="cell"><b>向量 & 对象存储</b><small>加密持久化</small></div>
+        <div class="cell"><b>可观测性</b><small>日志 · 评测 · 成本看板</small></div>
+        <div class="cell"><b>安全合规</b><small>权限 · 审计 · 脱敏</small></div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- 6 scenarios -->
+  <section class="slide" data-t="典型场景" data-d="四个高频用例">
+    <div class="kicker">05 · USE CASES</div>
+    <h2 class="title">典型使用场景</h2>
+    <div class="rule"></div>
+    <div class="grid g2">
+      <div class="card"><div class="ic">🌅</div><h3>晨间情报官</h3><p>定时抓取行业资讯 + 收件箱摘要，生成 5 分钟可读早报推送到手机。</p></div>
+      <div class="card"><div class="ic">✍️</div><h3>内容创作流</h3><p>选题 → 大纲 → 成文 → 配图 → 多平台分发，一条工作流全自动，你只做终审。</p></div>
+      <div class="card"><div class="ic">💻</div><h3>开发副驾</h3><p>读仓库、写代码、跑测试、发 PR，配合沙箱安全执行与 MCP 工具链。</p></div>
+      <div class="card"><div class="ic">🗂️</div><h3>个人事务管家</h3><p>日程整理、邮件草拟、票据归档、旅行规划——长期记忆记住你的偏好。</p></div>
+    </div>
+  </section>
+
+  <!-- 7 differentiation -->
+  <section class="slide" data-t="差异化优势" data-d="与通用 Chat 对比">
+    <div class="kicker">06 · WHY US</div>
+    <h2 class="title">差异化：<span class="hl">从"对话"到"代理执行"</span></h2>
+    <div class="rule"></div>
+    <table class="cmp">
+      <tr><th>能力维度</th><th class="own">AgentHub</th><th>通用聊天 AI</th><th>单点效率工具</th></tr>
+      <tr><td>多 Agent 编排协同</td><td class="yes own">✔ 原生</td><td class="no">✘</td><td class="no">✘</td></tr>
+      <tr><td>长期个人记忆</td><td class="yes own">✔ 双通道</td><td>有限</td><td class="no">✘</td></tr>
+      <tr><td>工具调用 / MCP</td><td class="yes own">✔ 100+</td><td>部分</td><td>单一</td></tr>
+      <tr><td>定时工作流自动化</td><td class="yes own">✔ 可视化</td><td class="no">✘</td><td>部分</td></tr>
+      <tr><td>知识库 RAG 引用</td><td class="yes own">✔</td><td>部分</td><td>部分</td></tr>
+      <tr><td>多模型成本可控</td><td class="yes own">✔ 路由策略</td><td class="no">✘</td><td class="no">✘</td></tr>
+      <tr><td>本地/私有化部署</td><td class="yes own">✔</td><td class="no">✘</td><td>部分</td></tr>
+    </table>
+  </section>
+
+  <!-- 8 business model -->
+  <section class="slide" data-t="商业模式" data-d="三档订阅 + 企业版">
+    <div class="kicker">07 · BUSINESS MODEL</div>
+    <h2 class="title">商业模式：<span class="hl">订阅 + 增值 + 企业</span></h2>
+    <div class="rule"></div>
+    <div class="grid g3">
+      <div class="card price"><div class="ic">🌱</div><h3>免费版</h3><div class="amt">¥0<small> /月</small></div>
+        <ul><li>2 个智能体 · 基础模型</li><li>日 100 次任务</li><li>1 个知识库（50 文档）</li></ul></div>
+      <div class="card price hot"><span class="tag">推荐</span><div class="ic">⭐</div><h3>专业版</h3><div class="amt">¥39<small> /月</small></div>
+        <ul><li>无限智能体 · 高级模型</li><li>定时工作流 + 100+ 工具</li><li>无限知识库 · 优先算力</li></ul></div>
+      <div class="card price"><div class="ic">🏢</div><h3>团队 / 企业版</h3><div class="amt">¥199<small> 起/月</small></div>
+        <ul><li>席位管理 · 组织知识库</li><li>私有化 / VPC 部署</li><li>SSO · 审计 · 专属支持</li></ul></div>
+    </div>
+    <p class="sub" style="margin-top:16px">收入结构：订阅 70% · 模型与算力增值服务 20% · 企业定制与生态分成 10%（目标 18 个月达成）。</p>
+  </section>
+
+  <!-- 9 roadmap -->
+  <section class="slide" data-t="发展路线" data-d="四个阶段里程碑">
+    <div class="kicker">08 · ROADMAP</div>
+    <h2 class="title">发展路线图</h2>
+    <div class="rule"></div>
+    <div class="road">
+      <div class="step done"><div class="dot"></div><div><div class="when">阶段一 · 已上线</div><h4>MVP 验证</h4><p>核心对话 + 3 个 Agent + 基础工具，1 万+ 种子用户。</p></div></div>
+      <div class="step done"><div class="dot"></div><div><div class="when">阶段二 · 进行中</div><h4>记忆 & 知识库</h4><p>长期记忆、RAG 引用、工作流引擎，付费转化跑通。</p></div></div>
+      <div class="step"><div class="dot"></div><div><div class="when">阶段三 · Q+2</div><h4>生态开放</h4><p>MCP 市场、插件 SDK、多端 App 全量发布。</p></div></div>
+      <div class="step"><div class="dot"></div><div><div class="when">阶段四 · Q+4</div><h4>企业化</h4><p>私有化部署、组织版、行业解决方案与出海。</p></div></div>
+    </div>
+    <div class="grid g3" style="margin-top:26px">
+      <div class="card metric"><div class="big">10万+</div><div class="lb">12 个月目标注册用户</div></div>
+      <div class="card metric"><div class="big">8%</div><div class="lb">目标付费转化率</div></div>
+      <div class="card metric"><div class="big">NPS 50+</div><div class="lb">用户体验净推荐值</div></div>
+    </div>
+  </section>
+
+  <!-- 10 metrics -->
+  <section class="slide" data-t="关键指标" data-d="当前进展数据">
+    <div class="kicker">09 · TRACTION</div>
+    <h2 class="title">关键指标 <span class="hl">Traction</span></h2>
+    <div class="rule"></div>
+    <div class="grid g4">
+      <div class="card metric"><div class="big">12k+</div><div class="lb">注册用户</div></div>
+      <div class="card metric"><div class="big">48%</div><div class="lb">7 日留存</div></div>
+      <div class="card metric"><div class="big">35万</div><div class="lb">月执行任务数</div></div>
+      <div class="card metric"><div class="big">99.9%</div><div class="lb">服务可用性</div></div>
+      <div class="card metric"><div class="big">100+</div><div class="lb">内置工具 / MCP</div></div>
+      <div class="card metric"><div class="big">6</div><div class="lb">专家 Agent 模板</div></div>
+      <div class="card metric"><div class="big">4.8</div><div class="lb">用户评分（5 分制）</div></div>
+      <div class="card metric"><div class="big">-37%</div><div class="lb">人均 token 成本下降</div></div>
+    </div>
+  </section>
+
+  <!-- 11 team/ecosystem -->
+  <section class="slide" data-t="团队与生态" data-d="核心团队 + 合作伙伴">
+    <div class="kicker">10 · TEAM & ECOSYSTEM</div>
+    <h2 class="title">团队与生态</h2>
+    <div class="rule"></div>
+    <div class="grid g3">
+      <div class="card"><div class="ic">🧑‍💻</div><h3>核心团队</h3><ul><li>AI 算法：大模型/Agent/RAG 背景</li><li>平台工程：高并发与安全</li><li>产品增长：工具类 App 从 0 到 1</li></ul></div>
+      <div class="card"><div class="ic">🤝</div><h3>生态合作</h3><ul><li>主流大模型厂商（多模型接入）</li><li>MCP 工具与插件开发者</li><li>云厂商联合孵化计划</li></ul></div>
+      <div class="card"><div class="ic">🛡️</div><h3>护城河</h3><ul><li>个人记忆数据飞轮</li><li>工具 & 工作流生态网络</li><li>成本路由与调度优化</li></ul></div>
+    </div>
+    <div class="quotecard" style="margin-top:20px">我们不与模型竞争，我们把最好的模型变成每个人的日常工作流。
+      <span class="who">— 团队信念</span></div>
+  </section>
+
+  <!-- 12 closing -->
+  <section class="slide closing" data-t="结尾" data-d="合作与联系 CTA">
+    <div class="kicker">THANK YOU</div>
+    <h1 style="font-size:clamp(30px,5vw,60px);font-weight:900;margin-top:6px">
+      让每个人都拥有 <span style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">AI 分身</span>
+    </h1>
+    <p class="sub" style="margin:16px auto 0;text-align:center">诚邀体验内测 · 渠道合作 · 生态共建</p>
+    <div class="cta">
+      <button class="btn" onclick="alert('感谢关注！演示环境：请点击左侧目录浏览全部内容。')">预约产品演示</button>
+      <button class="btn ghost" onclick="alert('商务合作：business@agenthub.demo')">商务合作</button>
+    </div>
+    <div class="qr" aria-label="二维码占位"></div>
+  </section>
+
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="bar"></div>
+  <div id="hudRow">
+    <div id="tools">
+      <button class="navbtn" id="btnPrev" title="上一页 (←)" aria-label="上一页">‹</button>
+      <button class="navbtn" id="btnNext" title="下一页 (→ / 空格)" aria-label="下一页">›</button>
+      <button class="navbtn" id="btnThumb" title="缩略图 (T)" aria-label="缩略图导航">▦</button>
+      <button class="navbtn" id="btnFull" title="全屏 (F)" aria-label="全屏">⛶</button>
+    </div>
+    <span id="brandMini">AGENTHUB · 业务介绍</span>
+    <span id="pageNo">01 / 13</span>
+  </div>
+</div>
+
+<!-- thumbnails -->
+<div id="thumbs">
+  <h3>◈ 幻灯片导航 · 点击跳转（按 T / Esc 关闭）</h3>
+  <div class="tgrid" id="tgrid"></div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   极简幻灯片引擎: section.slide, transform 过渡, 键盘/点击/触摸
+============================================================ */
+const slides = Array.from(document.querySelectorAll(".slide"));
+const N = slides.length;
+let cur = 0;
+const $ = (id)=>document.getElementById(id);
+
+/* ---- TOC (自动由 data-t/data-d 生成, 点击跳转) ---- */
+const tocItems = slides.map((s,i)=>({t:s.dataset.t||("第"+(i+1)+"页"), d:s.dataset.d||"", i}));
+$("tocBox").innerHTML = tocItems.map((o,k)=> k===0? "" : // skip cover in toc
+  `<div class="item" data-go="${o.i}"><span class="num">${String(k).padStart(2,"0")}</span><span class="nm">${o.t}<span class="ds">${o.d}</span></span></div>`
+).join("");
+document.querySelectorAll("#tocBox .item").forEach(el=>{
+  el.onclick = ()=> go(+el.dataset.go);
+});
+
+/* ---- thumbnails ---- */
+function buildThumbs(){
+  $("tgrid").innerHTML = slides.map((s,i)=>`
+    <div class="thumb ${i===cur?"cur":""}" data-go="${i}">
+      <div class="tn">${String(i+1).padStart(2,"0")} / ${N}</div>
+      <div class="tt">${s.dataset.t||"Slide "+(i+1)}</div>
+      <div class="td">${s.dataset.d||""}</div>
+    </div>`).join("");
+  document.querySelectorAll("#tgrid .thumb").forEach(el=>{
+    el.onclick = ()=>{ closeThumbs(); go(+el.dataset.go); };
+  });
+}
+function openThumbs(){ buildThumbs(); $("thumbs").classList.add("show"); }
+function closeThumbs(){ $("thumbs").classList.remove("show"); }
+function toggleThumbs(){ $("thumbs").classList.contains("show") ? closeThumbs() : openThumbs(); }
+
+/* ---- go / next / prev ---- */
+function go(i){
+  i = Math.max(0, Math.min(N-1, i));
+  if (i===cur) return;
+  slides[cur].classList.remove("active");
+  slides[cur].classList.toggle("prev", i>cur);
+  cur = i;
+  slides[cur].classList.remove("prev");
+  slides[cur].classList.add("active");
+  updateHud();
+}
+function next(){ go(cur+1); }
+function prev(){ go(cur-1); }
+
+function updateHud(){
+  $("pageNo").textContent = String(cur+1).padStart(2,"0") + " / " + N;
+  $("bar").style.width = ((cur+1)/N*100) + "%";
+}
+
+/* ---- fullscreen ---- */
+function toggleFull(){
+  if (!document.fullscreenElement){
+    (document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen).call(document.documentElement);
+  } else {
+    (document.exitFullscreen||document.webkitExitFullscreen).call(document);
+  }
+}
+
+/* ---- events: buttons ---- */
+$("btnPrev").onclick = prev;
+$("btnNext").onclick = next;
+$("btnThumb").onclick = toggleThumbs;
+$("btnFull").onclick = toggleFull;
+
+/* ---- events: keyboard ---- */
+document.addEventListener("keydown",(e)=>{
+  if (e.code==="ArrowRight"||e.code==="Space"||e.code==="PageDown"){ e.preventDefault(); next(); }
+  else if (e.code==="ArrowLeft"||e.code==="PageUp"){ e.preventDefault(); prev(); }
+  else if (e.key==="t"||e.key==="T"){ toggleThumbs(); }
+  else if (e.key==="f"||e.key==="F"){ toggleFull(); }
+  else if (e.key==="Home"){ go(0); }
+  else if (e.key==="End"){ go(N-1); }
+  else if (e.key==="Escape"){ closeThumbs(); }
+  else if (/^[0-9]$/.test(e.key) && (e.altKey||e.metaKey)){ /* future: jump */ }
+});
+
+/* ---- events: touch swipe ---- */
+let tsx=0, tsy=0, moving=false;
+document.addEventListener("touchstart",(e)=>{ tsx=e.touches[0].clientX; tsy=e.touches[0].clientY; moving=true; },{passive:true});
+document.addEventListener("touchend",(e)=>{
+  if(!moving) return; moving=false;
+  const dx=e.changedTouches[0].clientX-tsx, dy=e.changedTouches[0].clientY-tsy;
+  if (Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)) { dx<0 ? next() : prev(); }
+},{passive:true});
+
+/* ---- events: click machine (not on buttons/links) ---- */
+document.addEventListener("click",(e)=>{
+  if (e.target.closest("button,a,#thumbs")) return;
+  const x = e.clientX / window.innerWidth;
+  if (x > 0.72) next();
+  else if (x < 0.18) prev();
+});
+
+/* ---- events: wheel (throttled) ---- */
+let wheelLock=false;
+document.addEventListener("wheel",(e)=>{
+  if (wheelLock) return;
+  if (Math.abs(e.deltaY) < 24) return;
+  wheelLock=true; setTimeout(()=>wheelLock=false, 500);
+  e.deltaY>0 ? next() : prev();
+},{passive:true});
+
+/* ---- boot ---- */
+updateHud();
+</script>
+</body>
+</html>

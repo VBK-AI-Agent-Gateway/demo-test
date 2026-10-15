@@ -1,0 +1,27 @@
+services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      NODE_ENV: production
+      DB_PATH: /app/data/app.db
+    volumes:
+      - appdata:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  test:
+    build: .
+    profiles: ["test"]
+    environment:
+      NODE_ENV: test
+      DB_PATH: /app/data/test.db
+    command: ["npx", "jest", "--runInBand", "--forceExit"]
+
+volumes:
+  appdata:

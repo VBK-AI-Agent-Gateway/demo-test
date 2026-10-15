@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>零压语言课 · 日语英语零基础学习</title>
+<meta name="description" content="轻量外语学习：日语（平假名/片假名/振假名）与英语零基础，单词、短句、听力、选词填空、翻译闯关；间隔重复、错题本、已掌握词汇；无积分等级、无红生命、无排行社交付费。">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">零压<span>语言课</span> 🌱</div>
+  <div class="spacer"></div>
+  <div class="quiet-note">无积分 · 无等级 · 无排行 · 纯粹学语言</div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-view="home">🏠 课程</button>
+  <button class="tab" data-view="review">🔁 今日复习</button>
+  <button class="tab" data-view="wrong">📕 错题本</button>
+  <button class="tab" data-view="words">📗 已掌握</button>
+</nav>
+
+<main>
+  <!-- 课程主页 -->
+  <section class="view" id="view-home">
+    <div class="lang-switch" id="langSwitch">
+      <button class="lang-btn active" data-lang="ja">🇯🇵 日语</button>
+      <button class="lang-btn" data-lang="en">🇬🇧 英语</button>
+    </div>
+    <div class="progress-strip">
+      <span id="progText">已学 0 个小节</span>
+      <div class="pbar"><i id="progBar" style="width:0%"></i></div>
+    </div>
+    <div id="unitBox"></div>
+  </section>
+
+  <!-- 今日复习 -->
+  <section class="view" id="view-review" style="display:none">
+    <div class="panel">
+      <h2>🔁 间隔重复复习</h2>
+      <p class="desc">按遗忘曲线安排到期卡片，只复习、不计分。每天少量多次，记忆最牢。</p>
+      <div class="due-stat" id="dueStat">到期 0 张</div>
+      <button class="go-btn" id="reviewBtn">开始复习</button>
+      <p class="hint" id="reviewHint">学完课程小节后，这里会出现待复习卡片。</p>
+    </div>
+  </section>
+
+  <!-- 错题本 -->
+  <section class="view" id="view-wrong" style="display:none">
+    <div class="panel">
+      <h2>📕 错题本</h2>
+      <p class="desc">做错的题自动收录，点「重做」可直接再练一遍；连续答对 2 次自动移出。</p>
+      <div id="wrongList" class="list"></div>
+    </div>
+  </section>
+
+  <!-- 已掌握词汇 -->
+  <section class="view" id="view-words" style="display:none">
+    <div class="panel">
+      <h2>📗 已掌握词汇</h2>
+      <p class="desc">SRS 等级达到「已掌握」的词会进入这里，可随时点 🔊 朗读复习。</p>
+      <div id="wordList" class="list"></div>
+    </div>
+  </section>
+</main>
+
+<!-- 练习全屏层 -->
+<div class="overlay" id="overlay">
+  <div class="q-top">
+    <button class="close-x" id="closeBtn" aria-label="退出">✕</button>
+    <div class="q-progress"><i id="qBar" style="width:0%"></i></div>
+    <div class="q-count" id="qCount">1/5</div>
+  </div>
+  <div class="q-body" id="qBody"></div>
+  <div class="result" id="resultBox">
+    <div class="big">🎉</div>
+    <h1>小节完成！</h1>
+    <div class="gain" id="resGain"></div>
+    <p class="res-note">答错的题已收录到错题本，稍后会安排复习。</p>
+    <button class="next-btn" id="resBtn">返回课程</button>
+  </div>
+  <div class="q-foot" id="qFoot" style="display:none">
+    <div class="fb-title" id="fbTitle"></div>
+    <div class="fb-tip" id="fbTip"></div>
+    <button class="next-btn" id="checkBtn">继续</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

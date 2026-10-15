@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>LexAI · 全能企业法务与 AI 合规总监</title>
+<meta name="description" content="LexAI 六大法务功能：合同 Redline、AI 治理 AIA、AI 采购风控、数据合规出境、法规检索、履约预警，深色响应式移动端优先卡片排版。">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: { extend: {
+    colors: { ink: "#0D0E11", ink2: "#14161B", ink3: "#1B1E25",
+      brand: "#3B82F6", risk: "#EF4444", warn: "#F59E0B", ok: "#10B981" },
+    fontFamily: { sans: ['"Noto Sans SC"','"PingFang SC"','"Microsoft YaHei"','system-ui','sans-serif'] },
+    boxShadow: { glow: "0 0 0 1px rgba(59,130,246,.35), 0 12px 40px rgba(59,130,246,.15)" }
+  } }
+};
+</script>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+</head>
+<body class="bg-ink text-slate-200 font-sans min-h-screen selection:bg-brand/40">
+<div class="flex min-h-screen">
+
+  <!-- 手机遮罩 -->
+  <div id="scrim" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden"></div>
+
+  <!-- 左侧导航 -->
+  <aside id="sidebar" class="fixed md:sticky top-0 left-0 z-50 md:z-30 h-full w-[276px] shrink-0 -translate-x-full md:translate-x-0 transition-transform duration-300 bg-ink2 border-r border-white/10 flex flex-col">
+    <div class="flex items-center gap-3 px-5 h-16 border-b border-white/10 shrink-0">
+      <div class="w-10 h-10 rounded-xl bg-brand/15 border border-brand/40 grid place-items-center text-xl shadow-glow">⚖️</div>
+      <div class="leading-tight">
+        <div class="font-black text-white tracking-wide">LexAI</div>
+        <div class="text-[11px] text-slate-500 font-semibold">全能企业法务与 AI 合规总监</div>
+      </div>
+      <button id="closeSide" class="ml-auto md:hidden w-11 h-11 -mr-2 grid place-items-center rounded-lg text-slate-400 hover:text-white hover:bg-white/10" aria-label="关闭菜单">✕</button>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto px-3 py-3 space-y-1" id="navList">
+      <div class="text-[11px] font-bold tracking-widest text-slate-500 px-2 pt-1 pb-1">六大核心功能</div>
+      <button class="nav-item active" data-nav="home">🏠 功能菜单 / 主菜单</button>
+      <button class="nav-item" data-nav="contract">📜 合同审查 Redline</button>
+      <button class="nav-item" data-nav="ai">🤖 AI 治理 AIA</button>
+      <button class="nav-item" data-nav="procure">🛒 AI/SaaS 采购风控</button>
+      <button class="nav-item" data-nav="data">🛡️ 数据合规与出境</button>
+      <button class="nav-item" data-nav="search">🔍 法规与判例检索</button>
+      <button class="nav-item" data-nav="alert">📅 履约与节点预警</button>
+      <div class="text-[11px] font-bold tracking-widest text-slate-500 px-2 pt-4 pb-1">合规速查</div>
+      <div class="flex flex-wrap gap-2 px-2 pb-2">
+        <span class="tag">民法典</span><span class="tag">数安法</span><span class="tag">EU AI Act</span>
+        <span class="tag">GDPR</span><span class="tag">PIPL</span><span class="tag">生成式AI办法</span>
+      </div>
+    </nav>
+
+    <div class="px-5 py-4 border-t border-white/10 text-[11px] text-slate-600 leading-relaxed">
+      深色模式 · 移动端优先卡片排版 · 演示规则引擎<br>© 2026 LexAI General Counsel
+    </div>
+  </aside>
+
+  <!-- 主内容 -->
+  <div class="flex-1 min-w-0 flex flex-col pb-[76px] md:pb-0">
+    <header class="sticky top-0 z-30 h-16 shrink-0 bg-ink/90 backdrop-blur border-b border-white/10 flex items-center gap-3 px-4 md:px-6">
+      <button id="openSide" class="md:hidden w-11 h-11 -ml-2 grid place-items-center rounded-lg text-slate-300 hover:bg-white/10" aria-label="打开菜单">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <h1 id="pageTitle" class="font-black text-white text-lg md:text-xl truncate">📜 合同审查与 Redline 替换</h1>
+      <div class="ml-auto flex items-center gap-2">
+        <button id="runBtn" class="h-11 px-4 rounded-xl text-sm font-bold bg-brand text-white hover:brightness-110 active:scale-95 transition whitespace-nowrap">▶ 运行审查</button>
+      </div>
+    </header>
+
+    <!-- ===== 欢迎屏：功能菜单引导 ===== -->
+    <main class="pane flex-1 p-4 md:p-6" data-pane="home">
+      <blockquote class="exec-card">
+        <div class="exec-t">LexAI 服务已就绪</div>
+        <p>你好，我是 <b>LexAI 全能企业法务与 AI 合规总监</b>。请从下方 6 大功能中选择一项开始，我会<b>分段输出</b>，每次只给你 Top 2~3 个最高风险点，绝不刷屏。</p>
+      </blockquote>
+      <div class="sub-h">🛠️ 请选择服务模块</div>
+      <div class="menu-grid" id="menuGrid">
+        <button class="menu-card" data-go="contract"><span class="mc-ic">📜</span><b>智能合同审查与 Redline</b><i>标注 🔴高/🟡中风险，给出修改条款</i></button>
+        <button class="menu-card" data-go="ai"><span class="mc-ic">🤖</span><b>AI 系统治理与 AIA</b><i>判别风险等级，出具影响评估</i></button>
+        <button class="menu-card" data-go="procure"><span class="mc-ic">🛒</span><b>第三方 AI/SaaS 采购风控</b><i>排查训练授权与隐私泄露</i></button>
+        <button class="menu-card" data-go="data"><span class="mc-ic">🛡️</span><b>数据合规与跨境 (PIA)</b><i>收集合法性与出境合规</i></button>
+        <button class="menu-card" data-go="search"><span class="mc-ic">🔍</span><b>法律法规与判例检索</b><i>引用条款与裁判要旨</i></button>
+        <button class="menu-card" data-go="alert"><span class="mc-ic">📁</span><b>履约预警与合同看板</b><i>付款 / 到期 / 解约窗口</i></button>
+      </div>
+      <div class="hint-bar">💡 轻量交互：每个模块单次只输出 Top 2~3 风险点，用底部按钮翻页 · 回复【M】可随时返回本菜单</div>
+    </main>
+
+    <!-- ===== 功能1：合同审查 ===== -->
+    <main class="pane hidden flex-1 p-4 md:p-6" data-pane="contract">
+      <div class="pane-tabs lg:hidden flex gap-2 p-1 mb-4 rounded-xl bg-ink2 border border-white/10">
+        <button class="pane-tab active flex-1 h-11 rounded-lg text-sm font-bold" data-side="input">① 输入与原文</button>
+        <button class="pane-tab flex-1 h-11 rounded-lg text-sm font-bold" data-side="result">② 风控卡片</button>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+        <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden flex flex-col">
+          <div class="flex items-center h-12 px-4 border-b border-white/10 shrink-0 text-sm font-black text-white">📄 合同文本</div>
+          <div class="p-4">
+            <textarea id="ctText" rows="14" class="ta" placeholder="粘贴合同原文（留空将载入演示合同）&#10;例：乙方对因本合同产生的任何损失承担无限赔偿责任……&#10;双方保密义务永久有效……&#10;验收标准由甲方另行认定……&#10;甲方应于验收合格后 90 日内付款……">甲方：XX 科技有限公司
+乙方：XX 供应商
+第一条 乙方对因本合同产生的任何损失承担无限赔偿责任，不设任何上限。
+第六条 双方保密义务永久有效，不因合同终止而解除。
+第九条 验收标准由甲方另行认定，乙方应无条件配合。
+第十一条 争议由甲方所在地人民法院管辖。
+第十三条 甲方应于验收合格后 90 日内支付全部货款。</textarea>
+            <div class="flex gap-2 mt-3 flex-wrap">
+              <select id="ctType" class="sel flex-1 min-w-[140px]">
+                <option>采购/供货合同</option><option>软件服务/SaaS 合同</option><option>技术开发合同</option><option>保密协议 NDA</option>
+              </select>
+            </div>
+          </div>
+        </section>
+        <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden flex flex-col">
+          <div class="flex items-center h-12 px-4 border-b border-white/10 shrink-0 text-sm font-black text-white">🛡️ 风控卡片输出</div>
+          <div id="ctOut" class="p-4 space-y-3 overflow-auto max-h-[70vh]"></div>
+          <div class="chunk-bar" id="ctBar"></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- ===== 功能2：AI 治理 AIA ===== -->
+    <main class="pane hidden flex-1 p-4 md:p-6" data-pane="ai">
+      <div class="pane-tabs lg:hidden flex gap-2 p-1 mb-4 rounded-xl bg-ink2 border border-white/10">
+        <button class="pane-tab active flex-1 h-11 rounded-lg text-sm font-bold" data-side="input">① 参数设置</button>
+        <button class="pane-tab flex-1 h-11 rounded-lg text-sm font-bold" data-side="result">② AIA 清单</button>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+        <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
+          <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">⚙️ AI 系统参数</div>
+          <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label class="lbl">企业角色
+              <select id="aiRole" class="sel"><option value="deployer">Deployer 部署者</option><option value="provider">Provider 提供者</option><option value="both">两者兼有</option></select>
+            </label>
+            <label class="lbl">使用场景
+              <select id="aiScene" class="sel">
+                <option value="biometric">生物识别/情绪识别</option><option value="employment">招聘筛选/员工评估</option>
+                <option value="education">教育录取/考试评分</option><option value="chat">客服对话/内容生成</option>
+                <option value="internal">内部办公提效</option>
+              </select>
+            </label>
+            <label class="lbl">特殊类别个人数据
+              <select id="aiSensitive" class="sel"><option value="no">否</option><option value="yes">是（健康/生物等）</option></select>
+            </label>
+            <label class="lbl">适用法域
+              <select id="aiLaw" class="sel"><option value="both">EU AI Act + 中国双轨</option><option value="eu">仅 EU</option><option value="cn">仅中国</option></select>
+            </label>
+            <label class="lbl sm:col-span-2">系统描述
+              <textarea id="aiDesc" rows="4" class="ta" placeholder="例：部署第三方大模型 API，面向内部员工生成营销文案，人工审核后发布"></textarea>
+            </label>
+          </div>
+        </section>
+        <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
+          <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">📊 AI 影响评估清单 (AIA)</div>
+          <div id="aiOut" class="p-4 space-y-3 overflow-auto max-h-[70vh]"></div>
+          <div class="chunk-bar" id="aiBar"></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- ===== 功能3：采购风控 ===== -->
+    <main class="pane hidden flex-1 p-4 md:p-6" data-pane="procure">
+      <div class="pane-tabs lg:hidden flex gap-2 p-1 mb-4 rounded-xl bg-ink2 border border-white/10">
+        <button class="pane-tab active flex-1 h-11 rounded-lg text-sm font-bold" data-side="input">① 采购条款</button>
+        <button class="pane-tab flex-1 h-11 rounded-lg text-sm font-bold" data-side="result">② 风控卡片</button>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+        <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
+          <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">🛒 AI/SaaS 采购合同条款</div>
+          <div class="p-4">
+            <label class="lbl">采购标的
+              <select id="apKind" class="sel"><option>大模型 API 调用服务</option><option>AI SaaS 平台订阅</option><option>定制化模型开发</option></select>
+            </label>
+            <label class="lbl mt-3">条款原文（留空载入高危范本）
+              <textarea id="apText" rows="10" class="ta" placeholder="例：乙方可将甲方输入数据及输出结果用于模型训练……">乙方可将甲方输入数据及输出结果用于模型训练。
+模型生成内容的知识产权归乙方所有。
+乙方对模型输出内容的准确性不作任何保证，亦不承担责任。
+乙方可在服务中断时不承担任何赔付责任。</textarea>
+            </label>
+          </div>
+        </section>
+        <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
+          <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">🛡️ 采购风控卡片</div>
+          <div id="apOut" class="p-4 space-y-3 overflow-auto max-h-[70vh]"></div>
+          <div class="chunk-bar" id="apBar"></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- ===== 功能4：数据合规出境 ===== -->
+    <main class="pane hidden flex-1 p-4 md:p-6" data-pane="data">
+      <div class="pane-tabs lg:hidden flex gap-2 p-1 mb-4 rounded-xl bg-ink2 border border-white/10">
+        <button class="pane-tab active flex-1 h-11 rounded-lg text-sm font-bold" data-side="input">① 数据场景</button>
+        <button class="pane-tab flex-1 h-11 rounded-lg text-sm font-bold" data-side="result">② 合规清单</button>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+        <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
+          <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">🛡️ 数据处理场景</div>
+          <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label class="lbl">是否处理敏感个人信息
+              <select id="dpSens" class="sel"><option value="yes">是（生物/医疗/行踪/金融）</option><option value="no">否</option></select>
+            </label>
+            <label class="lbl">数据是否出境
+              <select id="dpCross" class="sel"><option value="standard">出境·适用标准合同</option><option value="cert">出境·已获安全评估/认证</option><option value="no">不出境</option></select>
+            </label>
+            <label class="lbl">涉及未成年人
+              <select id="dpMinor" class="sel"><option value="yes">是</option><option value="no">否</option></select>
+            </label>
+            <label class="lbl">适用框架
+              <select id="dpLaw" class="sel"><option value="both">GDPR + PIPL 双轨</option><option value="pipl">仅 PIPL/数安法</option><option value="gdpr">仅 GDPR</option></select>
+            </label>
+            <label class="lbl sm:col-span-2">补充说明
+              <textarea id="dpDesc" rows="3" class="ta" placeholder="例：用户注册手机号+人脸用于登录，行为日志同步至新加坡分析集群"></textarea>
+            </label>
+          </div>
+        </section>
+        <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
+          <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">📋 数据合规行动清单</div>
+          <div id="dpOut" class="p-4 space-y-3 overflow-auto max-h-[70vh]"></div>
+          <div class="chunk-bar" id="dpBar"></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- ===== 功能5：法规检索 ===== -->
+    <main class="pane hidden flex-1 p-4 md:p-6" data-pane="search">
+      <div class="pane-tabs lg:hidden flex gap-2 p-1 mb-4 rounded-xl bg-ink2 border border-white/10">
+        <button class="pane-tab active flex-1 h-11 rounded-lg text-sm font-bold" data-side="input">① 法务问题</button>
+        <button class="pane-tab flex-1 h-11 rounded-lg text-sm font-bold" data-side="result">② 检索建议</button>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+        <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
+          <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">🔍 复杂法务问题</div>
+          <div class="p-4">
+            <textarea id="lsQ" rows="7" class="ta" placeholder="例：我们的 AI 客服在欧盟收集用户对话数据，需要履行哪些义务？">我们在 App 上线 AI 换脸功能，同时收集用户人脸数据并同步到境外服务器，会有什么法律风险？</textarea>
+            <div class="flex flex-wrap gap-2 mt-3" id="lsChips">
+              <button class="chipbtn" data-q="AI 生成内容侵权谁担责？">AI 生成内容侵权</button>
+              <button class="chipbtn" data-q="员工个人信息可以随意在内部系统共享吗？">员工数据共享</button>
+              <button class="chipbtn" data-q="大模型 API 采购合同要注意什么条款？">大模型采购条款</button>
+            </div>
+          </div>
+        </section>
+        <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
+          <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">📖 法规引用与行动指南</div>
+          <div id="lsOut" class="p-4 space-y-3 overflow-auto max-h-[70vh]"></div>
+          <div class="chunk-bar" id="lsBar"></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- ===== 功能6：履约预警 ===== -->
+    <main class="pane hidden flex-1 p-4 md:p-6" data-pane="alert">
+      <div class="pane-tabs lg:hidden flex gap-2 p-1 mb-4 rounded-xl bg-ink2 border border-white/10">
+        <button class="pane-tab active flex-1 h-11 rounded-lg text-sm font-bold" data-side="input">① 节点录入</button>
+        <button class="pane-tab flex-1 h-11 rounded-lg text-sm font-bold" data-side="result">② 待办清单</button>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+        <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
+          <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">📅 合同履约节点</div>
+          <div class="p-4 space-y-3">
+            <label class="lbl">合同名称
+              <input id="alName" class="sel" value="供应商采购合同 v3">
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label class="lbl">交付节点 <input type="date" id="alDeliver" class="sel"></label>
+              <label class="lbl">付款节点 <input type="date" id="alPay" class="sel"></label>
+              <label class="lbl">续约/解约窗口 <input type="date" id="alRenew" class="sel"></label>
+              <label class="lbl">质保截止 <input type="date" id="alWar" class="sel"></label>
+            </div>
+            <button id="alGo" class="btn w-full">生成履约待办清单</button>
+          </div>
+        </section>
+        <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
+          <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">✅ 节点预警待办</div>
+          <div id="alOut" class="p-4 space-y-3 overflow-auto max-h-[70vh]"></div>
+          <div class="chunk-bar" id="alBar"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- 吸底操作栏（手机） -->
+<div class="fixed bottom-0 left-0 right-0 z-40 h-[72px] bg-ink2/95 backdrop-blur border-t border-white/10 flex items-center gap-3 px-4 md:hidden" style="padding-bottom:env(safe-area-inset-bottom)">
+  <button class="bar-side flex-1 h-11 rounded-xl font-black text-sm bg-brand text-white active:scale-95 transition" data-side="input">① 输入</button>
+  <button class="bar-side flex-1 h-11 rounded-xl font-black text-sm bg-ink3 border border-white/15 text-slate-300 active:scale-95 transition" data-side="result">② 结果</button>
+  <button id="barGo" class="h-11 px-5 rounded-xl font-black text-sm bg-brand text-white shadow-glow active:scale-95 transition">运行</button>
+</div>
+
+<div id="toast" class="fixed left-1/2 bottom-24 md:bottom-8 z-[60] px-5 h-11 inline-flex items-center rounded-full bg-brand text-white text-sm font-black shadow-glow opacity-0 -translate-y-4 translate-x-[-50%] transition-all pointer-events-none"></div>
+<script src="app.js"></script>
+</body>
+</html>

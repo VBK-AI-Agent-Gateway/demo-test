@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>法务与 AI 合规总监 Legal &amp; AI Compliance Counsel</title>
+<meta name="description" content="合同审查风险标注、EU AI Act 合规定级与生成式 AI 影响评估、AI 采购合同专项审查，一键生成分层法律意见。">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+</head>
+<body>
+<div class="shell">
+
+  <!-- 左侧目录 -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="logo">⚖️</span>
+      <div class="brand-txt">
+        <b>法务与 AI 合规总监</b>
+        <em>Legal &amp; AI Compliance Counsel</em>
+      </div>
+    </div>
+
+    <nav class="menu" id="menu" aria-label="功能目录">
+      <div class="menu-label">法律服务目录</div>
+      <button class="m-item active" data-tab="contract">
+        <span class="m-ic">📜</span>
+        <span class="m-txt"><b>合同审查</b><i>要素提取 · 🔴🟡风险标注 · Redline</i></span>
+      </button>
+      <button class="m-item" data-tab="ai">
+        <span class="m-ic">🤖</span>
+        <span class="m-txt"><b>AI 合规评估</b><i>EU AI Act 定级 · AIA 影响评估</i></span>
+      </button>
+      <button class="m-item" data-tab="aiproc">
+        <span class="m-ic">🔗</span>
+        <span class="m-txt"><b>AI 采购专项</b><i>训练授权 · IP 归属 · 幻觉责任</i></span>
+      </button>
+
+      <div class="menu-label">合规速查</div>
+      <div class="chips">
+        <span class="chip">EU AI Act</span>
+        <span class="chip">GDPR</span>
+        <span class="chip">生成式AI办法</span>
+        <span class="chip">个保法</span>
+      </div>
+    </nav>
+
+    <div class="side-foot">
+      <div class="badge-row"><span class="pill">纯前端</span><span class="pill">不上传</span><span class="pill">演示</span></div>
+      <p>© 2026 Office EA · 输出为参考性合规建议，重大交易请执业律师复核</p>
+    </div>
+  </aside>
+
+  <!-- 右侧内容 -->
+  <div class="content">
+    <header class="topbar">
+      <h1 id="tbTitle">合同审查与风险防控</h1>
+      <div class="topbar-note">结构清晰 · 表格输出 · 法条依据 · 分层结论</div>
+    </header>
+
+    <main class="main">
+
+      <!-- 模块一：合同审查 -->
+      <section class="panel open" id="panel-contract">
+        <p class="sub">粘贴合同文本，自动提取主体/金额/期限/IP/违约上限/管辖地六要素，按 🔴 高风险 · 🟡 中风险 标注，并给出可直接粘回合同的「建议修改后文本」。</p>
+        <div class="form">
+          <label class="full">合同类型
+            <select id="ctType">
+              <option>采购/供货合同</option><option>软件服务/SaaS 合同</option>
+              <option>技术开发合同</option><option>保密协议 NDA</option><option>劳动合同</option>
+            </select>
+          </label>
+          <label class="full">合同文本（可直接粘贴全文）
+            <textarea id="ctText" rows="12" placeholder="甲方：XX 科技有限公司&#10;乙方：XX 供应商&#10;合同金额：人民币 100 万元&#10;乙方对因本合同产生的任何损失承担无限赔偿责任……&#10;本协议保密义务永久有效……&#10;争议由甲方所在地法院管辖……&#10;验收标准：由甲方另行认定"></textarea>
+          </label>
+        </div>
+        <div class="ops"><button class="btn" id="ctGo">审查合同</button></div>
+        <div class="out" id="ctOut" hidden>
+          <div class="ops"><button class="btn small" data-copy="ctOut">📋 复制意见书</button><button class="btn ghost small" data-md="ctOut">⬇ 下载 .md</button></div>
+          <pre></pre>
+        </div>
+      </section>
+
+      <!-- 模块二：AI 合规评估 -->
+      <section class="panel" id="panel-ai">
+        <p class="sub">界定企业角色（部署者 Deployer / 提供者 Provider），依 EU AI Act 定级四档风险（附 Article 依据），并从数据合法性、偏见歧视、隐私泄露、人机协同等维度出具生成式 AI 影响评估（AIA）与应对策略。</p>
+        <div class="form">
+          <label>企业角色
+            <select id="aiRole"><option value="provider">Provider 提供者（开发/投放市场）</option><option value="deployer">Deployer 部署者（在业务中使用）</option><option value="both">两者兼有</option></select>
+          </label>
+          <label>使用场景
+            <select id="aiScene">
+              <option value="biometric">生物识别/情绪识别</option>
+              <option value="critical">关键基础设施安全组件</option>
+              <option value="education">教育录取/考试评分</option>
+              <option value="employment">招聘筛选/员工评估</option>
+              <option value="credit">信用评分/保险定价</option>
+              <option value="law">执法/司法辅助</option>
+              <option value="chat">客服对话/内容生成</option>
+              <option value="internal">内部办公提效（低风险）</option>
+            </select>
+          </label>
+          <label>是否处理特殊类别个人数据
+            <select id="aiSensitive"><option value="no">否</option><option value="yes">是（健康/生物/政治等）</option></select>
+          </label>
+          <label>是否与 EU 市场相关
+            <select id="aiEU"><option value="yes">是</option><option value="no">否（仅中国境内）</option></select>
+          </label>
+          <label class="full">依据框架
+            <select id="aiLaw"><option value="eu">EU AI Act + GDPR</option><option value="cn">中国《生成式AI服务管理暂行办法》+《个保法》</option><option value="both">双轨（EU + 中国）</option></select>
+          </label>
+          <label class="full">系统描述
+            <textarea id="aiDesc" rows="4" placeholder="例：部署第三方大模型 API，面向内部员工生成营销文案，人工审核后发布，训练数据来自公司公开资料"></textarea>
+          </label>
+        </div>
+        <div class="ops"><button class="btn" id="aiGo">出具合规评估</button></div>
+        <div class="out" id="aiOut" hidden>
+          <div class="ops"><button class="btn small" data-copy="aiOut">📋 复制评估报告</button><button class="btn ghost small" data-md="aiOut">⬇ 下载 .md</button></div>
+          <pre></pre>
+        </div>
+      </section>
+
+      <!-- 模块三：AI 采购专项 -->
+      <section class="panel" id="panel-aiproc">
+        <p class="sub">聚焦 AI 业务四类特定条款：数据训练授权、生成内容知识产权归属、AI 幻觉/错误输出责任划分、数据隐私与算法合规承诺，逐条给出风险等级与 Redline 修改文本。</p>
+        <div class="form">
+          <label>采购标的
+            <select id="apKind"><option>大模型 API 调用服务</option><option>定制化模型开发</option><option>AI SaaS 平台订阅</option><option>数据标注/训练数据服务</option></select>
+          </label>
+          <label class="full">涉 AI 条款原文（有则贴，无则留空由内置高风险范本演示）
+            <textarea id="apText" rows="8" placeholder="例：乙方可将甲方输入数据及输出结果用于模型训练……&#10;模型生成内容的知识产权归乙方所有……&#10;乙方对模型输出内容的准确性不作任何保证，亦不承担责任……"></textarea>
+          </label>
+        </div>
+        <div class="ops"><button class="btn" id="apGo">专项审查</button></div>
+        <div class="out" id="apOut" hidden>
+          <div class="ops"><button class="btn small" data-copy="apOut">📋 复制审查意见</button><button class="btn ghost small" data-md="apOut">⬇ 下载 .md</button></div>
+          <pre></pre>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>WebCraft · 网页版我的世界</title>
+<style>
+  :root{--bg:#0b0f14;--panel:rgba(12,16,22,.82);--border:#3a4553;--fg:#e8eef4;--muted:#93a1b1;--accent:#5ac8fa;--green:#69db7c;--gold:#ffd43b}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--fg);
+    font:15px/1.5 -apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  #gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  /* crosshair */
+  #cross{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:22px;height:22px;pointer-events:none;z-index:5;display:none}
+  #cross::before,#cross::after{content:"";position:absolute;background:rgba(255,255,255,.85);mix-blend-mode:difference}
+  #cross::before{left:50%;top:0;width:2px;height:100%;transform:translateX(-50%)}
+  #cross::after{top:50%;left:0;height:2px;width:100%;transform:translateY(-50%)}
+  /* HUD */
+  .hud{position:fixed;z-index:6;font-size:13px;pointer-events:none}
+  #info{left:10px;top:10px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 11px;line-height:1.6;font-family:ui-monospace,Menlo,Consolas,monospace}
+  #info b{color:var(--accent)}
+  #fps{color:var(--muted)}
+  #hotbar{left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:6px;pointer-events:auto}
+  .slot{width:46px;height:46px;border:2px solid #4a5563;border-radius:8px;background:#11161d;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;image-rendering:pixelated}
+  .slot.active{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,212,59,.35) inset,0 0 10px rgba(255,212,59,.3)}
+  .slot .cube{width:24px;height:24px;border-radius:3px;box-shadow:inset -5px -5px 0 rgba(0,0,0,.3),inset 3px 3px 0 rgba(255,255,255,.25)}
+  .slot .num{position:absolute;top:1px;left:4px;font-size:10px;color:var(--muted)}
+  #hint{right:10px;top:10px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 11px;max-width:230px;color:var(--muted);font-size:12.5px;line-height:1.7}
+  #hint b{color:var(--fg)}
+  #toast{position:fixed;left:50%;top:64px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--border);border-radius:999px;padding:8px 18px;font-size:14px;opacity:0;transition:opacity .2s;z-index:20;pointer-events:none}
+  #toast.show{opacity:1}
+  /* overlays */
+  .overlay{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(5,8,12,.72);backdrop-filter:blur(4px);padding:16px}
+  .overlay.open{display:flex}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px 26px;max-width:460px;width:100%;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+  .panel h1{margin:0 0 6px;font-size:26px;letter-spacing:1px}
+  .panel h1 .logo{color:var(--green)}
+  .panel p{color:var(--muted);font-size:14px;margin:6px 0}
+  .keys{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;text-align:left;font-size:13.5px;margin:14px 0}
+  .keys div{display:flex;gap:8px;align-items:center;color:var(--muted)}
+  kbd{background:#1b232d;border:1px solid var(--border);border-bottom-width:3px;border-radius:6px;padding:2px 7px;font-size:12px;color:var(--fg);font-family:ui-monospace,monospace}
+  .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+  button{background:var(--accent);border:0;color:#04141d;font-weight:700;padding:11px 20px;border-radius:10px;cursor:pointer;font-size:15px;font-family:inherit}
+  button:active{transform:translateY(1px)}
+  button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+  button.green{background:var(--green);color:#06210d}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  /* mobile controls */
+  #touch{position:fixed;inset:0;z-index:7;display:none;pointer-events:none}
+  #touch .pad{position:absolute;left:18px;bottom:110px;width:130px;height:130px;border:2px solid rgba(255,255,255,.3);border-radius:50%;pointer-events:auto;background:rgba(0,0,0,.25)}
+  #touch .knob{position:absolute;left:50%;top:50%;width:56px;height:56px;border-radius:50%;background:rgba(90,200,250,.5);border:2px solid rgba(255,255,255,.6);transform:translate(-50%,-50%)}
+  #touch .btn{position:absolute;right:20px;width:66px;height:66px;border-radius:50%;background:rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.45);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;pointer-events:auto}
+  #btnJump{bottom:120px} #btnBreak{bottom:48px;right:100px} #btnPlace{bottom:48px}
+  footer{position:fixed;left:0;right:0;bottom:0;text-align:center;font-size:11.5px;color:#54616f;padding:3px;z-index:4;pointer-events:none}
+  @media (max-width:900px){#hint{display:none}#info{font-size:12px}}
+  @media (max-width:640px){.slot{width:38px;height:38px}.slot .cube{width:20px;height:20px}#hotbar{gap:4px;padding:5px}}
+  @media (max-width:420px){.slot{width:34px;height:34px}.panel h1{font-size:21px}.keys{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="cross"></div>
+
+<div class="hud" id="info">
+  <div>WebCraft <span id="fps">60 fps</span></div>
+  <div>XYZ <b id="pos">0 0 0</b></div>
+  <div>朝向 <b id="face">-</b> · 手持 <b id="held">草方块</b></div>
+  <div>模式 <b id="mode">行走</b></div>
+</div>
+
+<div class="hud" id="hint">
+  <b>操作</b><br>
+  <b>WASD</b> 移动 · <b>空格</b> 跳跃<br>
+  <b>双击空格</b> 飞行开关<br>
+  <b>左键</b> 挖方块 · <b>右键</b> 放方块<br>
+  <b>1-9 / 滚轮</b> 切换方块<br>
+  <b>Shift</b> 下蹲/飞行下降 · <b>Esc</b> 暂停
+</div>
+
+<div class="hud" id="hotbar"></div>
+<div id="toast"></div>
+
+<div id="touch">
+  <div class="pad" id="tPad"><div class="knob" id="tKnob"></div></div>
+  <div class="btn" id="btnJump">⤒</div>
+  <div class="btn" id="btnBreak">⛏</div>
+  <div class="btn" id="btnPlace">▣</div>
+</div>
+
+<!-- start menu -->
+<div class="overlay open" id="menu">
+  <div class="panel">
+    <h1><span class="logo">🟩</span> WebCraft</h1>
+    <p>网页版我的世界 · 方块体素沙盒。挖方块、搭建筑、自由行走飞行。</p>
+    <div class="keys">
+      <div><kbd>W A S D</kbd> 移动</div><div><kbd>鼠标</kbd> 视角</div>
+      <div><kbd>空格</kbd> 跳跃</div><div><kbd>双击空格</kbd> 飞行</div>
+      <div><kbd>左键</kbd> 挖掘</div><div><kbd>右键</kbd> 放置</div>
+      <div><kbd>1-9</kbd> 选方块</div><div><kbd>滚轮</kbd> 切方块</div>
+      <div><kbd>Shift</kbd> 下降</div><div><kbd>Esc</kbd> 暂停/释放鼠标</div>
+    </div>
+    <p style="font-size:12.5px">点击开始后浏览器会锁定鼠标，按 <kbd>Esc</kbd> 可释放。手机自动显示虚拟摇杆。</p>
+    <div class="actions">
+      <button id="btnPlay" class="green">▶ 进入世界</button>
+      <button id="btnLoad">📂 读取存档</button>
+      <button id="btnReset" class="ghost">↺ 新世界</button>
+    </div>
+  </div>
+</div>
+
+<!-- pause -->
+<div class="overlay" id="pause">
+  <div class="panel">
+    <h1>⏸ 已暂停</h1>
+    <p>鼠标已释放，游戏暂停。</p>
+    <div class="actions">
+      <button id="btnResume" class="green">▶ 继续游戏</button>
+      <button id="btnSave">💾 保存</button>
+      <button id="btnExit" class="ghost">🏠 主菜单</button>
+    </div>
+  </div>
+</div>
+
+<footer>WebCraft · 单文件 WebGL 体素沙盒 · 数据存 localStorage</footer>
+
+<script>
+"use strict";
+/* ============================================================
+   WebCraft — 单文件 WebGL 体素沙盒
+   - 程序化地形(噪声高度/树/水)  - 第一人称指针锁定视角
+   - WASD+跳跃+重力碰撞+飞行      - 射线选块 挖/放方块
+   - 方块选栏 1-9/滚轮            - 保存/读档(localStorage)
+============================================================ */
+
+/* ---------------- config ---------------- */
+const SX = 48, SY = 40, SZ = 48;         // world size (x, y, z)
+const WATER_Y = 12;                        // water level
+const AIR=0, GRASS=1, DIRT=2, STONE=3, SAND=4, WOOD=5, LEAF=6, WATER=7, PLANK=8, BRICK=9;
+const BLOCK_NAMES = ["空气","草方块","泥土","石头","沙子","原木","树叶","水","木板","砖块"];
+const BLOCK_COLORS = [ // [r,g,b] top-ish base color (0..1)
+  [0,0,0],[0.42,0.72,0.35],[0.55,0.40,0.28],[0.62,0.62,0.65],
+  [0.87,0.81,0.55],[0.45,0.33,0.20],[0.30,0.62,0.30],[0.30,0.55,0.85],
+  [0.76,0.60,0.40],[0.72,0.34,0.28]
+];
+const HOTBAR = [GRASS, DIRT, STONE, SAND, WOOD, LEAF, PLANK, BRICK, WATER];
+
+/* ---------------- world data ---------------- */
+let world = new Uint8Array(SX * SY * SZ);
+function idx(x, y, z) { return (y * SZ + z) * SX + x; }
+function inBounds(x, y, z) { return x >= 0 && y >= 0 && z >= 0 && x < SX && y < SY && z < SZ; }
+function getBlock(x, y, z) { return inBounds(x,y,z) ? world[idx(x,y,z)] : AIR; }
+function setBlock(x, y, z, v) { if (inBounds(x,y,z)) world[idx(x,y,z)] = v; }
+function solid(x,y,z){ const b=getBlock(x,y,z); return b!==AIR && b!==WATER; }
+
+/* ---- simple value noise ---- */
+function hash2(x, z) {
+  let n = x * 374761393 + z * 668265263;
+  n = (n ^ (n >> 13)) * 1274126177;
+  return ((n ^ (n >> 16)) >>> 0) / 4294967295;
+}
+function smooth(t){ return t*t*(3-2*t); }
+function noise2(x, z) {
+  const xi = Math.floor(x), zi = Math.floor(z);
+  const xf = x - xi, zf = z - zi;
+  const a = hash2(xi, zi), b = hash2(xi+1, zi), c = hash2(xi, zi+1), d = hash2(xi+1, zi+1);
+  const u = smooth(xf), v = smooth(zf);
+  return (a*(1-u)+b*u)*(1-v) + (c*(1-u)+d*u)*v;
+}
+function fbm(x, z) {
+  return noise2(x, z) * 0.55 + noise2(x*2.1, z*2.1) * 0.28 + noise2(x*4.3, z*4.3) * 0.17;
+}
+function terrainHeight(x, z) {
+  const n = fbm(x * 0.05, z * 0.05);
+  return Math.floor(8 + n * 18); // 8..26
+}
+
+let seed = 12345;
+function genWorld(newSeed) {
+  seed = newSeed || Math.floor(Math.random() * 1e9);
+  world = new Uint8Array(SX * SY * SZ);
+  // terrain columns
+  for (let x = 0; x < SX; x++) {
+    for (let z = 0; z < SZ; z++) {
+      const h = terrainHeight(x + seed * 0.001, z + seed * 0.001);
+      const beach = h <= WATER_Y + 1;
+      for (let y = 0; y <= h; y++) {
+        let b;
+        if (y === h) b = beach ? SAND : GRASS;
+        else if (y >= h - 3) b = beach ? SAND : DIRT;
+        else b = STONE;
+        setBlock(x, y, z, b);
+      }
+      // water fill
+      for (let y = h + 1; y <= WATER_Y; y++) setBlock(x, y, z, WATER);
+    }
+  }
+  // trees
+  for (let i = 0; i < 14; i++) {
+    const x = 3 + Math.floor(hash2(seed + i * 7, i * 13) * (SX - 6));
+    const z = 3 + Math.floor(hash2(i * 11, seed + i * 5) * (SZ - 6));
+    const h = terrainHeight(x + seed * 0.001, z + seed * 0.001);
+    if (getBlock(x, h, z) !== GRASS) continue;
+    const th = 4 + Math.floor(hash2(x, z) * 3);
+    for (let y = 1; y <= th; y++) setBlock(x, h + y, z, WOOD);
+    for (let dx = -2; dx <= 2; dx++)
+      for (let dz = -2; dz <= 2; dz++)
+        for (let dy = th - 1; dy <= th + 1; dy++) {
+          if (Math.abs(dx) + Math.abs(dz) + Math.abs(dy - th) > 3) continue;
+          const px = x + dx, pz = z + dz, py = h + dy + 1;
+          if (getBlock(px, py, pz) === AIR) setBlock(px, py, pz, LEAF);
+        }
+  }
+}
+
+/* ---------------- mat4 ---------------- */
+function mat4Identity(){ return new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]); }
+function mat4Perspective(fovy, aspect, near, far) {
+  const f = 1 / Math.tan(fovy / 2), nf = 1 / (near - far);
+  return new Float32Array([
+    f/aspect,0,0,0, 0,f,0,0, 0,0,(far+near)*nf,-1, 0,0,2*far*near*nf,0
+  ]);
+}
+function mat4Multiply(a, b) {
+  const o = new Float32Array(16);
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+    o[j*4+i] = a[i]*b[j*4] + a[4+i]*b[j*4+1] + a[8+i]*b[j*4+2] + a[12+i]*b[j*4+3];
+  }
+  return o;
+}
+
+/* ---------------- WebGL setup ---------------- */
+const canvas = document.getElementById("gl");
+const gl = canvas.getContext("webgl", { antialias:true }) || canvas.getContext("experimental-webgl");
+if (!gl) { alert("浏览器不支持 WebGL"); }
+
+function compile(type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s), src);
+  return s;
+}
+function program(vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(p));
+  return p;
+}
+
+const VS = `
+attribute vec3 aPos; attribute vec3 aColor; attribute float aShade;
+uniform mat4 uMVP;
+varying vec3 vColor; varying float vShade; varying float vDist;
+void main(){
+  gl_Position = uMVP * vec4(aPos, 1.0);
+  vColor = aColor; vShade = aShade; vDist = gl_Position.w;
+}`;
+const FS = `
+precision mediump float;
+varying vec3 vColor; varying float vShade; varying float vDist;
+uniform vec3 uFogColor; uniform float uFogNear; uniform float uFogFar;
+void main(){
+  vec3 c = vColor * vShade;
+  float f = clamp((vDist - uFogNear) / (uFogFar - uFogNear), 0.0, 1.0);
+  c = mix(c, uFogColor, f);
+  gl_FragColor = vec4(c, 1.0);
+}`;
+
+const prog = program(VS, FS);
+const loc = {
+  aPos: gl.getAttribLocation(prog, "aPos"),
+  aColor: gl.getAttribLocation(prog, "aColor"),
+  aShade: gl.getAttribLocation(prog, "aShade"),
+  uMVP: gl.getUniformLocation(prog, "uMVP"),
+  uFogColor: gl.getUniformLocation(prog, "uFogColor"),
+  uFogNear: gl.getUniformLocation(prog, "uFogNear"),
+  uFogFar: gl.getUniformLocation(prog, "uFogFar"),
+};
+const vbo = gl.createBuffer();
+
+/* face definitions: dir, 4 corners, shade */
+const FACES = [
+  { d:[ 1,0,0], s:0.80, c:[[1,0,0],[1,1,0],[1,1,1],[1,0,1]] },
+  { d:[-1,0,0], s:0.80, c:[[0,0,1],[0,1,1],[0,1,0],[0,0,0]] },
+  { d:[0, 1,0], s:1.00, c:[[0,1,1],[1,1,1],[1,1,0],[0,1,0]] }, // top brighter
+  { d:[0,-1,0], s:0.55, c:[[0,0,0],[1,0,0],[1,0,1],[0,0,1]] },
+  { d:[0,0, 1], s:0.90, c:[[0,0,1],[1,0,1],[1,1,1],[0,1,1]] },
+  { d:[0,0,-1], s:0.70, c:[[1,0,0],[0,0,0],[0,1,0],[1,1,0]] },
+];
+function faceColor(block, face, y) {
+  let col = BLOCK_COLORS[block] || [1,0,1];
+  if (block === GRASS && face !== 2 && face !== 3) col = BLOCK_COLORS[DIRT]; // sides = dirt
+  if (block === GRASS && face === 3) col = BLOCK_COLORS[DIRT];
+  if (block === WOOD && (face === 2 || face === 3)) col = [0.62,0.48,0.30]; // log ends
+  if (block === WATER) col = [0.30,0.55,0.85];
+  return col;
+}
+
+let meshDirty = true;
+function rebuildMesh() {
+  const verts = [];
+  for (let y = 0; y < SY; y++)
+    for (let z = 0; z < SZ; z++)
+      for (let x = 0; x < SX; x++) {
+        const b = getBlock(x, y, z);
+        if (b === AIR) continue;
+        for (let f = 0; f < 6; f++) {
+          const F = FACES[f];
+          const nb = getBlock(x + F.d[0], y + F.d[1], z + F.d[2]);
+          // show face if neighbor is air or water (and we're not water-water)
+          const show = nb === AIR || (nb === WATER && b !== WATER) || (b === WATER && nb === AIR);
+          if (!show) continue;
+          const col = faceColor(b, f, y);
+          let shade = F.s;
+          // simple height-based ambient
+          shade *= 0.75 + Math.min(y / SY, 1) * 0.35;
+          const quad = F.c;
+          // two triangles: 0,1,2 and 0,2,3
+          const order = [0,1,2, 0,2,3];
+          for (const oi of order) {
+            const p = quad[oi];
+            verts.push(x + p[0], y + p[1], z + p[2], col[0], col[1], col[2], shade);
+          }
+        }
+      }
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+  meshCount = verts.length / 7;
+  meshDirty = false;
+}
+let meshCount = 0;
+
+/* ---------------- player / camera ---------------- */
+const player = { x: SX/2, y: SY-2, z: SZ/2, vy: 0, yaw: 0.6, pitch: -0.15, onGround:false, fly:false };
+const EYE = 1.62;
+let keys = {};
+let running = false;
+let started = false;
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(window.innerWidth * dpr);
+  canvas.height = Math.floor(window.innerHeight * dpr);
+  gl.viewport(0, 0, canvas.width, canvas.height);
+}
+window.addEventListener("resize", resize);
+
+/* collision: AABB half-width 0.3, height 1.8 */
+const PW = 0.3, PH = 1.8;
+function collide(nx, ny, nz) {
+  // check corners of AABB against solid blocks
+  const minX = Math.floor(nx - PW), maxX = Math.floor(nx + PW);
+  const minY = Math.floor(ny), maxY = Math.floor(ny + PH);
+  const minZ = Math.floor(nz - PW), maxZ = Math.floor(nz + PW);
+  for (let x = minX; x <= maxX; x++)
+    for (let y = minY; y <= maxY; y++)
+      for (let z = minZ; z <= maxZ; z++)
+        if (solid(x, y, z)) return true;
+  return false;
+}
+
+/* ---------------- input: pointer lock + keys ---------------- */
+let lastSpace = 0;
+function isTouch() { return ("ontouchstart" in window) && window.innerWidth < 900; }
+
+document.addEventListener("keydown", (e) => {
+  if (!started) return;
+  keys[e.code] = true;
+  if (e.code === "Space") {
+    e.preventDefault();
+    const now = performance.now();
+    if (now - lastSpace < 300) { player.fly = !player.fly; player.vy = 0; toast(player.fly ? "✈️ 飞行模式：空格上升 / Shift 下降" : "🚶 行走模式"); updateHUD(); }
+    lastSpace = now;
+  }
+  if (e.code.startsWith("Digit")) {
+    const n = +e.code.slice(5);
+    if (n >= 1 && n <= 9) selectSlot(n - 1);
+  }
+});
+document.addEventListener("keyup", (e) => { keys[e.code] = false; });
+
+canvas.addEventListener("mousedown", (e) => {
+  if (!started) return;
+  if (!isTouch() && document.pointerLockElement !== canvas) { requestLock(); return; }
+  e.preventDefault();
+  if (e.button === 0) breakBlock();
+  else if (e.button === 2) placeBlock();
+});
+canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+canvas.addEventListener("wheel", (e) => {
+  if (!started) return;
+  e.preventDefault();
+  const dir = e.deltaY > 0 ? 1 : -1;
+  selectSlot((slot + dir + HOTBAR.length) % HOTBAR.length);
+}, { passive:false });
+
+document.addEventListener("mousemove", (e) => {
+  if (document.pointerLockElement !== canvas) return;
+  const sens = 0.0022;
+  player.yaw -= e.movementX * sens;
+  player.pitch -= e.movementY * sens;
+  player.pitch = Math.max(-1.55, Math.min(1.55, player.pitch));
+});
+function requestLock() {
+  if (canvas.requestPointerLock) canvas.requestPointerLock();
+}
+document.addEventListener("pointerlockchange", () => {
+  const locked = document.pointerLockElement === canvas;
+  document.getElementById("cross").style.display = locked ? "block" : "none";
+  if (!locked && started && !isTouch()) { // paused
+    setRunning(false);
+    openOv("pause");
+  } else if (locked) { setRunning(true); closeOv("pause"); }
+});
+
+/* touch look: drag on canvas */
+let touchId = null, lastTX = 0, lastTY = 0;
+canvas.addEventListener("touchstart", (e) => {
+  if (!started) return;
+  const t = e.changedTouches[0];
+  if (t.clientX > window.innerWidth * 0.35) { touchId = t.identifier; lastTX = t.clientX; lastTY = t.clientY; }
+}, { passive:true });
+canvas.addEventListener("touchmove", (e) => {
+  if (touchId === null) return;
+  for (const t of e.changedTouches) if (t.identifier === touchId) {
+    player.yaw -= (t.clientX - lastTX) * 0.005;
+    player.pitch -= (t.clientY - lastTY) * 0.005;
+    player.pitch = Math.max(-1.55, Math.min(1.55, player.pitch));
+    lastTX = t.clientX; lastTY = t.clientY;
+  }
+  e.preventDefault();
+}, { passive:false });
+canvas.addEventListener("touchend", (e) => {
+  for (const t of e.changedTouches) if (t.identifier === touchId) touchId = null;
+});
+
+/* mobile virtual joystick */
+const move = { x:0, y:0 };
+(function setupPad(){
+  const pad = document.getElementById("tPad"), knob = document.getElementById("tKnob");
+  let id = null;
+  const rect0 = () => pad.getBoundingClientRect();
+  pad.addEventListener("touchstart", (e)=>{ id=e.changedTouches[0].identifier; moveTouch(e); e.preventDefault(); }, {passive:false});
+  pad.addEventListener("touchmove", (e)=>{ moveTouch(e); e.preventDefault(); }, {passive:false});
+  pad.addEventListener("touchend", (e)=>{ if(id!==null){ id=null; move.x=0; move.y=0; knob.style.transform="translate(-50%,-50%)"; } });
+  function moveTouch(e){
+    for (const t of e.changedTouches) if (t.identifier===id){
+      const r = rect0(); const cx=r.left+r.width/2, cy=r.top+r.height/2;
+      let dx=t.clientX-cx, dy=t.clientY-cy;
+      const len=Math.hypot(dx,dy)||1, max=r.width/2-20;
+      if(len>max){ dx=dx/len*max; dy=dy/len*max; }
+      move.x=dx/max; move.y=dy/max;
+      knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    }
+  }
+  document.getElementById("btnJump").addEventListener("touchstart",(e)=>{ keys.Space=true; e.preventDefault(); },{passive:false});
+  document.getElementById("btnJump").addEventListener("touchend",()=>{ keys.Space=false; });
+  document.getElementById("btnBreak").addEventListener("touchstart",(e)=>{ if(started) breakBlock(); e.preventDefault(); },{passive:false});
+  document.getElementById("btnPlace").addEventListener("touchstart",(e)=>{ if(started) placeBlock(); e.preventDefault(); },{passive:false});
+})();
+
+/* ---------------- raycast (DDA voxel traversal) ---------------- */
+function raycast(maxDist) {
+  const dirX = Math.cos(player.pitch) * Math.sin(player.yaw + Math.PI);
+  const dirY = Math.sin(player.pitch);
+  const dirZ = Math.cos(player.pitch) * Math.cos(player.yaw + Math.PI);
+  const ox = player.x, oy = player.y + EYE, oz = player.z;
+  let x = Math.floor(ox), y = Math.floor(oy), z = Math.floor(oz);
+  const stepX = Math.sign(dirX), stepY = Math.sign(dirY), stepZ = Math.sign(dirZ);
+  const tDX = Math.abs(1 / (dirX || 1e-9)), tDY = Math.abs(1 / (dirY || 1e-9)), tDZ = Math.abs(1 / (dirZ || 1e-9));
+  let tMX = (stepX > 0 ? (x + 1 - ox) : (ox - x)) * tDX;
+  let tMY = (stepY > 0 ? (y + 1 - oy) : (oy - y)) * tDY;
+  let tMZ = (stepZ > 0 ? (z + 1 - oz) : (oz - z)) * tDZ;
+  let normal = [0,0,0];
+  let t = 0;
+  while (t <= maxDist) {
+    if (solid(x, y, z)) return { x, y, z, normal };
+    if (tMX < tMY && tMX < tMZ) { x += stepX; t = tMX; tMX += tDX; normal = [-stepX,0,0]; }
+    else if (tMY < tMZ)        { y += stepY; t = tMY; tMY += tDY; normal = [0,-stepY,0]; }
+    else                       { z += stepZ; t = tMZ; tMZ += tDZ; normal = [0,0,-stepZ]; }
+  }
+  return null;
+}
+
+let slot = 0;
+function selectSlot(i) {
+  slot = i; renderHotbar();
+  document.getElementById("held").textContent = BLOCK_NAMES[HOTBAR[slot]];
+}
+
+function breakBlock() {
+  const hit = raycast(6);
+  if (!hit) { toast("太远了，够不着"); return; }
+  const b = getBlock(hit.x, hit.y, hit.z);
+  if (b === WATER) return;
+  setBlock(hit.x, hit.y, hit.z, AIR);
+  // floating leaves above wood become... keep simple
+  meshDirty = true;
+  updateHUD();
+}
+function placeBlock() {
+  const hit = raycast(6);
+  if (!hit) { toast("太远了，够不着"); return; }
+  const px = hit.x + hit.normal[0], py = hit.y + hit.normal[1], pz = hit.z + hit.normal[2];
+  if (!inBounds(px, py, pz)) return;
+  // don't place inside player
+  const feetMinX = Math.floor(player.x - PW), feetMaxX = Math.floor(player.x + PW);
+  const feetMinZ = Math.floor(player.z - PW), feetMaxZ = Math.floor(player.z + PW);
+  const feetMinY = Math.floor(player.y), feetMaxY = Math.floor(player.y + PH - 0.01);
+  if (px>=feetMinX && px<=feetMaxX && pz>=feetMinZ && pz<=feetMaxZ && py>=feetMinY && py<=feetMaxY) return;
+  const cur = getBlock(px, py, pz);
+  if (cur !== AIR && cur !== WATER) return;
+  setBlock(px, py, pz, HOTBAR[slot]);
+  meshDirty = true;
+  updateHUD();
+}
+
+/* ---------------- game loop ---------------- */
+let lastT = performance.now(), fpsAcc = 0, fpsN = 0, fpsTimer = 0;
+function setRunning(v){ running = v; }
+
+function update(dt) {
+  if (!running) return;
+  // movement input
+  let ix = 0, iz = 0;
+  if (keys.KeyW) iz += 1;
+  if (keys.KeyS) iz -= 1;
+  if (keys.KeyA) ix -= 1;
+  if (keys.KeyD) ix += 1;
+  if (isTouch()) { ix += move.x; iz += -move.y; }
+  // rotate by yaw
+  const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
+  let dx = (ix * cos - iz * sin);
+  let dz = (ix * sin + iz * cos) * -1;
+  // normalize
+  const len = Math.hypot(dx, dz);
+  if (len > 1) { dx /= len; dz /= len; }
+  const speed = player.fly ? 9 : 5;
+  const mx = dx * speed * dt, mz = dz * speed * dt;
+
+  // gravity / fly vertical
+  if (player.fly) {
+    player.vy = 0;
+    if (keys.Space) player.y += speed * dt;
+    if (keys.ShiftLeft || keys.ShiftRight) player.y -= speed * dt;
+  } else {
+    player.vy -= 24 * dt;
+    if (player.vy < -30) player.vy = -30;
+    if (keys.Space && player.onGround) { player.vy = 8.2; player.onGround = false; }
+  }
+  const vy = player.vy * dt;
+
+  // move X
+  if (mx !== 0 && !collide(player.x + mx, player.y, player.z)) player.x += mx;
+  // move Z
+  if (mz !== 0 && !collide(player.x, player.y, player.z + mz)) player.z += mz;
+  // move Y
+  if (vy !== 0) {
+    if (!collide(player.x, player.y + vy, player.z)) {
+      player.y += vy; player.onGround = false;
+    } else {
+      if (vy < 0) player.onGround = true;
+      player.vy = 0;
+    }
+  }
+  // auto step up 1 block if walking into it and grounded
+  if (!player.fly && player.onGround && len > 0.1) {
+    if (collide(player.x + mx, player.y, player.z) && mx !== 0 && !collide(player.x + mx, player.y + 1, player.z) && !collide(player.x, player.y + 1, player.z)) {
+      player.x += mx; player.y += 0.001; // tiny lift handled by gravity next frame
+      player.y = Math.ceil(player.y + 0.001);
+    }
+  }
+  // keep in bounds
+  player.x = Math.max(0.4, Math.min(SX - 0.4, player.x));
+  player.z = Math.max(0.4, Math.min(SZ - 0.4, player.z));
+  if (player.y < -20) { player.y = SY; player.vy = 0; }
+}
+
+function render() {
+  gl.clearColor(0.55, 0.75, 0.95, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  if (meshDirty) rebuildMesh();
+  if (meshCount === 0) return;
+
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.CULL_FACE);
+  gl.cullFace(gl.BACK);
+
+  const aspect = canvas.width / canvas.height;
+  const proj = mat4Perspective(1.2, aspect, 0.1, 400);
+
+  // view matrix from yaw/pitch (build manually)
+  const cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
+  const cp = Math.cos(player.pitch), sp = Math.sin(player.pitch);
+  // forward
+  const fx = -sy * cp, fy = sp, fz = -cy * cp;
+  // right
+  const rx = cy, ry = 0, rz = -sy;
+  // up = cross(right, forward)
+  const ux = ry * fz - rz * fy, uy = rz * fx - rx * fz, uz = rx * fy - ry * fx;
+  const ex = player.x, ey = player.y + EYE, ez = player.z;
+  // view = [rx ux -fx 0; ry uy -fy 0; rz uz -fz 0; dot(r,e) dot(u,e) dot(-f,e) 1] column-major
+  const view = new Float32Array([
+    rx, ux, -fx, 0,
+    ry, uy, -fy, 0,
+    rz, uz, -fz, 0,
+    -(rx*ex + ry*ey + rz*ez), -(ux*ex + uy*ey + uz*ez), (fx*ex + fy*ey + fz*ez), 1
+  ]);
+  const mvp = mat4Multiply(proj, view);
+
+  gl.useProgram(prog);
+  gl.uniformMatrix4fv(loc.uMVP, false, mvp);
+  gl.uniform3f(loc.uFogColor, 0.55, 0.75, 0.95);
+  gl.uniform1f(loc.uFogNear, 45);
+  gl.uniform1f(loc.uFogFar, 140);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  const stride = 7 * 4;
+  gl.enableVertexAttribArray(loc.aPos);
+  gl.vertexAttribPointer(loc.aPos, 3, gl.FLOAT, false, stride, 0);
+  gl.enableVertexAttribArray(loc.aColor);
+  gl.vertexAttribPointer(loc.aColor, 3, gl.FLOAT, false, stride, 12);
+  gl.enableVertexAttribArray(loc.aShade);
+  gl.vertexAttribPointer(loc.aShade, 1, gl.FLOAT, false, stride, 24);
+
+  gl.disable(gl.CULL_FACE); // avoid winding bugs; enable for perf if correct
+  gl.drawArrays(gl.TRIANGLES, 0, meshCount);
+
+  // translucent water pass: redraw water-colored? skip for simplicity (water drawn opaque)
+}
+
+function loop(now) {
+  const dt = Math.min(0.05, (now - lastT) / 1000);
+  lastT = now;
+  update(dt);
+  render();
+
+  // fps + HUD
+  fpsN++; fpsTimer += dt;
+  if (fpsTimer >= 0.5) {
+    document.getElementById("fps").textContent = Math.round(fpsN / fpsTimer) + " fps";
+    fpsN = 0; fpsTimer = 0;
+    updateHUD();
+  }
+  requestAnimationFrame(loop);
+}
+
+/* ---------------- HUD / hotbar / toast ---------------- */
+function updateHUD(){
+  document.getElementById("pos").textContent =
+    `${player.x.toFixed(1)} ${player.y.toFixed(1)} ${player.z.toFixed(1)}`;
+  // facing
+  const yawDeg = ((player.yaw * 180 / Math.PI) % 360 + 360) % 360;
+  let face;
+  if (yawDeg < 45 || yawDeg >= 315) face = "北(-Z)";
+  else if (yawDeg < 135) face = "西(-X)";
+  else if (yawDeg < 225) face = "南(+Z)";
+  else face = "东(+X)";
+  document.getElementById("face").textContent = face;
+  document.getElementById("held").textContent = BLOCK_NAMES[HOTBAR[slot]];
+  document.getElementById("mode").textContent = player.fly ? "飞行 ✈️" : "行走 🚶";
+}
+function renderHotbar(){
+  const el = document.getElementById("hotbar");
+  el.innerHTML = HOTBAR.map((b,i)=>{
+    const c = BLOCK_COLORS[b].map(v=>Math.round(v*255));
+    return `<div class="slot ${i===slot?"active":""}" data-i="${i}">
+      <span class="num">${i+1}</span>
+      <div class="cube" style="background:rgb(${c[0]},${c[1]},${c[2]})"></div>
+    </div>`;
+  }).join("");
+  el.querySelectorAll(".slot").forEach(s=>s.onclick=()=>selectSlot(+s.dataset.i));
+}
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"),2200);
+}
+
+/* ---------------- save / load ---------------- */
+const LS_KEY = "webcraft_save_v1";
+function saveGame(){
+  try{
+    // RLE compress world (mostly runs)
+    const runs = [];
+    let i=0;
+    while(i<world.length){
+      const v=world[i]; let c=1;
+      while(i+c<world.length && world[i+c]===v && c<65535) c++;
+      runs.push(v,c); i+=c;
+    }
+    const data = {
+      seed, sx:SX, sy:SY, sz:SZ, runs,
+      player:{ x:player.x, y:player.y, z:player.z, yaw:player.yaw, pitch:player.pitch, fly:player.fly },
+      slot
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+    toast("💾 已保存到浏览器");
+  }catch(e){ toast("保存失败：" + e.message); }
+}
+function loadGame(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw){ toast("没有找到存档"); return false; }
+    const data = JSON.parse(raw);
+    if(data.sx!==SX||data.sy!==SY||data.sz!==SZ){ toast("存档尺寸不匹配，已忽略"); return false; }
+    seed = data.seed;
+    world = new Uint8Array(SX*SY*SZ);
+    let p=0;
+    for(let i=0;i<data.runs.length;i+=2){
+      const v=data.runs[i], c=data.runs[i+1];
+      world.fill(v, p, p+c); p+=c;
+    }
+    Object.assign(player, data.player);
+    slot = data.slot||0;
+    meshDirty = true; renderHotbar(); updateHUD();
+    toast("📂 存档已读取");
+    return true;
+  }catch(e){ toast("读档失败："+e.message); return false; }
+}
+function hasSave(){ return !!localStorage.getItem(LS_KEY); }
+
+/* ---------------- overlays ---------------- */
+function openOv(id){ document.getElementById(id).classList.add("open"); }
+function closeOv(id){ document.getElementById(id).classList.remove("open"); }
+
+document.getElementById("btnPlay").onclick = () => {
+  closeOv("menu");
+  started = true;
+  renderHotbar(); updateHUD();
+  document.getElementById("cross").style.display = isTouch() ? "block" : "none";
+  if (!isTouch()) requestLock(); else { setRunning(true); document.getElementById("touch").style.display="block"; }
+  toast("⛏ 左键挖 · 右键放 · 双击空格飞");
+};
+document.getElementById("btnLoad").onclick = () => {
+  if (loadGame()) { closeOv("menu"); started = true;
+    document.getElementById("cross").style.display = isTouch() ? "block" : "none";
+    if (!isTouch()) requestLock(); else { setRunning(true); document.getElementById("touch").style.display="block"; }
+  }
+};
+document.getElementById("btnReset").onclick = () => {
+  genWorld();
+  localStorage.removeItem(LS_KEY);
+  player.x=SX/2; player.y=SY-2; player.z=SZ/2; player.vy=0; player.yaw=0.6; player.pitch=-0.15; player.fly=false;
+  meshDirty = true; renderHotbar(); updateHUD();
+  toast("🌍 新世界已生成（种子 "+seed+"）");
+};
+document.getElementById("btnResume").onclick = () => { if(!isTouch()) requestLock(); else { closeOv("pause"); setRunning(true);} };
+document.getElementById("btnSave").onclick = saveGame;
+document.getElementById("btnExit").onclick = () => {
+  saveGame();
+  setRunning(false);
+  if (document.exitPointerLock) document.exitPointerLock();
+  closeOv("pause"); openOv("menu"); started=false;
+  document.getElementById("cross").style.display="none";
+  document.getElementById("touch").style.display="none";
+};
+window.addEventListener("beforeunload", () => { if (started) saveGame(); });
+document.getElementById("btnLoad").disabled = !hasSave();
+
+/* ---------------- boot ---------------- */
+genWorld();
+resize();
+renderHotbar();
+updateHUD();
+requestAnimationFrame(loop);
+// enable load button state after potential save
+document.getElementById("btnLoad").disabled = !hasSave();
+</script>
+</body>
+</html>

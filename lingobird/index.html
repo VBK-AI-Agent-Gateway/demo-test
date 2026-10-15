@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LingoBird - 日语 · 英语学习</title>
+<meta name="description" content="像多邻国一样好玩的日语英语学习应用：课程树、每日练习、中文界面。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐦</text></svg>">
+<style>
+:root{
+  --green:#58cc02; --green-d:#46a302; --blue:#1cb0f6; --blue-d:#1497db;
+  --red:#ff4b4b; --orange:#ff9600; --yellow:#ffc800;
+  --purple:#ce82ff; --gray:#afafaf; --gray-l:#e5e5e5;
+  --ink:#3c3c3c; --ink-l:#777; --bg:#ffffff; --card:#f7f7f7;
+  --r:16px; --shadow-sm:0 4px 14px rgba(0,0,0,.06); --shadow-md:0 8px 24px rgba(0,0,0,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:'Nunito',ui-rounded,'Hiragino Maru Gothic ProN','PingFang SC','Microsoft YaHei',system-ui,sans-serif;
+  background:linear-gradient(160deg,#d7eefa 0%,#eaf7e3 60%,#fff7e0 100%); color:var(--ink); overflow:hidden;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+.hidden{display:none !important;}
+
+/* ---------- Layout ---------- */
+#app{height:100%;display:flex;flex-direction:column;}
+#topbar{
+  height:56px;flex:0 0 auto;display:flex;align-items:center;gap:14px;
+  padding:0 16px;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:2px solid var(--gray-l);box-shadow:0 2px 12px rgba(0,0,0,.05);
+  z-index:20;
+}
+#topbar .logo{font-weight:900;font-size:20px;color:var(--green);letter-spacing:-.5px;white-space:nowrap;}
+#topbar .logo span{color:var(--blue);}
+.stat{display:flex;align-items:center;gap:5px;font-weight:800;font-size:15px;color:var(--ink-l);}
+.stat svg{width:24px;height:24px;}
+.spacer{flex:1;}
+
+#main{flex:1;overflow-y:auto;overscroll-behavior:contain;padding-bottom:40px;}
+.screen{max-width:640px;margin:0 auto;padding:16px;}
+
+/* ---------- Buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-weight:800;font-size:16px;letter-spacing:.5px;text-transform:uppercase;
+  padding:14px 22px;border-radius:var(--r);color:#fff;background:var(--green);
+  box-shadow:0 4px 0 var(--green-d),0 8px 18px rgba(88,204,2,.25);transition:transform .05s,filter .15s;user-select:none;
+}
+.btn:active{transform:translateY(4px);box-shadow:0 0 0 var(--green-d);}
+.btn.blue{background:var(--blue);box-shadow:0 4px 0 var(--blue-d);}
+.btn.blue:active{box-shadow:0 4px 0 var(--blue-d);}
+.btn.red{background:var(--red);box-shadow:0 4px 0 #d33;}
+.btn.red:active{box-shadow:0 4px 0 #d33;}
+.btn.gray{background:var(--gray-l);color:var(--gray);box-shadow:0 4px 0 #ccc;}
+.btn.ghost{background:#fff;color:var(--blue);border:2px solid var(--gray-l);box-shadow:0 4px 0 var(--gray-l);}
+.btn:disabled{filter:grayscale(.6) opacity(.6);pointer-events:none;}
+.btn.block{width:100%;}
+.btn.sm{font-size:13px;padding:9px 14px;border-radius:12px;}
+
+/* ---------- Home / path ---------- */
+.unit-banner{
+  background:linear-gradient(135deg,#58cc02,#7ee83e);color:#fff;border-radius:20px;padding:18px 20px;
+  box-shadow:0 5px 0 var(--green-d),0 10px 24px rgba(88,204,2,.3);margin-bottom:24px;position:relative;overflow:hidden;
+}
+.unit-banner::after{content:'';position:absolute;top:-40%;left:-30%;width:50%;height:180%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);transform:rotate(20deg);}
+.unit-banner h2{font-size:20px;font-weight:900;}
+.unit-banner p{font-size:14px;opacity:.9;margin-top:2px;}
+.unit-banner .deco{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:44px;opacity:.35;}
+.path{display:flex;flex-direction:column;align-items:center;gap:10px;padding-bottom:10px;}
+.node{
+  width:80px;height:72px;border-radius:50%;background:linear-gradient(160deg,#58cc02,#46a302);
+  box-shadow:0 7px 0 var(--green-d),0 12px 24px rgba(88,204,2,.35);display:flex;align-items:center;justify-content:center;
+  font-size:32px;color:#fff;position:relative;transition:transform .1s,box-shadow .1s;
+}
+.node:active{transform:translateY(5px);box-shadow:0 2px 0 var(--green-d);}
+.node.locked{background:var(--gray-l);box-shadow:0 7px 0 #c9c9c9;color:#b9b9b9;cursor:not-allowed;}
+.node.done{background:linear-gradient(160deg,#ffd94d,#ffb300);box-shadow:0 7px 0 #d9a800,0 12px 24px rgba(255,180,0,.35);}
+.node .ring{position:absolute;inset:-8px;border:3px solid var(--green);border-radius:50%;opacity:.25;}
+.node.done .ring{border-color:var(--yellow);}
+.node-label{font-size:13px;font-weight:800;color:var(--ink-l);text-align:center;margin-top:-6px;}
+.zig{width:4px;height:26px;background:var(--gray-l);border-radius:4px;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes nudge{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.07)}}
+.path .row{display:flex;flex-direction:column;align-items:center;}
+.path .off1{transform:translateX(-60px);} .path .off2{transform:translateX(60px);}
+.path .node:not(.locked):not(.done){animation:bounce 2s infinite;}
+.nudge{animation:nudge 1.6s infinite !important;}
+
+/* ---------- Lesson header ---------- */
+#lesson-top{display:flex;align-items:center;gap:12px;padding:14px 16px 6px;max-width:640px;margin:0 auto;}
+#close-btn{font-size:24px;color:var(--gray);font-weight:900;padding:4px 8px;}
+#bar-wrap{flex:1;height:16px;background:var(--gray-l);border-radius:10px;overflow:hidden;}
+#bar{height:100%;width:0;background:var(--green);border-radius:10px;transition:width .3s;}
+#hearts{display:flex;align-items:center;gap:4px;font-weight:900;color:var(--red);font-size:16px;}
+#q-area{max-width:560px;margin:0 auto;padding:18px 16px 10px;flex:1;overflow-y:auto;}
+.prompt{font-size:22px;font-weight:900;margin-bottom:16px;line-height:1.3;}
+.jpcard{
+  background:linear-gradient(135deg,#fff,#f2fbff);border:2px solid var(--gray-l);border-radius:20px;
+  padding:22px 18px;font-size:34px;font-weight:900;text-align:center;margin-bottom:18px;position:relative;cursor:pointer;
+  box-shadow:var(--shadow-md);transition:.15s;
+}
+.jpcard:hover{transform:translateY(-2px);border-color:var(--blue);}
+.jpcard .romaji{font-size:16px;color:var(--ink-l);font-weight:700;margin-top:6px;text-transform:none;}
+.jpcard .zh-mean{font-size:17px;color:var(--green-d);font-weight:900;margin-top:8px;letter-spacing:.5px;}
+.jpcard .zh-mean::before{content:'🇨🇳 中文：';color:var(--gray);font-weight:800;font-size:13px;}
+.hint{font-size:14px;color:var(--ink-l);margin-top:14px;}
+
+/* choices */
+.choices{display:flex;flex-direction:column;gap:12px;}
+.choice{
+  text-align:left;background:#fff;border:2px solid var(--gray-l);border-bottom-width:4px;
+  border-radius:18px;padding:16px 16px;font-size:17px;font-weight:700;color:var(--ink);
+  display:flex;gap:12px;align-items:center;transition:.12s;box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+.choice:hover{border-color:#c9d6e4;transform:translateY(-1px);}
+.choice .key{
+  flex:0 0 26px;height:26px;border:2px solid var(--gray-l);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--gray);font-weight:800;
+}
+.choice.sel{background:#ddf4ff;border-color:var(--blue);color:var(--blue-d);box-shadow:0 4px 16px rgba(28,176,246,.25);}
+.choice.sel .key{border-color:var(--blue);color:var(--blue);}
+.choice.ok{background:#d7ffb8;border-color:var(--green);color:var(--green-d);}
+.choice.bad{background:#ffdfe0;border-color:var(--red);color:var(--red);}
+#bank{
+  min-height:64px;border:2px solid var(--gray-l);border-radius:14px;padding:8px;margin-bottom:16px;
+  display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;background:#fff;
+}
+.wordbank{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+.chip{
+  background:#fff;border:2px solid var(--gray-l);border-bottom-width:4px;border-radius:16px;
+  padding:14px 16px;font-size:18px;font-weight:800;text-align:center;transition:.12s;box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+.chip:hover{transform:translateY(-2px);}
+.chip.sel{background:#ddf4ff;border-color:var(--blue);color:var(--blue-d);}
+.chip.used{opacity:.3;pointer-events:none;}
+
+/* listen */
+#audio-btn{
+  width:110px;height:110px;background:var(--blue);border-radius:20px;color:#fff;
+  display:flex;align-items:center;justify-content:center;margin:10px auto 14px;
+  box-shadow:0 5px 0 var(--blue-d);
+}
+#audio-btn:active{transform:translateY(4px);box-shadow:none;}
+
+/* match grid */
+#match{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:480px;margin:0 auto;}
+.mtile{
+  background:#fff;border:2px solid var(--gray-l);border-bottom-width:4px;border-radius:14px;
+  padding:14px 8px;font-size:17px;font-weight:800;min-height:60px;transition:.12s;
+}
+.mtile.sel{background:#ddf4ff;border-color:var(--blue);color:var(--blue-d);}
+.mtile.done{background:#d7ffb8;border-color:var(--green);color:var(--green-d);opacity:.7;border-bottom-width:2px;}
+.mtile.miss{background:#ffdfe0;border-color:var(--red);color:var(--red);animation:shake .3s;}
+.mtile .mtile-txt{display:block;font-weight:900;}
+.mtile .zh-line{display:block;font-size:13px;font-weight:800;color:var(--ink-l);margin-top:4px;line-height:1.3;}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* ---------- Footer / check ---------- */
+#footer{flex:0 0 auto;background:#fff;border-top:2px solid var(--gray-l);transition:background .25s;padding:16px 16px 18px;box-shadow:0 -6px 24px rgba(0,0,0,.06);}
+#footer.ok{background:#d7ffb8;border-color:var(--green);}
+#footer.bad{background:#ffdfe0;border-color:var(--red);}
+#footer-in{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:14px;}
+#verdict{flex:1;font-weight:900;font-size:18px;display:none;align-items:flex-start;gap:10px;flex-direction:column;}
+#verdict .ic{font-size:34px;}
+#verdict .ex{display:block;font-size:14px;font-weight:700;color:var(--ink-l);margin-top:3px;}
+.grammar-box{
+  background:linear-gradient(135deg,#fffbe8,#fff7db);border:2px solid var(--yellow);border-radius:14px;
+  padding:10px 14px;font-size:14px;font-weight:800;color:#7a5c00;margin-top:8px;width:100%;
+  box-shadow:0 4px 14px rgba(255,200,0,.25);animation:pop .3s;
+}
+.grammar-box::before{content:'📖 语法讲解';display:block;font-size:12px;color:#b98a00;letter-spacing:1px;margin-bottom:3px;}
+.grammar-box .rule{display:block;color:#5c4700;font-weight:700;font-size:13.5px;line-height:1.45;}
+.zh-line-answer{font-size:14px;font-weight:800;color:var(--green-d);margin-top:4px;}
+.wrong-echo{
+  background:#ffdfe0;border:2px solid var(--red);border-radius:12px;padding:6px 12px;
+  font-size:14px;font-weight:800;color:var(--red);margin-top:6px;
+}
+#check-btn{min-width:140px;}
+
+/* lesson end */
+.end-screen{max-width:520px;margin:30px auto;text-align:center;padding:20px;}
+.end-screen .big{font-size:84px;animation:pop .6s;filter:drop-shadow(0 8px 20px rgba(0,0,0,.15));}
+@keyframes pop{0%{transform:scale(0)}80%{transform:scale(1.15)}100%{transform:scale(1)}}
+.end-screen h1{font-size:30px;font-weight:900;color:var(--orange);margin:10px 0 22px;}
+.rewards{display:flex;gap:12px;justify-content:center;margin-bottom:26px;flex-wrap:wrap;}
+.reward{background:linear-gradient(135deg,#fff,#f7f7f7);border:2px solid var(--gray-l);border-radius:18px;padding:16px 22px;min-width:110px;box-shadow:var(--shadow-sm);}
+.reward .t{font-size:13px;font-weight:800;color:var(--ink-l);text-transform:uppercase;}
+.reward .v{font-size:24px;font-weight:900;display:flex;align-items:center;gap:6px;justify-content:center;margin-top:4px;}
+.reward .v.y{color:var(--orange);} .reward .v.p{color:var(--purple);}
+
+.voice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.voice-opt{
+  position:relative;background:#fff;border:2px solid var(--gray-l);border-bottom-width:4px;border-radius:16px;
+  padding:14px 8px 12px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:.12s;
+}
+.voice-opt:hover{transform:translateY(-2px);}
+.voice-opt.on{background:#ddf4ff;border-color:var(--blue);box-shadow:0 4px 14px rgba(78,187,255,.3);}
+.voice-opt .vi{font-size:26px;}
+.voice-opt .vn{font-weight:900;font-size:15px;}
+.voice-opt .vd{font-size:12px;color:var(--ink-l);font-weight:700;}
+.voice-opt .vb{position:absolute;top:6px;right:8px;color:var(--blue);font-weight:900;}
+
+/* ---------- Learn tab ---------- */
+.lang-tabs{display:flex;gap:10px;margin-bottom:16px;}
+.lang-tab{
+  flex:1;padding:15px;border-radius:18px;background:#fff;border:2px solid var(--gray-l);
+  font-weight:900;font-size:16px;color:var(--ink-l);display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 3px 0 var(--gray-l);transition:.15s;
+}
+.lang-tab:hover{transform:translateY(-2px);}
+.lang-tab.on{background:#ddf4ff;border-color:var(--blue);color:var(--blue-d);box-shadow:0 3px 0 var(--blue);}
+.course-hero{
+  display:flex;gap:14px;align-items:center;background:#fff;border:2px solid var(--gray-l);
+  border-radius:20px;padding:18px 16px;margin-bottom:22px;box-shadow:var(--shadow-sm);
+}
+.course-hero .flag{font-size:44px;}
+.course-hero h3{font-size:19px;font-weight:900;}
+.course-hero p{font-size:14px;color:var(--ink-l);font-weight:700;margin-top:2px;}
+
+/* section grid (practice) */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.tile{
+  background:#fff;border:2px solid var(--gray-l);border-bottom-width:5px;border-radius:20px;
+  padding:20px 16px;text-align:left;transition:.12s;box-shadow:var(--shadow-sm);
+}
+.tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);}
+.tile:active{transform:translateY(3px);border-bottom-width:2px;}
+.tile .ic{font-size:32px;}
+.tile h4{font-size:17px;font-weight:900;margin-top:8px;}
+.tile p{font-size:13px;color:var(--ink-l);font-weight:700;margin-top:2px;}
+.tile.g{border-color:#a4e57a;} .tile.b{border-color:#8ed4fb;} .tile.o{border-color:#ffcf7f;}
+.tile.p{border-color:#e3b3ff;} .tile.r{border-color:#ffa5a5;}
+
+/* leaderboard / profile */
+
+.profile-head{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#fff,#f6f0ff);border:2px solid var(--gray-l);border-radius:22px;padding:20px 18px;margin-bottom:18px;box-shadow:var(--shadow-md);}
+.profile-head .ava{
+  width:74px;height:74px;border-radius:50%;background:var(--purple);display:flex;align-items:center;
+  justify-content:center;font-size:40px;border:4px solid #fff;box-shadow:0 4px 0 #a568d6;
+}
+.profile-head h3{font-size:22px;font-weight:900;}
+.profile-head p{color:var(--ink-l);font-weight:700;font-size:14px;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.stat-card{background:#fff;border:2px solid var(--gray-l);border-radius:18px;padding:16px 14px;display:flex;gap:10px;align-items:center;box-shadow:var(--shadow-sm);}
+.stat-card .ic{font-size:30px;}
+.stat-card .n{font-size:20px;font-weight:900;}
+.stat-card .l{font-size:12px;color:var(--ink-l);font-weight:800;text-transform:uppercase;}
+.ach{display:flex;gap:12px;align-items:center;background:#fff;border:2px solid var(--gray-l);border-radius:16px;padding:14px 16px;margin-top:12px;box-shadow:var(--shadow-sm);transition:.12s;}
+.ach .ic{font-size:30px;}
+.ach.off{opacity:.45;filter:grayscale(1);}
+.ach h5{font-size:15px;font-weight:900;}
+.ach p{font-size:13px;color:var(--ink-l);font-weight:700;}
+
+/* bottom nav */
+#nav{
+  flex:0 0 auto;height:66px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-top:2px solid var(--gray-l);
+  display:flex;justify-content:center;gap:8px;padding:0 8px;z-index:20;box-shadow:0 -4px 20px rgba(0,0,0,.06);
+}
+.nav-i{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  font-size:11px;font-weight:800;color:var(--gray);padding:6px 12px;border-radius:12px;border:2px solid transparent;min-width:64px;
+}
+.nav-i svg{width:26px;height:26px;}
+.nav-i.on{color:var(--blue);background:#ddf4ff;border-color:#84d8ff;}
+.nav-i.on.green{color:var(--green);background:#eaffdd;border-color:#a4e57a;}
+
+/* modal + toast */
+#modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;
+}
+.modal{background:#fff;border-radius:20px;padding:24px;max-width:400px;width:100%;text-align:center;animation:pop .25s;}
+.modal h3{font-size:22px;font-weight:900;margin-bottom:8px;}
+.modal p{color:var(--ink-l);font-weight:700;margin-bottom:18px;font-size:15px;line-height:1.5;}
+#toast{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);
+  background:var(--ink);color:#fff;padding:10px 20px;border-radius:30px;font-weight:800;font-size:14px;
+  opacity:0;transition:.25s;z-index:60;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.25);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+@media(max-width:520px){
+  .stat.hide-sm{display:none;}
+  .prompt{font-size:19px;}
+  .tiles{gap:10px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="logo">🐦 Lingo<span>Bird</span></div>
+    <div class="stat hide-sm" title="经验"><svg viewBox="0 0 24 24" fill="#ffc800"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg><span id="st-xp">0</span></div>
+    <div class="spacer"></div>
+  </header>
+
+  <main id="main"></main>
+
+  <nav id="nav">
+    <button class="nav-i on green" data-tab="learn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      学习
+    </button>
+    <button class="nav-i" data-tab="practice">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      练习
+    </button>
+    <button class="nav-i" data-tab="profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      我的
+    </button>
+  </nav>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ================= Data ================= */
+const COURSES = {
+  ja: {
+    id:'ja', name:'日语', flag:'🇯🇵', greeting:'こんにちは',
+    units: [
+      { title:'第 1 单元：打招呼', icon:'👋', lessons:[
+        { id:'ja1', title:'你好', icon:'👋', items:[
+          {t:'choice', q:'选出“你好”的日语说法', jp:'こんにちは', en:'Hello', options:['こんにちは','さようなら','ありがとう','ごめん'], a:0, ex:'こんにちは (konnichiwa) = Hello', zh:'Hello', grammar:'日语寒暄随时段变化：早上おはよう、白天こんにちは、晚上こんばんは；对不熟的人加 ございます 更礼貌。'},
+          {t:'choice', q:'“早上好”用日语怎么说？', en:'Good morning', options:['おはよう','こんばんは','はい','いってきます'], a:0, ex:'おはよう (ohayou) = Good morning', zh:'Good morning', grammar:'おはよう是早上的问候；对长辈/上级说 おはようございます 以示礼貌。'},
+          {t:'choice', q:'选择正确的翻译', jp:'こんばんは', en:'Good evening', options:['Good evening','Good night','Good afternoon','Goodbye'], a:0, ex:'こんばんは (konbanwa) = Good evening', zh:'Good evening', grammar:'こんばんは 由「今晩は」演变而来，用于日落后的问候；道别说 おやすみなさい。'},
+          {t:'build', q:'把日语 “晚安” 翻译成英语', jp:'おやすみなさい', answer:'good night', words:['good','night','morning','evening'], ex:'おやすみなさい = good night', zh:'good night', grammar:'睡前道晚安用 おやすみなさい；对亲近的人可省略 なさい，说 おやすみ。'},
+          {t:'listen', audio:'ohayou gozaimasu', q:'你听到了什么？', options:['おはようございます','こんにちは','ありがとう','おやすみなさい'], a:0, ex:'おはようございます = Good morning (polite)', zh:'Good morning (polite)', grammar:'ございます 是 です 的敬语形式，早安的礼貌版 = おはようございます。'},
+          {t:'choice', q:'“再见”用日语怎么说？', en:'Goodbye', options:['さようなら','こんにちは','はい','いいえ'], a:0, ex:'さようなら (sayounara) = Goodbye', zh:'Goodbye', grammar:'さようなら 是较正式的告别，隐含「不知何时再见」；朋友间常用 じゃあね / またね。'},
+          {t:'match', q:'配对以下词语', pairs:[['こんにちは','Hello'],['ありがとう','Thank you'],['はい','Yes'],['いいえ','No']], ex:'这些都是最基础的日常用语', zh:'打招呼基础词', grammar:'日语的「は」提示主题（读 wa 不读 ha），「が」提示主语；初学先记住固定寒暄即可。'},
+          {t:'build', q:'把 “谢谢” 翻译成日语', en:'Thank you', answer:'arigatou', words:['arigatou','konnichiwa','sumimasen','gomen'], ex:'谢谢 = ありがとう (arigatou)', zh:'ありがとう (arigatou)', grammar:'ありがとう 源自「有り難い」（难得）；礼貌版 ありがとうございます，过去式 ありがとうございました。'},
+          {t:'choice', q:'选择正确的翻译', jp:'すみません', en:'Excuse me / Sorry', options:['Excuse me / Sorry','Thank you','Please','Welcome'], a:0, ex:'すみません (sumimasen) = Excuse me / Sorry', zh:'Excuse me / Sorry', grammar:'すみません 一字多用：道歉=对不起、搭讪=不好意思/劳驾、致谢=谢谢您（轻微）。'},
+          {t:'listen', audio:'sayounara', q:'你听到了什么？', options:['さようなら','こんにちは','こんばんは','ありがとう'], a:0, ex:'さようなら = Goodbye', zh:'Goodbye', grammar:'告别用语；在课堂/职场说「さようなら」过于郑重，可说 じゃあね / 失礼します。'}
+        ]},
+        { id:'ja2', title:'自我介绍', icon:'🙋', items:[
+          {t:'choice', q:'“我叫小明”用日语怎么说？', en:'My name is Xiao Ming', options:['わたしは しょうめい です','これは ほんです','げんき ですか','にほんご です'], a:0, ex:'わたしは〜です = 我是…… / 我叫……', zh:'我是…… / 我叫……', grammar:'日语自我介绍 = わたしは 名前 です。中文的「我叫」对应「わたしは〜です」，其中 は 是主题助词（读 wa）。'},
+          {t:'build', q:'把 “我是学生” 翻译成日语（罗马音）', en:'I am a student', answer:'watashi wa gakusei desu', words:['watashi','wa','gakusei','desu','kawaii','sensei'], ex:'わたしは学生です = I am a student', zh:'I am a student', grammar:'AはBです = A是B。职业/身份直接放在 です 前，无需冠词（对比英语 a student）。'},
+          {t:'choice', q:'“请多关照”用日语怎么说？', en:'Nice to meet you', options:['どうぞ よろしく おねがいします','はじめまして','ありがとう ございます','しつれい します'], a:0, ex:'どうぞよろしくお願いします是介绍后的常用寒暄', zh:'请多关照', grammar:'初次见面固定流程：はじめまして → 名前 → よろしくお願いします，缺一不可显得失礼。'},
+          {t:'choice', q:'选择正确的翻译', jp:'にほんご を べんきょう します', en:'I study Japanese', options:['I study Japanese','I like Japanese','I speak Japanese','Japanese is easy'], a:0, ex:'〜をべんきょうします = 学习……', zh:'学习……', grammar:'宾语后接助词 を（读 o），再接动词；语序 = 主语(は) 宾语(を) 动词，动词永远放句末。'},
+          {t:'match', q:'配对以下词语', pairs:[['わたし','I'],['がくせい','student'],['せんせい','teacher'],['ともだち','friend']], ex:'自我介绍的高频词', zh:'自我介绍词', grammar:'日语名词不分单复数：がくせい 既可以是 student 也可以是 students，靠上下文判断。'},
+          {t:'listen', audio:'hajimemashite', q:'你听到了什么？', options:['はじめまして','どうもありがとうございます','はじめましてではありません','よろしく'], a:0, ex:'はじめまして = 初次见面', zh:'初次见面', grammar:'はじめまして = 头一次，只用于初次见面；第二次见面再说会显得奇怪。'},
+          {t:'build', q:'把 “我是中国人” 翻译成日语（罗马音）', en:'I am Chinese', answer:'watashi wa chuugokujin desu', words:['watashi','wa','chuugokujin','desu','nihonjin','eigo'], ex:'わたしは中国人です', zh:'我是中国人', grammar:'国籍词 + 人 = ……人：中国人(ちゅうごくじん)、日本人(にほんじん)；注意 人 的读音会随词变化。'},
+          {t:'choice', q:'“你是哪国人？”的日语是？', en:'What country are you from?', options:['どちらの くじ ですか','なに を しています か','いつ に いきます か','どこ に あります か'], a:0, ex:'どちらの国ですか = 您是哪国人？', zh:'您是哪国人？', grammar:'どちら 是 どこ 的礼貌说法，问对方信息时用 どちら 更得体。'}
+        ]},
+        { id:'ja3', title:'日常寒暄', icon:'💬', items:[
+          {t:'choice', q:'吃饭前常说的一句话是？', en:"Let's eat! (before a meal)", options:['いただきます','ごちそうさま','いってらっしゃい','ただいま'], a:0, ex:'いただきます = 我开动了', zh:'我开动了', grammar:'饭前 いただきます（领受生命）、饭后 ごちそうさまでした（多谢款待），是一对固定搭配。'},
+          {t:'choice', q:'“我回来了”用日语怎么说？', en:"I'm home", options:['ただいま','いってきます','おかえり','いらっしゃい'], a:0, ex:'ただいま = 我回来了（回家时说）', zh:'我回来了（回家时说）', grammar:'回家说 ただいま，家人回 おかえり(なさい)；出门说 いってきます，家人回 いってらっしゃい。'},
+          {t:'build', q:'把 “我出门了” 翻译成英语', jp:'いってきます', answer:'im off now', words:['im','off','now','welcome','home','back'], ex:'いってきます = 我出门了（对家里人说）', zh:'我出门了（对家里人说）', grammar:'「行ってきます/来ます/います」构成一组：出门/来/在，回应分别是 いってらっしゃい/おかえり/いらっしゃい。'},
+          {t:'choice', q:'选择正确的翻译', jp:'おつかれさま でした', en:'Good work / Thanks for your effort', options:['Good work / Thanks for your effort','Excuse me','Please wait','See you tomorrow'], a:0, ex:'お疲れ様でした是下班/放学的万能寒暄', zh:'辛苦了', grammar:'お疲れ様でした = 辛苦了，工作结束、活动散场必说；对上级也可用，是最安全的职场用语。'},
+          {t:'match', q:'配对以下词语', pairs:[['いただきます','Bon appétit'],['おかえり','Welcome home'],['いってきます',"I'm heading out"],['おやすみ','Good night']], ex:'家庭场景常用语', zh:'家庭常用语', grammar:'家庭寒暄成对出现：いただきます↔ごちそうさま，ただいま↔おかえり，いってきます↔いってらっしゃい。'},
+          {t:'listen', audio:'gochisousama deshita', q:'你听到了什么？', options:['ごちそうさまでした','いただきます','おつかれさまでした','おめでとうございます'], a:0, ex:'ごちそうさまでした = 多谢款待（饭后说）', zh:'多谢款待（饭后说）', grammar:'饭后必说 ごちそうさまでした，对做饭/请客的人表示感谢；省略版 ごちそうさま 仅限熟人。'},
+          {t:'choice', q:'“辛苦了”用日语怎么说？', en:'Good job / Thank you for your effort', options:['おつかれさま です','おめでとう ございます','こんにちは','すみません'], a:0, ex:'お疲れ様です是职场最常用的话', zh:'辛苦了（职场）', grammar:'「様(さま)」是敬称；お疲れ様です 比 お疲れ様でした 语气稍轻，适用于正在进行中的工作。'},
+          {t:'build', q:'把 “生日快乐” 翻译成日语（罗马音）', en:'Happy birthday', answer:'omedetou gozaimasu', words:['omedetou','gozaimasu','kanpai','yoisho','shukufuku'], ex:'おめでとうございます = 生日快乐', zh:'生日快乐', grammar:'祝贺类 = おめでとう ございます：生日、升学、结婚都用它，加 ございます 更郑重。'}
+        ]}
+      ]},
+      { title:'第 2 单元：基础会话', icon:'🍙', lessons:[
+        { id:'ja4', title:'数字与时间', icon:'🔢', items:[
+          {t:'choice', q:'“一、二、三”的日语是？', en:'One, two, three', options:['いち、に、さん','いち、つ、み','い、に、さ','hitotsu、futatsu、mittsu'], a:0, ex:'いち に さん 是音读数字', zh:'一、二、三', grammar:'日语数字有音读（いちにさん，来自汉语）和训读（ひとつふたつ，和语）两套；计数多用音读。'},
+          {t:'choice', q:'“今天星期几？”日语怎么说？', en:'What day is it today?', options:['きょう は なん よう び です か','いま なん じ です か','きょう は にほん です か','なに を たべます か'], a:0, ex:'何曜日(なんようび) = 星期几', zh:'星期几', grammar:'曜日 = 星期：月火水木金土日，对应 Monday~Sunday，前加 なん 构成疑问「何曜日」。'},
+          {t:'build', q:'把 “现在几点？” 翻译成英语', jp:'いま なん じ ですか', answer:'what time is it now', words:['what','time','is','it','now','day','today'], ex:'いま なん じ ですか = 现在几点？', zh:'现在几点？', grammar:'问时间 = いま なん じ ですか；答「〜じです」。分读作 ふん/ぷん，随前一个数字音变。'},
+          {t:'choice', q:'“星期一”的日语是？', en:'Monday', options:['げつようび','かようび','もくようび','にちようび'], a:0, ex:'月曜日(げつようび) = 星期一', zh:'星期一', grammar:'日语星期以五行命名：月曜・火曜・水曜・木曜・金曜・土曜・日曜；曜(よう)读 you。'},
+          {t:'listen', audio:'sanjuu go fun', q:'你听到了什么？', options:['さんじゅうごふん','さんじゅうごじ','さんじゅうじ','にじゅうごふん'], a:0, ex:'35分 = さんじゅうごふん', zh:'さんじゅうごふん', grammar:'数字+分：1~10分读 ふん，4读 よんぷん，9读 きゅうふん，30读 さんじゅっぷん，有促音化现象。'},
+          {t:'match', q:'配对数字', pairs:[['いち','One'],['に','Two'],['さん','Three'],['よん','Four']], ex:'基础数字 1-4', zh:'数字 1~4', grammar:'1-4 = いち に さん よん；4 也可读 し，但 し 与「死」同音，通常避免；0 读 れい/ゼロ。'},
+          {t:'build', q:'把 “明天见” 翻译成日语（罗马音）', en:'See you tomorrow', answer:'ashita mata ne', words:['ashita','mata','ne','kyou','matamata'], ex:'明日またね = 明天见', zh:'明天见', grammar:'明日(あした/あす) = 明天；またね = 再见（非正式），比 さようなら 更常用。'},
+          {t:'choice', q:'“现在是三点”日语怎么说？', jp:'さんじ です', en:'It is three o\'clock', options:['It is three o\'clock','It is three days','The third thing','Three o\'clock is fun'], a:0, ex:'〜じ = ……点钟', zh:'……点钟', grammar:'时间 + じ = ……点：さんじ 3点；分 + ふん。整点用「〜じ(ま)です」。'}
+        ]},
+        { id:'ja5', title:'食物与饮料', icon:'🍣', items:[
+          {t:'choice', q:'“我喜欢吃寿司”用日语怎么说？', en:'I like eating sushi', options:['すしが たべる のが すき です','すしは おおい です','すしを つかいます','すしに いきます'], a:0, ex:'〜がすきです = 喜欢……', zh:'喜欢……', grammar:'日语「喜欢」用 〜が好きです：对象后接 が（不是 を），因为好き是形容动词，对象用主格助词。'},
+          {t:'build', q:'把 “我要一杯水” 翻译成英语', jp:'みずを ください', answer:'water please', words:['water','please','tea','coffee','give'], ex:'〜をください = 请给我……', zh:'请给我……', grammar:'ください = 请给我……（依附于 を），比 ちょうだい 更礼貌，是购物点餐万能句。'},
+          {t:'choice', q:'“好吃”的日语是？', en:'Delicious', options:['おいしい','おもしろい','おおきい','あつい'], a:0, ex:'おいしい = 好吃', zh:'好吃', grammar:'おいしい 是对食物的赞美；礼貌版 おいしかったです（过去式）是用餐后的常用句。'},
+          {t:'choice', q:'在餐厅点餐时会听到：', en:'What would you like?', options:['なにを いれます か','いくら ですか','おいしい ですか','ごめん ください ですか'], a:0, ex:'なにを入れますか = 要点什么呢？', zh:'要点什么呢？', grammar:'礼貌点餐：なにをいれますか / これをください；动词「入る」= 放入、点（菜）。'},
+          {t:'match', q:'配对食物', pairs:[['すし','Sushi'],['らーめん','Ramen'],['みず','Water'],['おちゃ','Tea']], ex:'餐厅必备词', zh:'餐厅词', grammar:'日语外来语（片假名）多来自英语：ラーメン ramen、コーヒー coffee；点餐先说「すみません」引起注意。'},
+          {t:'listen', audio:'sushi o kudasai', q:'你听到了什么？', options:['すしを ください','すしを たべます','すしは おいしい','すしに いきます'], a:0, ex:'すしをください = 请给我寿司', zh:'请给我寿司', grammar:'ください = 请给我……（依附于 を），比 ちょうだい 更礼貌，是购物点餐万能句。'},
+          {t:'build', q:'把 “很贵” 翻译成日语（罗马音）', en:'It is expensive', answer:'takai desu', words:['takai','desu','yasui','oishii'], ex:'高い(たかい) = 贵', zh:'贵', grammar:'高い 一词两义：价格贵 / 程度高；便宜用 安い(やすい)。'},
+          {t:'choice', q:'“我饿了”日语怎么说？', en:'I am hungry', options:['おなかが すいて います','のどが かわいて います','たなか です','おなかが いっぱい です'], a:0, ex:'お腹が空く = 肚子饿；のどがかわく = 口渴', zh:'口渴', grammar:'肚子饿 = おなかがすいた；口渴 = のどがかわいた。生理状态用「が」+ 自动词。'}
+        ]},
+        { id:'ja6', title:'方位与出行', icon:'🚃', items:[
+          {t:'choice', q:'“车站在哪里？”日语怎么说？', en:'Where is the station?', options:['えきは どこに あります か','えきは なに ですか','えきに いきます か','えきは おおきい ですか'], a:0, ex:'〜はどこにありますか = ……在哪里？', zh:'……在哪里？', grammar:'问地点用 〜は どこに ありますか（あります = 存在，用于无生命物体）；人/动物用 います。'},
+          {t:'choice', q:'“左”的日语是？', en:'Left', options:['ひだり','みぎ','まえ','うしろ'], a:0, ex:'左(ひだり)=左，右(みぎ)=右', zh:'左、右', grammar:'方向词：左ひだり / 右みぎ / 前まえ / 後ろうしろ；问路常配「まっすぐ/に」使用。'},
+          {t:'build', q:'把 “请给我地图” 翻译成英语', jp:'ちずを ください', answer:'map please', words:['map','please','ticket','station','here'], ex:'ちず = 地图', zh:'地图', grammar:'地图 = 地図(ちず)；交通カード = 交通卡；和语词用平假名，外来语用片假名。'},
+          {t:'choice', q:'“一起去吧”用日语怎么说？', en:"Let's go together", options:['いっしょに いきましょう','ひとりで いきます','いそぎます','やすみましょう'], a:0, ex:'〜ましょう = 让我们……', zh:'让我们……', grammar:'动词ます形去 ます + ましょう = 让我们一起……吧：いきましょう（走吧）、たべましょう（吃吧）。'},
+          {t:'match', q:'配对出行词', pairs:[['えき','Station'],['でんしゃ','Train'],['ひだり','Left'],['みぎ','Right']], ex:'问路必备', zh:'问路词', grammar:'问路句型：すみません、〜は どこに ありますか；回答用 右/左に あります。'},
+          {t:'listen', audio:'koko wa doko desu ka', q:'你听到了什么？', options:['ここは どこ ですか','ここは なん ですか','そこは どこ ですか','これは だれ ですか'], a:0, ex:'ここはどこですか = 这里是哪里？', zh:'这里是哪里？', grammar:'ここ(这里)/そこ(那里)/あそこ(远处那里)/どこ(哪里)，构成场所指示体系。'},
+          {t:'build', q:'把 “很远” 翻译成日语（罗马音）', en:'It is far', answer:'tooi desu', words:['tooi','desu','chikai','takai','arimasu'], ex:'遠い(とおい) = 远', zh:'远', grammar:'距离远 = 遠い(とおい)，近 = 近い(ちかい)；也用于关系疏远(とおいかんけい)。'},
+          {t:'choice', q:'“直走”用日语怎么说？', en:'Go straight', options:['まっすぐ いって ください','ひだりに まがって','みぎに とまれ','やすんで ください'], a:0, ex:'まっすぐ行ってください = 请直走（问路常用）', zh:'请直走（问路常用）', grammar:'〜てください = 请做……（动词て形+ください）；て形是日语最重要的活用形之一。'}
+        ]}
+      ]},
+      { title:'第 3 单元：生活场景', icon:'🗻', lessons:[
+        { id:'ja7', title:'购物', icon:'🛍️', items:[
+          {t:'choice', q:'“这个多少钱？”日语怎么说？', en:'How much is this?', options:['これは いくら ですか','これは なに ですか','これは だれの ですか','これは いい ですか'], a:0, ex:'いくら = 多少钱', zh:'多少钱', grammar:'问价 = いくらですか / いくらに なりますか（后者更礼貌）；数字+円(えん)=……日元。'},
+          {t:'build', q:'把 “太贵了！” 翻译成英语', jp:'たかい です！', answer:'its too expensive', words:['its','too','expensive','cheap','very'], ex:'表达价格惊讶的常用句', zh:'太贵了', grammar:'太贵了 = たかいです！强烈版：とても/ちょっと たかいです。便宜 = やすいです。'},
+          {t:'choice', q:'“便宜”的日语是？', en:'Cheap / Inexpensive', options:['やすい','たかい','おおきい','ちいさい'], a:0, ex:'安い(やすい)=便宜', zh:'便宜', grammar:'形容词分类：い形容词（たかい/やすい）直接加 です；な形容词要加 な/で。'},
+          {t:'choice', q:'“我买了”用日语怎么说？', en:"I'll buy it", options:['かいます','かけます','たべます','いきます'], a:0, ex:'買う(かう)=买', zh:'买', grammar:'动词ます形：かう→かいます（う段变い段+ます）；否定 かいません，过去 かいました。'},
+          {t:'match', q:'配对购物词', pairs:[['いくら','How much'],['やすい','Cheap'],['たかい','Expensive'],['かいもの','Shopping']], ex:'逛街必备', zh:'购物词', grammar:'购物句型：これ/それを ください、いくらですか、もっと 安いですか（能便宜点吗）。'},
+          {t:'listen', audio:'kore o kudasai', q:'你听到了什么？', options:['これを ください','これを かいます','これは いくら','これは たかい'], a:0, ex:'これをください = 请给我这个', zh:'请给我这个', grammar:'これ/それ/あれ + をください = 这个/那个/远处那个请给我，购物三件套。'},
+          {t:'build', q:'把 “用信用卡” 翻译成日语（罗马音）', en:'By credit card', answer:'kuredo kaado de', words:['kuredo','kaado','de','genkin','okane'], ex:'クレジットカードで = 用信用卡', zh:'用信用卡', grammar:'手段/材料用助词 で：カードで います（刷卡）、现金で（付现金）。'},
+          {t:'choice', q:'“可以试穿吗？”日语怎么说？', en:'May I try this on?', options:['きても いい ですか','かって もいい ですか','たべて もいい ですか','みて ください'], a:0, ex:'〜てもいいですか = 可以……吗？', zh:'可以……吗？', grammar:'〜てもいいですか = 允许句型（可以……吗）；回答 いいですよ（可以）/ だめです（不行）。'}
+        ]},
+        { id:'ja8', title:'天气', icon:'🌤️', items:[
+          {t:'choice', q:'“今天天气怎么样？”日语怎么说？', en:'How is the weather today?', options:['きょうは てんきが いい ですか','きょうは なんじ ですか','きょうは どこ ですか','きょうは だれ ですか'], a:0, ex:'てんき = 天气', zh:'天气', grammar:'天气 = 天気(てんき)；预报 = 天気予报(てんきよほう)；问天气用「てんきが いいですか」。'},
+          {t:'choice', q:'“下雨”的日语是？', en:'It rains', options:['あめが ふります','かぜが ふきます','ゆきが ふります','あめが やみます'], a:0, ex:'雨がふります = 下雨', zh:'下雨', grammar:'自然现象用自动词+が：雨が ふる(降る)、風が ふく(吹く)、雪が ふる；助词「が」标主语。'},
+          {t:'build', q:'把 “很热” 翻译成日语（罗马音）', en:'It is hot', answer:'atsui desu', words:['atsui','desu','samui','nurui','tenki'], ex:'暑い(あつい)=热，寒い(さむい)=冷', zh:'热、冷', grammar:'暑い 指气温热，寒い 指气温冷；东西烫手用 熱い(あつい)，冰凉用 冷たい(つめたい)。'},
+          {t:'choice', q:'“下雪”的日语是？', en:'It snows', options:['ゆきが ふります','あめが ふります','かぜが ふきます','はれます'], a:0, ex:'雪がふります = 下雪', zh:'下雪', grammar:'雪(ゆき)が ふります；降雨量大 = 大雨(おおあめ)，梅雨 = つゆ。'},
+          {t:'match', q:'配对天气词', pairs:[['てんき','Weather'],['あめ','Rain'],['ゆき','Snow'],['はれ','Clear sky']], ex:'看天气预报用', zh:'天气词', grammar:'天气词汇：晴れ(はれ) 晴、くもり 阴、あめ 雨、ゆき 雪、かぜ 风；程度用 とても/ちょっと。'},
+          {t:'listen', audio:'kyou wa hare desu', q:'你听到了什么？', options:['きょうは はれ です','きょうは あめ です','きょうは ゆき です','きょうは くもり です'], a:0, ex:'今日は晴れです = 今天晴天', zh:'今天晴天', grammar:'今日は(きょうは) 提示主题；「が」提示天气状况，两者都可，が更强调状况本身。'},
+          {t:'build', q:'把 “刮风了” 翻译成英语', jp:'かぜが ふいて います', answer:'its windy', words:['its','windy','raining','snowing','sunny'], ex:'風がふいています = 刮着风', zh:'刮着风', grammar:'〜ています = 正在……/持续状态；风持续刮 = ふいて います，雨正在下 = ふっています。'},
+          {t:'choice', q:'“明天会下雨”日语怎么说？', en:'It will rain tomorrow', options:['あした あめが ふります','きのう あめが ふった','いま あめが ふっています','あめは やみました'], a:0, ex:'明日(あした)=明天；现在进行~ています', zh:'明天（现在进行时）', grammar:'过去式 = きのう あめが ふった（昨天下了雨）；〜ました 是礼貌过去，简体 〜た。'}
+        ]},
+        { id:'ja9', title:'心情感受', icon:'😊', items:[
+          {t:'choice', q:'“很开心”用日语怎么说？', en:'I am happy', options:['たのしい です','かなしい です','つかれ です','おおきい です'], a:0, ex:'楽しい(たのしい)=开心', zh:'开心', grammar:'楽しい = 内心感到愉快（事/物）；うれしい = 情绪上高兴；两词不可互换。'},
+          {t:'choice', q:'“好可爱！”的日语是？', en:'So cute!', options:['かわいい です','きれい です','すごい です','さむい です'], a:0, ex:'可愛い(かわいい)=可爱', zh:'可爱', grammar:'かわいい 是万能夸赞词：对人、对物、甚至对食物都可用；过去式 かわいかった。'},
+          {t:'build', q:'把 “好累…” 翻译成日语（罗马音）', en:'I am tired', answer:'tsukareta desu', words:['tsukareta','desu','genki','ureshii','samui'], ex:'つかれた = 累了（口语）', zh:'累了（口语）', grammar:'疲れる → つかれた（简体过去）；礼貌说法 = 疲れました。省略 です 是口语常见。'},
+          {t:'choice', q:'“我明白了”用日语怎么说？', en:'I see / I understand', options:['わかりました','ききました','みました','いきました'], a:0, ex:'わかりました = 明白了', zh:'明白了', grammar:'わかりました = 我明白了（礼貌）；简体 わかった。对上级回答「はい、わかりました」最稳妥。'},
+          {t:'match', q:'配对心情词', pairs:[['うれしい','Happy'],['かなしい','Sad'],['おこった','Angry'],['げんき','Energetic']], ex:'表达情绪', zh:'情绪词', grammar:'心情形容词：うれしい(高兴) かなしい(难过) おこる(生气) 疲れる(累)；都可直接+です 结句。'},
+          {t:'listen', audio:'tanoshii ne', q:'你听到了什么？', options:['たのしい ね','かなしい ね','つかれた ね','かわいい ね'], a:0, ex:'楽しいね = 很开心呢', zh:'很开心呢', grammar:'〜ね = 语气词，寻求认同/缓和语气；〜よ 用于告知对方不知道的事。'},
+          {t:'build', q:'把 “我喜欢你” 翻译成日语（罗马音）', en:'I like you', answer:'suki desu', words:['suki','desu','kirai','ai','anata'], ex:'好きです = 喜欢你', zh:'喜欢你', grammar:'好きです 前用 が 标对象：あなたが 好きです；表白时 が 常省略，直接说「好きです」。'},
+          {t:'choice', q:'“加油！”的日语应援说法是？', en:'Go for it! / You can do it!', options:['がんばって','おつかれさま','おめでとう','いただきます'], a:0, ex:'頑張って！= 加油！（为别人打气）', zh:'加油', grammar:'応援語：がんばって（简体，朋友间）/ がんばってください（礼貌）；回答 ありがとうございます。'}
+        ]}
+      ]},
+      { title:'第 4 单元：进阶会话', icon:'⛩️', lessons:[
+        { id:'ja10', title:'动词变形', icon:'⚙️', items:[
+          {t:'choice', q:'“食べます（吃）”的否定形是？', en:'do not eat', options:['たべません','たべます','たべたい','たべさせます'], a:0, ex:'〜ません = 不做……（礼貌否定）', zh:'不做……（礼貌否定）', grammar:'ます形否定 = ません：たべません(不吃)、のみません(不喝)；简体否定 = ない(たべない)。'},
+          {t:'choice', q:'“飲みます（喝）”换成过去式是？', en:'drank', options:['のみました','のみません','のもう','のんでいる'], a:0, ex:'〜ました = ……了（礼貌过去式）', zh:'……了（礼貌过去式）', grammar:'ます形过去 = ました：たべました(吃了)；否定过去 = ませんでした(没吃)。'},
+          {t:'build', q:'把 “我不喝咖啡” 翻译成日语（罗马音）', en:'I do not drink coffee', answer:'koohi wa nomimasen', words:['koohi','wa','nomimasen','nomimasu','tabemasen'], ex:'コーヒーは飲みません = 我不喝咖啡', zh:'我不喝咖啡', grammar:'主题用 は、宾语用 を；否定落在动词上，语序仍是「主题+宾语+动词」。'},
+          {t:'choice', q:'“きます（来）”的ます形是？', en:'come (polite)', options:['きます','きます','こない','きました'], a:0, ex:'来ます(きます) 来ます形不加 e，直接 き+ます', zh:'来（ます形）', grammar:'变格动词 する/来る 变化不规则：する→します、来(こ)る→きます，需单独记忆。'},
+          {t:'match', q:'配对动词', pairs:[['たべる','Eat'],['のむ','Drink'],['みる','See'],['はしる','Run']], ex:'三个代表性的动词原形', zh:'动词原形', grammar:'动词三类：一类(う段结尾，如 かう/のむ)、二类(える/いる结尾，如 たべる)、三类(する/くる)；ます形规则不同。'},
+          {t:'listen', audio:'eigo o hanashimasu', q:'你听到了什么？', options:['えいごを はなします','えいごを つかいます','えいごを たべます','えいごを のみます'], a:0, ex:'英語を話します = 说英语', zh:'说英语', grammar:'语言技能动词：はなす(说)、かく(写)、きく(听)、よむ(读)；宾语后接 を。'},
+          {t:'build', q:'把 “我昨天看了电影” 翻译成英语（用过去式）', jp:'きのう えいがを みました', answer:'i watched a movie yesterday', words:['i','watched','a','movie','yesterday','watch'], ex:'〜ました = 过去式', zh:'过去式', grammar:'ます形过去 = ました：たべました(吃了)；否定过去 = ませんでした(没吃)。'},
+          {t:'choice', q:'“想去”的日语（希望助动词）是？', en:'want to go', options:['いきたい','いきます','いって','いきたかった'], a:0, ex:'〜たい = 想要……（たい形）', zh:'想要……（たい形）', grammar:'动词ます形去 ます + たい = 想做……；变化按い形容词规则（たべたい/たべたくない）。'}
+        ]},
+        { id:'ja11', title:'语法句型', icon:'📖', items:[
+          {t:'choice', q:'“私は水を飲みます” 的宾语助词是？', en:'the object particle is…', options:['を (o)','に (ni)','で (de)','へ (e)'], a:0, ex:'を = 宾语标记（水を = 把水）', zh:'把水）', grammar:'は=主题、が=主语、を=宾语、に=目的地/时间、で=场所/手段、へ=方向、も=也、から=从/因为。'},
+          {t:'choice', q:'“在哪里做？”的 “在（地点）”用哪个助词？', en:'at / in (place)', options:['で (de)','に (ni)','を (o)','の (no)'], a:0, ex:'で = 动作发生的场所（えきで まつ = 在车站等）', zh:'在车站等）', grammar:'存在用 に（あります/います），动作用 で（たべます/べんきょうします）；场所助词二选一。'},
+          {t:'build', q:'把 “用日语说话” 翻译成日语（罗马音）', en:'Speak in Japanese', answer:'nihongo de hanasu', words:['nihongo','de','hanasu','hanashimasu','ni'], ex:'〜で = 用……手段', zh:'用……手段', grammar:'手段/工具 + で：はしで いく(走路去)、バスで いく(坐公交去)、にほんごで はなす(用日语说)。'},
+          {t:'choice', q:'“学校へ行きます” 中 へ 的意思？', en:'to (direction)', options:['to（去向）','at（所在）','from（起点）','and（和）'], a:0, ex:'へ = 方向助词（学校へ = 去学校方向）', zh:'去学校方向）', grammar:'へ 读 e，表方向目的地；に 也表目的地但更强调到达点；移动动词(いく/くる/かえる)配へ/に。'},
+          {t:'match', q:'配对助词', pairs:[['は','Topic marker'],['が','Subject marker'],['を','Object marker'],['で','At / by means']], ex:'四大基础助词', zh:'基础助词', grammar:'口诀：主题は、主语が、宾语を、场所で/に、方向へ、时间に、从……から、也も。'},
+          {t:'listen', audio:'watashi wa nihon ni ikimasu', q:'你听到了什么？', options:['わたしは にほんに いきます','わたしは にほんで いきます','わたしは にほんを いきます','わたしは にほんが いきます'], a:0, ex:'日本に = 去（到）日本（に=目的地）', zh:'去（到）日本（に=目的地）', grammar:'移动目的地用 に/へ：にほんに いきます；强调到达点用 に，强调方向用 へ，口语常混用。'},
+          {t:'build', q:'把 “这是我的书” 翻译成日语（罗马音）', en:'This is my book', answer:'kore wa watashi no hon desu', words:['kore','wa','watashi','no','hon','desu'], ex:'〜の〜 = 我的……（所有格）', zh:'我的……（所有格）', grammar:'の 表所属：わたしの ほん(我的书)；也可表修饰「日本語の 先生」= 日语老师。'},
+          {t:'choice', q:'“是猫”用日语怎么说？（简体）', en:'(It) is a cat', options:['ねこだ','ねこです','ねこを','ねこに'], a:0, ex:'〜だ = 简体的 “是”（口语/朋友间）', zh:'简体的 “是”（口语/朋友间）', grammar:'です 与 だ 是同义礼貌/简体判断词；对上级必须用 です，朋友间 だ 更自然。'}
+        ]},
+        { id:'ja12', title:'旅行实用句', icon:'🧳', items:[
+          {t:'choice', q:'“酒店在哪里？”日语怎么说？', en:'Where is the hotel?', options:['ほてるは どこですか','ほてるは なにですか','ほてるに いきますか','ほてるは たかいですか'], a:0, ex:'ホテルはどこですか = 酒店在哪？', zh:'酒店在哪？', grammar:'存在问句模板：〜は どこに ありますか；酒店属事物用 あります，不用 います。'},
+          {t:'choice', q:'“请帮我叫出租车”用日语怎么说？', en:'Please call a taxi', options:['たくしーを よんで ください','たくしーを たべて ください','たくしーは どこですか','たくしーに ありがとう'], a:0, ex:'〜を呼んでください = 请帮我叫……', zh:'请帮我叫……', grammar:'て形 + ください = 请帮我做……；呼ぶ(よぶ)→よんで→よんで ください。'},
+          {t:'build', q:'把 “洗手间在哪里？” 翻译成英语', jp:'トイレは どこですか', answer:'where is the restroom', words:['where','is','the','restroom','toilet'], ex:'トイレ = 洗手间（外来语 toilet）', zh:'洗手间（外来语 toilet）', grammar:'トイレ 来自 toilet；还可以说 お手洗い(おてあらい)、化妆室(けしつ)。'},
+          {t:'choice', q:'“多少钱（礼貌）”在收银台怎么说？', en:'How much is it altogether?', options:['いくらに なりますか','なにを いれますか','けっこうです','おいしいです'], a:0, ex:'いくらになりますか = 一共多少钱？', zh:'一共多少钱？', grammar:'结账时说「いくらに なりますか」比 いくらですか 更正式礼貌，是店员常用句。'},
+          {t:'match', q:'配对旅行词', pairs:[['ホテル','Hotel'],['トイレ','Restroom'],['きっぷ','Ticket'],['みち','Street / Road']], ex:'外来语+和语混合的旅行词汇', zh:'旅行词', grammar:'旅行词组：book a flight 订航班、check in 办理登记、boarding card 登机牌、customs 海关。'},
+          {t:'listen', audio:'eki wa doko desu ka', q:'你听到了什么？', options:['えきは どこですか','えきは なんですか','えきに いきますか','えきで あるきます'], a:0, ex:'駅はどこですか = 车站在哪？', zh:'车站在哪？', grammar:'站 = 駅(えき)；配 〜は どこですか 构成万能问路句。'},
+          {t:'build', q:'把 “请稍等一下” 翻译成日语（罗马音）', en:'Please wait a moment', answer:'chotto matte kudasai', words:['chotto','matte','kudasai','matte','kudasai'], ex:'ちょっと待ってください = 稍等一下', zh:'稍等一下', grammar:'ちょっと = 一点点/稍等；待つ→まって→まって ください，是打断/请求时的缓冲语。'},
+          {t:'choice', q:'“救命！”紧急时喊的日语是？', en:'Help!', options:['たすけて！','ありがとう！','おはよう！','ごめんね！'], a:0, ex:'助けて！= 救命！（紧急呼救）', zh:'救命', grammar:'紧急词：助けて(救命)、火事(ひじ，着火)、警察(けいさつ)；呼救时音量和清晰度最重要。'}
+        ]}
+      ]}
+    ]
+  },
+  en: {
+    id:'en', name:'英语', flag:'🇬🇧', greeting:'Hello!',
+    units: [
+      { title:'第 1 单元：基础词汇', icon:'💬', lessons:[
+        { id:'en1', title:'问候', icon:'👋', items:[
+          {t:'choice', q:'“你好”的英文是？', jp:'你好', options:['Hello','Goodbye','Thanks','Yes'], a:0, ex:'Hello = 你好', zh:'你好', grammar:'英语问候按时间分：Good morning/afternoon/evening；Hello 最通用，正式场合可用 How do you do?'},
+          {t:'choice', q:'选出 “Thank you” 的意思', en:'Thank you', options:['谢谢你','对不起','再见','请'], a:0, ex:'Thank you = 谢谢你', zh:'谢谢你', grammar:'回答 Thank you：You\'re welcome / My pleasure / No problem；不可以说 Yes you do。'},
+          {t:'build', q:'把 “早上好” 翻译成英语', jp:'早上好', answer:'good morning', words:['good','morning','night','evening','goodby'], ex:'Good morning = 早上好', zh:'早上好', grammar:'Good + 时间词构成问候：morning(早)、afternoon(下午)、evening(晚)；night 用于道晚安。'},
+          {t:'listen', audio:'nice to meet you', q:'你听到了什么？', options:['nice to meet you','nice to see you','good to know you','glad to meet you'], a:0, ex:'Nice to meet you = 很高兴认识你', zh:'很高兴认识你', grammar:'Nice to meet you 用于初次见面；回应同样说 Nice to meet you too。'},
+          {t:'choice', q:'“晚安”的英文是？', jp:'晚安', options:['Good night','Good evening','Goodbye','Good luck'], a:0, ex:'Good night = 晚安', zh:'晚安', grammar:'Good night 只用于道晚安/告别；问候晚上好用 Good evening。'},
+          {t:'match', q:'配对以下词语', pairs:[['Hello','你好'],['Thanks','谢谢'],['Bye','再见'],['Yes','是']], ex:'最基础的问候', zh:'问候', grammar:'英语寒暄最易错点：Thank you 回 You\'re welcome，不是 Yes。'},
+          {t:'build', q:'把 “我叫小明” 翻译成英语', jp:'我叫小明', answer:'my name is xiaoming', words:['my','name','is','xiaoming','me'], ex:'My name is... = 我叫……', zh:'我叫……', grammar:'自我介绍三句式：My name is... / I\'m from... / Nice to meet you。'},
+          {t:'choice', q:'“不客气”用英语怎么说？', en:"You're welcome", options:["You're welcome",'Never mind',"It's ok",'All right'], a:0, ex:"You're welcome = 不客气", zh:'不客气', grammar:'You\'re welcome 是对感谢的标准回应；No problem 更口语随意。'}
+        ]},
+        { id:'en2', title:'动物', icon:'🐱', items:[
+          {t:'choice', q:'“猫”的英文是？', jp:'猫', options:['cat','dog','bird','fish'], a:0, ex:'cat = 猫', zh:'猫', grammar:'英语可数名词单数要加冠词 a/an：a cat、an apple（元音音素前用 an）。'},
+          {t:'choice', q:'“狗”用英语怎么说？', jp:'狗', options:['dog','cat','pig','cow'], a:0, ex:'dog = 狗', zh:'狗', grammar:'a dog；复数 dogs；pet 宠物统称。注意 an dog ✗，a apple ✗。'},
+          {t:'build', q:'把 “小鸟” 翻译成英语', jp:'小鸟', answer:'bird', words:['bird','cat','dog','duck'], ex:'bird = 鸟', zh:'鸟', grammar:'bird 复数 birds；与 bear(熊)、beard(胡子) 拼写相近，注意区分。'},
+          {t:'listen', audio:'the cat is black', q:'你听到了什么？', options:['the cat is black','the cat is back','the dog is black','a cat is black'], a:0, ex:'The cat is black. = 这只猫是黑色的。', zh:'这只猫是黑色的。', grammar:'颜色作表语：The cat is black.；颜色前有 the 表特指这只。'},
+          {t:'match', q:'配对动物', pairs:[['cat','猫'],['dog','狗'],['bird','鸟'],['fish','鱼']], ex:'常见的小动物', zh:'小动物', grammar:'动物词复数不规则：sheep 单复同形、mouse→mice、fish 通常不加 s。'},
+          {t:'choice', q:'“兔子”的英文是？', jp:'兔子', options:['rabbit','monkey','tiger','sheep'], a:0, ex:'rabbit = 兔子', zh:'兔子', grammar:'rabbit 兔子；注意 lie(躺)/lay(下蛋) 等易混词，rabbit 无此问题。'},
+          {t:'build', q:'把 “我有一只狗” 翻译成英语', jp:'我有一只狗', answer:'i have a dog', words:['i','have','a','dog','cat','an'], ex:'I have a... = 我有一只……', zh:'我有一只……', grammar:'have 表拥有；第三人称单数用 has：He has a dog.'}
+        ]},
+        { id:'en3', title:'数字', icon:'🔢', items:[
+          {t:'choice', q:'“三”的英文是？', jp:'三', options:['three','two','four','five'], a:0, ex:'three = 三', zh:'三', grammar:'1-100 数字：three(3) thirteen(13) 均含 three 词根，注意拼写不是 thre。'},
+          {t:'choice', q:'“十”用英语怎么说？', jp:'十', options:['ten','nine','eleven','twelve'], a:0, ex:'ten = 十', zh:'十', grammar:'ten 十；11-19 以 -teen 结尾，20-90 以 -ty 结尾，重音在后。'},
+          {t:'build', q:'把 “七” 翻译成英语', jp:'七', answer:'seven', words:['six','seven','eight','nine'], ex:'seven = 七', zh:'七', grammar:'seven(7) → seventeen(17) → seventy(70)，词根一致。'},
+          {t:'listen', audio:'i have two books', q:'你听到了什么？', options:['i have two books','i have ten books','i had two books','we have two books'], a:0, ex:'I have two books. = 我有两本书。', zh:'我有两本书。', grammar:'可数名词复数加 s：two books；have 随主语变 has（I/you/we/they 用 have）。'},
+          {t:'match', q:'配对数字', pairs:[['one','一'],['five','五'],['ten','十'],['twenty','二十']], ex:'数字 1 / 5 / 10 / 20', zh:'数字 1/5/10/20', grammar:'数字拼写：one five ten twenty；注意 twelve(12) 不是 twove。'},
+          {t:'choice', q:'“一百”的英文是？', jp:'一百', options:['hundred','thousand','dozen','score'], a:0, ex:'hundred = 百', zh:'百', grammar:'百=hundred、千=thousand、百万=million；前面有数字时不加 s：two hundred。'},
+          {t:'build', q:'把 “二十三” 翻译成英语', jp:'二十三', answer:'twenty three', words:['twenty','three','thirty','two'], ex:'23 = twenty-three', zh:'twenty-three', grammar:'两位数 = 十位-个位，中间加连字符：twenty-three、forty-five。'}
+        ]}
+      ]},
+      { title:'第 2 单元：日常生活', icon:'🍎', lessons:[
+        { id:'en4', title:'家庭', icon:'👪', items:[
+          {t:'choice', q:'“妈妈”的英文是？', jp:'妈妈', options:['mother','father','sister','brother'], a:0, ex:'mother = 妈妈', zh:'妈妈', grammar:'mother 正式 / mom 口语（美）/ mum（英）；家庭成员词注意 father/dad。'},
+          {t:'choice', q:'“爸爸”用英语怎么说？', jp:'爸爸', options:['father','mother','uncle','grandpa'], a:0, ex:'father = 爸爸', zh:'爸爸', grammar:'father 正式 / dad 口语；grandfather=爷爷/外公。'},
+          {t:'build', q:'把 “我妹妹” 翻译成英语', jp:'我妹妹', answer:'my sister', words:['my','sister','brother','your','family'], ex:'sister = 姐妹', zh:'姐妹', grammar:'英语 sister/brother 不分长幼，需用 older/younger 区分：my older sister 姐姐。'},
+          {t:'listen', audio:'this is my family', q:'你听到了什么？', options:['this is my family','this is my father','those are my family','this is your family'], a:0, ex:'This is my family. = 这是我的家人。', zh:'这是我的家人。', grammar:'介绍家人用 This is my + 成员；复数家人用 These are my family members.'},
+          {t:'match', q:'配对家人', pairs:[['mother','妈妈'],['father','爸爸'],['brother','兄弟'],['grandma','奶奶']], ex:'家庭成员', zh:'家庭成员', grammar:'家庭词：parents 父母、siblings 兄弟姐妹、aunt 阿姨/姑姑、cousin 堂/表兄弟姐妹（不分性别）。'},
+          {t:'choice', q:'“孩子”的英文是？', jp:'孩子', options:['child','aunt','nephew','cousin'], a:0, ex:'child = 孩子', zh:'孩子', grammar:'child 复数不规则：children；adult 成年人。'},
+          {t:'build', q:'把 “家人” 翻译成英语', jp:'家人', answer:'family', words:['family','friend','people','home'], ex:'family = 家庭/家人', zh:'家庭/家人', grammar:'family 集合名词，作整体时谓语用单数：My family is...；强调成员时可用 are。'}
+        ]},
+        { id:'en5', title:'食物', icon:'🍔', items:[
+          {t:'choice', q:'“面包”的英文是？', jp:'面包', options:['bread','rice','milk','egg'], a:0, ex:'bread = 面包', zh:'面包', grammar:'bread 不可数，不加 s、不加 a：some bread、a piece of bread。'},
+          {t:'choice', q:'“鸡蛋”用英语怎么说？', jp:'鸡蛋', options:['egg','apple','juice','cake'], a:0, ex:'egg = 鸡蛋', zh:'鸡蛋', grammar:'egg 可数：an egg、two eggs；注意 an egg（元音音素开头用 an）。'},
+          {t:'build', q:'把 “一杯牛奶” 翻译成英语', jp:'一杯牛奶', answer:'a glass of milk', words:['a','glass','of','milk','water','cup'], ex:'a glass of milk = 一杯牛奶', zh:'一杯牛奶', grammar:'液体量词：a glass of milk、a cup of tea、a bottle of water；milk 不可数不加 s。'},
+          {t:'listen', audio:'i like apples', q:'你听到了什么？', options:['i like apples','i like oranges','i take apples','i make apples'], a:0, ex:'I like apples. = 我喜欢苹果。', zh:'我喜欢苹果。', grammar:'like + 复数名词表泛指：I like apples.（我喜欢苹果这类东西）。'},
+          {t:'match', q:'配对食物', pairs:[['rice','米饭'],['apple','苹果'],['milk','牛奶'],['noodle','面条']], ex:'日常食物', zh:'食物', grammar:'三餐词：breakfast 早餐、lunch 午餐、dinner 晚餐；eat breakfast 吃早餐（不加 the）。'},
+          {t:'choice', q:'“水”的英文是？', jp:'水', options:['water','juice','tea','soup'], a:0, ex:'water = 水', zh:'水', grammar:'water 不可数：a glass of water；动词 water 也有"浇水"之意。'},
+          {t:'build', q:'把 “我饿了” 翻译成英语', jp:'我饿了', answer:'i am hungry', words:['i','am','hungry','thirsty','feel'], ex:'I am hungry. = 我饿了。', zh:'我饿了。', grammar:'I am = I\'m；hungry 饿、thirsty 渴；回答 Do you want...? 用 Yes, please.'}
+        ]},
+        { id:'en6', title:'颜色', icon:'🎨', items:[
+          {t:'choice', q:'“红色”的英文是？', jp:'红色', options:['red','blue','green','black'], a:0, ex:'red = 红色', zh:'红色', grammar:'颜色词作定语直接放在名词前：a red car；作表语用 is red。'},
+          {t:'choice', q:'“黄色”用英语怎么说？', jp:'黄色', options:['yellow','purple','orange','white'], a:0, ex:'yellow = 黄色', zh:'黄色', grammar:'yellow 黄；注意 Yellow Pages 是"黄页电话簿"，非颜色本义。'},
+          {t:'build', q:'把 “天空是蓝色的” 翻译成英语', jp:'天空是蓝色的', answer:'the sky is blue', words:['the','sky','is','blue','sea','green'], ex:'The sky is blue. = 天空是蓝色的。', zh:'天空是蓝色的。', grammar:'The + 自然界独一无二事物 + is + 颜色：The sun is yellow.'},
+          {t:'listen', audio:'the flower is red', q:'你听到了什么？', options:['the flower is red','the flower is read','the floor is red','the flavor is red'], a:0, ex:'The flower is red. = 这朵花是红色的。', zh:'这朵花是红色的。', grammar:'The + 名词 + is + 颜色 是标准颜色描述句型。'},
+          {t:'match', q:'配对颜色', pairs:[['red','红色'],['blue','蓝色'],['green','绿色'],['black','黑色']], ex:'基础颜色', zh:'颜色', grammar:'颜色词：red blue green yellow black white brown pink purple orange gray。'},
+          {t:'choice', q:'“白色”的英文是？', jp:'白色', options:['white','black','brown','gray'], a:0, ex:'white = 白色', zh:'白色', grammar:'white 白、black 黑；注意 write(写) 与 white(白) 发音/拼写区分。'},
+          {t:'build', q:'把 “我喜欢粉色” 翻译成英语', jp:'我喜欢粉色', answer:'i like pink', words:['i','like','pink','love','color'], ex:'I like pink. = 我喜欢粉色。', zh:'我喜欢粉色。', grammar:'like + 颜色 = 喜欢某色：I like pink.；不喜欢用 don\'t like。'}
+        ]}
+      ]},
+      { title:'第 3 单元：动词与语法', icon:'🏃', lessons:[
+        { id:'en7', title:'日常动词', icon:'⚙️', items:[
+          {t:'choice', q:'“吃”的英文是？', jp:'吃', options:['eat','drink','sleep','run'], a:0, ex:'eat = 吃', zh:'吃', grammar:'动词原形 eat；过去式 ate、过去分词 eaten（不规则三态）。'},
+          {t:'choice', q:'“睡觉”用英语怎么说？', jp:'睡觉', options:['sleep','run','swim','read'], a:0, ex:'sleep = 睡觉', zh:'睡觉', grammar:'sleep 睡觉；过去式 slept；sleepy 困的（形容词）。'},
+          {t:'build', q:'把 “我每天跑步” 翻译成英语', jp:'我每天跑步', answer:'i run every day', words:['i','run','every','day','walk'], ex:'I run every day. = 我每天跑步。', zh:'我每天跑步。', grammar:'every day 表习惯，动词用原形 run（非 running）；第三人称单数加 s：He runs.'},
+          {t:'listen', audio:'i go to school by bus', q:'你听到了什么？', options:['i go to school by bus','i go to school by bike','i went to school by bus','we go to school by bus'], a:0, ex:'I go to school by bus. = 我坐公交上学。', zh:'我坐公交上学。', grammar:'by + 交通方式：by bus/by car/by bike（不加 the）；go to school 去上学（不加 the）。'},
+          {t:'match', q:'配对动词', pairs:[['read','读'],['write','写'],['swim','游泳'],['cook','做饭']], ex:'日常动作动词', zh:'日常动词', grammar:'三态动词：read-read-read、write-wrote-written、swim-swam-swum、cook-cooked-cooked。'},
+          {t:'choice', q:'“我正在看书”的时态是？', en:'I am reading a book.', options:['现在进行时 be+doing','一般过去时','现在完成时','过去将来时'], a:0, ex:'am reading = 现在进行时（正在……）', zh:'现在进行时（正在……）', grammar:'现在进行时 = am/is/are + doing：I am reading.；标志词 now、Look!、at the moment。'},
+          {t:'build', q:'把 “他会说日语” 翻译成英语', jp:'他会说日语', answer:'he can speak japanese', words:['he','can','speak','japanese','she','english'], ex:'can = 能够/会', zh:'能够/会', grammar:'情态动词后接动词原形：can speak、must go、may come；can 无人称变化：He can speak.'},
+          {t:'choice', q:'“必须去”用哪个情态动词？', en:'must go', options:['must','may','might','could'], a:0, ex:'must = 必须（语气强烈）', zh:'必须（语气强烈）', grammar:'must 必须（主观）、have to 必须（客观）、should 应该；must 后接原形。'}
+        ]},
+        { id:'en8', title:'时态', icon:'📅', items:[
+          {t:'choice', q:'“我昨天去了公园” 用什么时态？', en:'I went to the park yesterday.', options:['一般过去时','一般现在时','将来时','进行时'], a:0, ex:'went / yesterday = 一般过去时', zh:'一般过去时', grammar:'过去时标志词：yesterday、last week、ago、in 2010；动词变过去式。'},
+          {t:'choice', q:'“go”的过去式是？', en:'go (past)', options:['went','goed','gone','going'], a:0, ex:'go → went 是不规则变化', zh:'go 的过去式', grammar:'不规则动词三态：go-went-gone、come-came-come、do-did-done；需专门记忆。'},
+          {t:'build', q:'把 “我明天要考试” 翻译成英语', jp:'我明天要考试', answer:'i have an exam tomorrow', words:['i','have','an','exam','tomorrow','test'], ex:'tomorrow 标志将来时间', zh:'tomorrow（将来时标志）', grammar:'将来时：will + 原形 / be going to + 原形；tomorrow、next week 是标志词。'},
+          {t:'listen', audio:'i have finished my homework', q:'你听到了什么？', options:['i have finished my homework','i had finish my homework','i finish my homework','i am finish my homework'], a:0, ex:'have finished = 现在完成时（已经完成）', zh:'现在完成时（已经完成）', grammar:'现在完成时 = have/has + 过去分词，强调"已完成并对现在有影响"；already、just、yet 常伴随。'},
+          {t:'match', q:'配对时态', pairs:[['do','一般现在时'],['did','一般过去时'],['doing','现在进行时'],['done','过去分词']], ex:'动词的四种形态', zh:'动词四种形态', grammar:'do-did-done-doing 四形态；做题先判断时态标志词，再选对应形态。'},
+          {t:'choice', q:'“eat”的过去分词是？', en:'eat (past participle)', options:['eaten','eated','eating','ate'], a:0, ex:'eat → ate → eaten', zh:'eat 的三态', grammar:'eat 三态 eat/ate/eaten；类似：drink-drank-drunk、sing-sang-sung。'},
+          {t:'build', q:'把 “我已经吃过饭了” 翻译成英语', jp:'我已经吃过饭了', answer:'i have eaten', words:['i','have','eaten','ate','eating'], ex:'have eaten = 已经吃了（现在完成时）', zh:'已经吃了（现在完成时）', grammar:'have + 过去分词 = 现在完成时；不与具体过去时间(yesterday)连用。'},
+          {t:'choice', q:'“will” 后面接什么形式？', en:'will + …', options:['动词原形','动词过去式','to+动词','doing'], a:0, ex:'will + do：will go / will eat（不加 to）', zh:'will + 动词原形', grammar:'will 后必须接动词原形，不加 to：will go、will eat；will be doing 表将来进行。'}
+        ]},
+        { id:'en9', title:'介词与疑问', icon:'❓', items:[
+          {t:'choice', q:'“在……上”用哪个介词？', en:'on the table', options:['on','in','at','of'], a:0, ex:'on = 在……表面', zh:'在……表面', grammar:'方位介词：on(表面)、in(内部)、under(下方)、next to(旁边)；看物体关系选词。'},
+          {t:'choice', q:'“在……里”用哪个介词？', en:'in the box', options:['in','on','to','for'], a:0, ex:'in = 在……内部', zh:'在……内部', grammar:'in 表内部：in the box、in the room、in Beijing(大城市)；on the table 表面。'},
+          {t:'build', q:'把 “书在桌子上” 翻译成英语', jp:'书在桌子上', answer:'the book is on the table', words:['the','book','is','on','table','in'], ex:'on the table = 在桌子上', zh:'在桌子上', grammar:'书在桌上：The book is on the table.；定冠词 the 特指那本书/那张桌。'},
+          {t:'listen', audio:'where do you live', q:'你听到了什么？', options:['where do you live','where do you love','what do you live','where did you live'], a:0, ex:'Where do you live? = 你住在哪里？', zh:'你住在哪里？', grammar:'Where 提问地点，do 提问一般现在时；回答 I live in + 地点。'},
+          {t:'match', q:'配对疑问词', pairs:[['What','什么'],['Where','哪里'],['When','什么时候'],['Who','谁']], ex:'四大疑问词', zh:'四大疑问词', grammar:'What 什么、Where 哪里、When 何时、Who 谁；How 怎样、Why 为什么；提问词放句首。'},
+          {t:'choice', q:'“你叫什么名字？”英语怎么问？', en:'What is your name?', options:['What is your name?','How old are you?','Where are you?','Who are you?'], a:0, ex:'What is your name? = 你叫什么名字？', zh:'你叫什么名字？', grammar:'What 提问事物/名字；What is = What\'s；回答 My name is...'},
+          {t:'build', q:'把 “为什么迟到了？” 翻译成英语', jp:'为什么迟到了？', answer:'why are you late', words:['why','are','you','late','how','when'], ex:'Why are you late? = 为什么迟到？', zh:'为什么迟到？', grammar:'Why 提问原因，回答常用 Because...；注意 are you 语序是疑问句倒装。'},
+          {t:'choice', q:'“和朋友”用哪个介词短语？', en:'with friends', options:['with friends','at friends','on friends','of friends'], a:0, ex:'with = 和……一起', zh:'和……一起', grammar:'介词 with 表伴随：with my friend；without 表没有：without you。'}
+        ]}
+      ]},
+      { title:'第 4 单元：实用英语', icon:'🌍', lessons:[
+        { id:'en10', title:'旅行', icon:'✈️', items:[
+          {t:'choice', q:'“机场”用英语怎么说？', jp:'机场', options:['airport','station','harbor','market'], a:0, ex:'airport = 机场', zh:'机场', grammar:'airport 机场(air+port)；station 车站；harbor 港口；注意 airport 双音节重音在前。'},
+          {t:'choice', q:'“我想订一张票”怎么表达？', en:'I want to book a ticket.', options:['I want to book a ticket.','I want to eat a ticket.','I want to throw a ticket.','I want a ticket to fly.'], a:0, ex:'book a ticket = 订票', zh:'订票', grammar:'book 作动词 = 预订：book a ticket/a room/a table；注意与"书"同形不同义。'},
+          {t:'build', q:'把 “洗手间在哪里？” 翻译成英语', jp:'洗手间在哪里？', answer:'where is the restroom', words:['where','is','the','restroom','bathroom'], ex:'restroom / bathroom = 洗手间', zh:'洗手间', grammar:'restroom(美)/toilet(英)/bathroom(家里)；Where is...? 是万能问位置句型。'},
+          {t:'listen', audio:'the flight is delayed', q:'你听到了什么？', options:['the flight is delayed','the fight is delayed','the flight is delighted','the light is delayed'], a:0, ex:'The flight is delayed. = 航班延误了。', zh:'航班延误了。', grammar:'被动语态：be + 过去分词 = 被……；delayed 被延误；at the airport 在机场。'},
+          {t:'match', q:'配对旅行词', pairs:[['passport','护照'],['ticket','车票'],['hotel','酒店'],['luggage','行李']], ex:'旅行必备五词', zh:'旅行五词', grammar:'旅行词组：book a flight 订航班、check in 办理登记、boarding card 登机牌、customs 海关。'},
+          {t:'choice', q:'“办理登机手续”用英语说？', en:'check in', options:['check in','check out','sign up','give up'], a:0, ex:'check in = 办理登机/入住', zh:'办理登机/入住', grammar:'check in 登机/入住登记、check out 退房/离开、sign up 报名、give up 放弃；注意 in/out 反义。'},
+          {t:'build', q:'把 “单程还是往返？” 翻译成英语', jp:'单程还是往返？', answer:'one way or round trip', words:['one','way','or','round','trip'], ex:'one way = 单程；round trip = 往返', zh:'往返', grammar:'单程 one-way、往返 round-trip；买票必问关键词，别订错票。'},
+          {t:'choice', q:'“海关”用英语怎么说？', jp:'海关', options:['customs','customer','coast','cost'], a:0, ex:'customs = 海关（注意和 customer 顾客区分）', zh:'海关（注意和 customer 顾客区分）', grammar:'customs 海关(C大写)、customer 顾客、coast 海岸、cost 花费，形近词辨析。'}
+        ]},
+        { id:'en11', title:'购物与用餐', icon:'🛒', items:[
+          {t:'choice', q:'“这个多少钱？”英语怎么问？', en:'How much is this?', options:['How much is this?','How many is this?','What is this much?','How long is this?'], a:0, ex:'How much + 不可数/价格', zh:'How much（价格问句）', grammar:'How much + 不可数/价格；How many + 可数复数：How many books?'},
+          {t:'choice', q:'“太贵了！”用英语怎么说？', en:"It's too expensive!", options:["It's too expensive!",'It is too cheap.','How much money!','Very expensive you!'], a:0, ex:"It's too expensive! = 太贵了！", zh:'太贵了！', grammar:'too 太(贬义过头)、very 很(中性)：too expensive 太贵、very good 很好。'},
+          {t:'build', q:'把 “我想买这件衬衫” 翻译成英语', jp:'我想买这件衬衫', answer:'i want to buy this shirt', words:['i','want','to','buy','this','shirt'], ex:'want to do = 想要做……', zh:'想要做……', grammar:'want to + 动词原形 = 想要……：want to buy、want to eat；want sth 直接加物。'},
+          {t:'listen', audio:'i would like a cup of coffee', q:'你听到了什么？', options:['i would like a cup of coffee','i would like a cut of coffee','i would like a cap of coffee','i would like to coffee'], a:0, ex:"I'd like... = 我想要……（点餐礼貌用语)", zh:'我想要……（点餐礼貌用语)', grammar:'I\'d like = I would like，比 I want 更礼貌；点餐、请求服务通用句型。'},
+          {t:'match', q:'配对餐厅词', pairs:[['menu','菜单'],['waiter','服务员'],['bill','账单'],['delicious','美味的']], ex:'餐厅场景四件套', zh:'餐厅四句', grammar:'餐厅句：Can I see the menu? / I\'ll have... / The bill, please. / It was delicious.'},
+          {t:'choice', q:'“结账”用英语怎么说？', en:'The bill, please.', options:['The bill, please.','The menu, please.','More food, please.','Wait a menu.'], a:0, ex:'The bill, please. = 请结账', zh:'请结账', grammar:'英式结账 = the bill；美式常用 the check；不要说 the money please。'},
+          {t:'build', q:'把 “我没有零钱” 翻译成英语', jp:'我没有零钱', answer:'i dont have change', words:['i','dont','have','change','money','small'], ex:'change = 零钱（名词）', zh:'零钱（名词）', grammar:'change 三义：零钱(名词)、改变(动词)、找零；Don\'t have change 没零钱。'},
+          {t:'choice', q:'“打折”用英语怎么说？', en:'on sale / discount', options:['on sale / discount','for sale only','out of sale','no sale'], a:0, ex:'on sale = 打折促销；discount = 折扣', zh:'折扣', grammar:'on sale 打折/促销、for sale 待售、sale 大甩卖；discount 折扣率。'}
+        ]},
+        { id:'en12', title:'日常闲聊', icon:'☕', items:[
+          {t:'choice', q:'“天气怎么样？”英语怎么问？', en:"How's the weather?", options:["How's the weather?",'How old is the weather?','Where is the weather?','What weather you?'], a:0, ex:"How's the weather? = 天气怎么样？", zh:'天气怎么样？', grammar:'How\'s = How is；weather 不可数不加 s：What\'s the weather like?'},
+          {t:'choice', q:'“我来自中国”用英语怎么说？', en:"I'm from China.", options:["I'm from China.",'I come China now.','China is me.','I from at China.'], a:0, ex:"I'm from... = 我来自……", zh:'我来自……', grammar:'I\'m = I am；be from + 地点 = 来自；问对方 Where are you from?'},
+          {t:'build', q:'把 “你周末过得怎么样？” 翻译成英语', jp:'你周末过得怎么样？', answer:'how was your weekend', words:['how','was','your','weekend','is','holiday'], ex:'How was your weekend? = 周末过得如何？（万能寒暄）', zh:'周末过得如何？（万能寒暄）', grammar:'was 是 is 的过去式，问刚过去的事用过去时；回答 Pretty good.'},
+          {t:'listen', audio:'what do you do for fun', q:'你听到了什么？', options:['what do you do for fun','what do you do for food','what did you do for fun','why do you do for fun'], a:0, ex:'What do you do for fun? = 你平时有什么爱好？', zh:'你平时有什么爱好？', grammar:'What do you do 问职业/日常；What do you do for fun 问爱好；回答 I like...'},
+          {t:'match', q:'配对闲聊话题', pairs:[['weather','天气'],['hobby','爱好'],['job','工作'],['movie','电影']], ex:'small talk 四大安全话题', zh:'闲聊四大话题', grammar:'闲聊安全话题：weather、hobby、job、movie；避开 religion、salary、age 等隐私话题。'},
+          {t:'choice', q:'“听起来不错”用英语怎么说？', en:'Sounds great!', options:['Sounds great!','Looks great!','Smells great!','Feels great!'], a:0, ex:'Sounds great! = 听起来很棒！', zh:'听起来很棒！', grammar:'Sounds + 形容词 = 听起来……（省略主语 It 的口语）；Sounds good/terrible.'},
+          {t:'build', q:'把 “保持联系” 翻译成英语', jp:'保持联系', answer:'keep in touch', words:['keep','in','touch','stay','contact'], ex:'Keep in touch! = 保持联系！', zh:'保持联系！', grammar:'keep in touch 保持联系；反义 lose touch 失联。'},
+          {t:'choice', q:'“一路顺风”送行时说？', en:'Have a safe trip!', options:['Have a safe trip!','Have a safe slip!','Take a safe soup!','Go safe home.'], a:0, ex:'Have a safe trip! = 一路平安！', zh:'一路平安！', grammar:'送别祝语：Have a safe trip / Take care / Bon voyage；回 Thank you.'}
+        ]}
+      ]}
+    ]
+  }
+};
+
+const DEFAULT_STATE = {
+  xp:0, hearts:5,
+  done:{}, course:'ja', totalCorrect:0, totalAnswered:0,
+  voice:'female'   // 'female' | 'male' | 'auto'  多角色音色
+};
+
+let S = load();
+function load(){
+  try{
+    const raw = localStorage.getItem('lingobird');
+    if(raw){ return Object.assign({}, DEFAULT_STATE, JSON.parse(raw)); }
+  }catch(e){}
+  return Object.assign({}, DEFAULT_STATE);
+}
+function save(){ try{ localStorage.setItem('lingobird', JSON.stringify(S)); }catch(e){} }
+function today(){ return new Date().toISOString().slice(0,10); }
+
+function hasCJKText(t){ return /[\u4e00-\u9fff\u3040-\u30ff\u3400-\u4dbf]/.test(t||''); }
+function hasJapaneseText(t){ return /[\u3040-\u30ff]/.test(t||''); }
+function speakLangFor(t, course){ if(hasJapaneseText(t)) return 'ja-JP'; if(hasCJKText(t)) return 'zh-CN'; if(course==='ja') return 'ja-JP'; return 'en-US'; }
+/* ================= Speech ================= */
+/* ------- 多角色音色引擎：按语言挑选系统内最佳人声 ------- */
+let _voices = [];
+function _refreshVoices(){
+  try{ _voices = speechSynthesis.getVoices() || []; }catch(e){ _voices = []; }
+}
+if('speechSynthesis' in window){
+  _refreshVoices();
+  speechSynthesis.onvoiceschanged = _refreshVoices;
+  // Firefox 有些环境不触发 onvoiceschanged，轮询兜底
+  let _vc = 0;
+  const _vTimer = setInterval(()=>{ _refreshVoices(); if(_voices.length && ++_vc>5) clearInterval(_vTimer); }, 300);
+}
+const _NICKS = ['female','f','girl','woman','lady','samantha','victoria','karen','moira','tessa','fiona','veena','zira','hazel','susan','allison','aria','jenny','sonia','libby','natasha','kana','haruka','kyoko','ai','alice','anna','maria','yuna','sora','mei','xiaoqi','tingting','yaoyao','huihui','yuwei','zh-CN-Female','google'];
+const _NICKS_M = ['male','m','boy','man','daniel','alex','fred','oliver','james','guy','david','mark','ryan','gordon','arthur','thomas','aaron','ryan','hideo','takumi','kyoto','tae','kang','daehye','google male','en-GB Male','zh-CN-Male'];
+function _pickVoice(lang, role){
+  if(!_voices.length){ try{ _refreshVoices(); }catch(e){} }
+  if(!_voices.length) return null;
+  let cands = _voices.filter(v => (v.lang||'').replace('_','-').toLowerCase().startsWith(lang.toLowerCase()));
+  if(!cands) cands = _voices.slice();
+  // 排序：先按偏好角色（female/male 关键词），再按 name 长度（短=更可能是系统主力音色）
+  const want = (role === 'male') ? _NICKS_M : (role === 'female' ? _NICKS : null); // role==='auto' 时为 null（中性，不偏向）
+  const score = v => {
+    const nm = (v.name||'').toLowerCase();
+    let s = 0;
+    if(want && want.some(k => nm.includes(k))) s += 10;
+    // 通用知名高质量音色加分
+    if(/natural|neural|premium|enhanced|google/i.test(nm)) s += 5;
+    if(/micro|robot|desktop|espeak|compact/i.test(nm)) s -= 10;
+    s -= Math.min(nm.length, 40) / 100; // 轻微偏好短名
+    return s;
+  };
+  cands = cands.slice().sort((a,b)=>score(b)-score(a));
+  return cands[0] || null;
+}
+function speak(text, slow, forceLang){
+  try{
+    if(!('speechSynthesis' in window)) return false;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const course = (typeof S !== 'undefined') ? S.course : 'ja';
+    const role = (typeof S !== 'undefined' && S.voice) ? S.voice : 'female';
+    const hasCJK = /[\u4e00-\u9fff\u3040-\u30ff\u3400-\u4dbf]/.test(text);
+    const hasJapanese = /[\u3040-\u30ff]/.test(text) || (course === 'ja' && /^[\x20-\x7E]+$/.test(text) && /[a-z]/i.test(text));
+    u.lang = forceLang || (hasJapanese ? 'ja-JP' : (hasCJK ? 'zh-CN' : 'en-US'));
+    if(slow) u.rate = 0.65;
+    const v = _pickVoice(u.lang, role);
+    if(v){ u.voice = v; u.lang = v.lang || u.lang; }
+    speechSynthesis.speak(u);
+    return true;
+  }catch(e){ return false; }
+}
+/* 试听当前角色（在设置里点按钮调用） */
+function previewVoice(){
+  const lang = (S.course==='ja') ? 'ja-JP' : 'en-US';
+  const sample = (lang==='ja-JP') ? 'こんにちは、みなさん！よろしくね。' : 'Hello there! Nice to meet you.';
+  speak(sample);
+  const v = _pickVoice(lang, S.voice);
+  if(!v){ toast('未检测到 ' + lang + ' 人声，正在用系统默认（建议用 Chrome/Edge 获得最佳音质）'); return; }
+  const nm = (v.name||'').toLowerCase();
+  const premium = /natural|neural|premium|enhanced|google/i.test(nm);
+  toast('🎬 ' + (v.name || v.lang) + (premium ? '（优质音色）' : '（普通音色，建议用 Chrome/Edge）'));
+}
+
+/* ================= UI helpers ================= */
+const $ = s => document.querySelector(s);
+const main = document.getElementById('main');
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+function updateStats(){
+  document.getElementById('st-xp').textContent = S.xp;
+}
+function beep(ok){
+  try{
+    const ctx = beep.ctx || (beep.ctx = new (window.AudioContext||window.webkitAudioContext)());
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = ok ? 740 : 180;
+    g.gain.setValueAtTime(.06, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + (ok?.25:.4));
+    o.start(); o.stop(ctx.currentTime + (ok?.25:.4));
+  }catch(e){}
+}
+
+/* ================= Router ================= */
+let tab = 'learn';
+function setTab(t){
+  tab = t;
+  document.querySelectorAll('.nav-i').forEach(b=>{
+    b.classList.toggle('on', b.dataset.tab === t);
+    b.classList.toggle('green', b.dataset.tab === 'learn' && t==='learn');
+  });
+  if(t==='learn') renderLearn(); else if(t==='practice') renderPractice(); else renderProfile();
+}
+document.querySelectorAll('.nav-i').forEach(b=> b.onclick = ()=> setTab(b.dataset.tab));
+
+/* ================= Learn tab ================= */
+function lessonUnlocked(courseId, unitIdx, lessonId){
+  const c = COURSES[courseId];
+  for(let u=0; u<unitIdx; u++){
+    for(const l of c.units[u].lessons){ if(!S.done[l.id]) return false; }
+  }
+  for(const l of c.units[unitIdx].lessons){ if(l.id === lessonId) break; if(!S.done[l.id]) return false; }
+  return true;
+}
+function allDone(courseId){
+  return COURSES[courseId].units.every(u=> u.lessons.every(l=> S.done[l.id]));
+}
+function renderLearn(){
+  const c = COURSES[S.course];
+  const total = c.units.reduce((a,u)=>a+u.lessons.length,0);
+  const doneN = c.units.reduce((a,u)=>a+u.lessons.filter(l=>S.done[l.id]).length,0);
+  const coursePct = Math.round(doneN/total*100);
+  let html = '<div class="screen">';
+  html += '<div class="lang-tabs">';
+  for(const id of ['ja','en']){
+    html += `<div class="lang-tab ${S.course===id?'on':''}" onclick="setCourse('${id}')">${COURSES[id].flag} ${COURSES[id].name}</div>`;
+  }
+  html += '</div>';
+  html += `<div class="course-hero"><div class="flag">${c.flag}</div><div><h3>${c.name}课程</h3><p>已完成 ${coursePct}% · ${c.greeting}</p></div></div>`;
+  html += '<div class="path">';
+  let firstOpen = true;
+  c.units.forEach((u,ui)=>{
+    html += `<div class="unit-banner"><h2>${u.title}</h2><p>${u.lessons.length} 节课</p><div class="deco">${u.icon}</div></div>`;
+    u.lessons.forEach((l,li)=>{
+      const done = !!S.done[l.id];
+      const unlocked = lessonUnlocked(S.course, ui, l.id);
+      const cls = done ? 'done' : (unlocked ? '' : 'locked');
+      const nudge = (!done && unlocked && firstOpen) ? 'nudge' : '';
+      if(!done && unlocked) firstOpen = false;
+      const off = li%3===1?'off1':(li%3===2?'off2':'');
+      html += `<div class="row"><div class="node ${cls} ${nudge} ${off}" ${unlocked?`onclick="startLesson('${l.id}')"`:''}>
+        <div class="ring"></div>${done?'⭐':(unlocked?l.icon:'🔒')}</div>
+        <div class="node-label">${l.title}</div></div>`;
+      if(li < u.lessons.length-1) html += '<div class="zig"></div>';
+    });
+  });
+  if(allDone(S.course)) html += '<div class="unit-banner" style="background:var(--purple);box-shadow:0 4px 0 #a568d6;margin-top:14px;"><h2>🎉 恭喜完成全部课程！</h2><p>去练习页复习，或切换另一门语言</p></div>';
+  html += '</div></div>';
+  main.innerHTML = html;
+}
+function setCourse(id){ S.course = id; save(); renderLearn(); }
+
+/* ================= Practice tab ================= */
+function renderPractice(){
+  const c = COURSES[S.course];
+  const allLessons = c.units.flatMap(u=>u.lessons);
+  const doneL = allLessons.filter(l=>S.done[l.id]);
+  const acc = S.totalAnswered ? Math.round(S.totalCorrect/S.totalAnswered*100) : 0;
+  const review = doneL.length ? doneL[S.totalAnswered % doneL.length].id : '';
+  let html = '<div class="screen"><h2 style="font-size:24px;font-weight:900;margin-bottom:16px;">练习</h2><div class="tiles">';
+  html += `<button class="tile g" onclick="reviewMode('${review}')"><div class="ic">💪</div><h4>错题复习</h4><p>混合重做已学内容</p></button>`;
+  html += `<button class="tile b" onclick="reviewMode('${review}')"><div class="ic">⚡</div><h4>闪电战</h4><p>快速 8 题冲刺</p></button>`;
+  html += `<button class="tile o" onclick="toast('发音练习：先完成课程解锁 🎤')"><div class="ic">🎤</div><h4>发音练习</h4><p>跟读日语句子</p></button>`;
+  html += `<button class="tile p" onclick="reviewMode('${review}')"><div class="ic">🎯</div><h4>词汇挑战</h4><p>巩固核心词汇</p></button>`;
+  html += `</div><p style="text-align:center;color:var(--ink-l);font-weight:700;margin-top:18px;">正确率 ${acc}% · 已答题 ${S.totalAnswered}</p></div>`;
+  main.innerHTML = html;
+}
+function reviewMode(lessonId){ if(!lessonId){ toast('先完成一节课程吧！'); return; } startLesson(lessonId, true); }
+
+/* ================= Profile ================= */
+function renderProfile(){
+  const totalL = Object.values(COURSES).reduce((a,c)=>a+c.units.reduce((b,u)=>b+u.lessons.length,0),0);
+  const doneL = Object.keys(S.done).filter(k=>S.done[k]).length;
+  const acc = S.totalAnswered ? Math.round(S.totalCorrect/S.totalAnswered*100) : 0;
+  const achs = [
+    {ic:'🌱', n:'初出茅庐', p:'完成第一节课', on:doneL>=1},
+    {ic:'⚡', n:'闪电手', p:'累计获得 100 XP', on:S.xp>=100},
+    {ic:'🏆', n:'毕业啦', p:'完成全部课程', on:doneL>=totalL},
+  ];
+  let html = `<div class="screen">
+    <div class="profile-head"><div class="ava">🦉</div><div><h3>学习者</h3><p>加入 LingoBird · ${COURSES[S.course].flag} ${COURSES[S.course].name}</p></div></div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="ic">⚡</div><div><div class="n">${S.xp}</div><div class="l">总经验</div></div></div>
+      <div class="stat-card"><div class="ic">🎯</div><div><div class="n">${acc}%</div><div class="l">正确率</div></div></div>
+      <div class="stat-card"><div class="ic">📚</div><div><div class="n">${doneL}/${totalL}</div><div class="l">完成课程</div></div></div>
+      <div class="stat-card"><div class="ic">✅</div><div><div class="n">${S.totalAnswered}</div><div class="l">已答题</div></div></div>
+    </div>
+    <h2 style="font-size:20px;font-weight:900;margin:22px 0 4px;">成就</h2>`;
+  for(const a of achs){
+    html += `<div class="ach ${a.on?'':'off'}"><div class="ic">${a.ic}</div><div><h5>${a.n}</h5><p>${a.p}</p></div><div style="margin-left:auto;font-weight:900;">${a.on?'✅':'🔒'}</div></div>`;
+  }
+  const voiceOpts = [
+    {v:'female', ic:'👩', n:'女声', d:'温柔清晰'},
+    {v:'male',   ic:'👨', n:'男声', d:'沉稳有力'},
+    {v:'auto',   ic:'🎲', n:'自动', d:'随系统'}
+  ];
+  html += `<h2 style="font-size:20px;font-weight:900;margin:22px 0 8px;">🔊 语音角色</h2><div class="voice-grid">`;
+  for(const vo of voiceOpts){
+    const on = (S.voice||'female') === vo.v;
+    html += `<button class="voice-opt ${on?'on':''}" onclick="setVoice('${vo.v}')"><span class="vi">${vo.ic}</span><span class="vn">${vo.n}</span><span class="vd">${vo.d}</span>${on?'<span class="vb">✓</span>':''}</button>`;
+  }
+  html += `</div><button class="btn ghost block" style="margin-top:8px;" onclick="previewVoice()">🎬 试听当前角色</button>`;
+  html += `<button class="btn ghost block" style="margin-top:14px;" onclick="resetProgress()">重置进度</button></div>`;
+  main.innerHTML = html;
+}
+function setVoice(v){
+  S.voice = v; save();
+  renderProfile();
+  previewVoice();
+}
+function resetProgress(){
+  openModal('确定要重置吗？','所有进度和经验都会清空。',()=>{
+    S = Object.assign({}, DEFAULT_STATE); save(); updateStats(); setTab('learn'); toast('进度已重置');
+  });
+}
+
+/* ================= Modal ================= */
+let modalCb = null, modalCancelCb = null;
+function openModal(title, body, cb, onCancel){
+  modalCb = cb; modalCancelCb = onCancel || null;
+  const bg = document.createElement('div'); bg.id = 'modal-bg';
+  bg.innerHTML = `<div class="modal"><h3>${title}</h3><p>${body}</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn gray" id="modal-cancel">取消</button>
+      <button class="btn red" id="modal-ok">确定</button>
+    </div></div>`;
+  document.body.appendChild(bg);
+  bg.onclick = e => { if(e.target === bg) closeModal(true); };
+  bg.querySelector('#modal-cancel').onclick = ()=> closeModal(true);
+  bg.querySelector('#modal-ok').onclick = ()=>{ const c=modalCb; closeModal(false); c && c(); };
+}
+function closeModal(cancel){
+  const bg = document.getElementById('modal-bg'); if(bg) bg.remove();
+  const c = modalCancelCb; modalCb = null; modalCancelCb = null;
+  if(cancel && c) c();
+}
+
+/* ================= Lesson engine ================= */
+let L = null;
+
+function findLesson(id){
+  for(const c of Object.values(COURSES)) for(const u of c.units) for(const l of u.lessons) if(l.id===id) return {course:c, unit:u, lesson:l};
+  return null;
+}
+function shuffle(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+function startLesson(id, isReview){
+  const found = findLesson(id); if(!found) return;
+  if(!isReview && S.hearts <= 0){
+    openModal('红心用完啦！❤️','红心会随时间恢复，稍后再来学习吧。', ()=>{ setTab('learn'); });
+    return;
+  }
+  L = {
+    id, course:found.course, unit:found.unit, lesson:found.lesson, isReview:!!isReview,
+    idx:-1, hearts:S.hearts, correct:0, answered:0, xpEarned:0,
+    answeredFlag:false, sel:null,
+    queue: shuffle(found.lesson.items).slice(0, isReview?8:found.lesson.items.length)
+  };
+  document.getElementById('nav').classList.add('hidden');
+  nextQuestion();
+}
+function endLesson(returnTo){
+  L = null;
+  document.getElementById('nav').classList.remove('hidden');
+  updateStats();
+  setTab(returnTo || 'learn');
+}
+function lessonShell(){
+  return `
+    <div id="lesson-top">
+      <button id="close-btn" onclick="quitLesson()">✕</button>
+      <div id="bar-wrap"><div id="bar"></div></div>
+      <div id="hearts">${L.isReview?'∞ ❤️':'❤️'}<span id="hearts-n">${L.isReview?'':L.hearts}</span></div>
+    </div>
+    <div id="q-area"></div>
+    <div id="footer">
+      <div id="footer-in">
+        <div id="verdict"></div>
+        <div class="spacer"></div>
+        <button class="btn" id="check-btn">检查</button>
+      </div>
+    </div>`;
+}
+function quitLesson(){
+  openModal('要退出本课吗？','进度不会保存。', ()=> endLesson('learn'));
+}
+function nextQuestion(){
+  L.idx++;
+  if(L.idx >= L.queue.length){ finishLesson(); return; }
+  L.answeredFlag = false; L.sel = null;
+  main.innerHTML = lessonShell();
+  const q = L.queue[L.idx];
+  const area = document.getElementById('q-area');
+  document.getElementById('bar').style.width = (L.idx / L.queue.length * 100) + '%';
+  document.getElementById('check-btn').onclick = onCheck;
+  if(q.t === 'choice') renderChoice(q, area);
+  else if(q.t === 'build') renderBuild(q, area);
+  else if(q.t === 'listen') renderListen(q, area);
+  else if(q.t === 'match') renderMatch(q, area);
+}
+function norm(s){ return String(s).toLowerCase().replace(/[.,!?;:'"’！？。]/g,'').replace(/\s+/g,' ').trim(); }
+
+function renderChoice(q, area){
+  let html = `<div class="prompt">${esc(q.q)}</div>`;
+  const course = S.course;
+  if(q.jp){
+    const jpIsCJK = hasCJKText(q.jp) && !hasJapaneseText(q.jp);
+    const jpSpeakLang = jpIsCJK ? 'zh-CN' : (hasJapaneseText(q.jp) ? 'ja-JP' : (course==='ja'?'ja-JP':'en-US'));
+    const jpClickAttr = jpIsCJK ? '' : `onclick="speak(this.dataset.t,'${jpSpeakLang}')"` ;
+    let cardInner = esc(q.jp);
+    // 主行下面统一显示中文翻译（母语释义）
+    if(q.zh) cardInner += `<div class="zh-mean">${esc(q.zh)}</div>`;
+    // 再下面补充原文（如果是英文/罗马字）
+    if(q.en && !hasCJKText(q.en)){
+      cardInner += `<div class="romaji" onclick="event.stopPropagation();speak(this.dataset.t,'${speakLangFor(q.en,course)}')" data-t="${esc(q.en)}">${esc(q.en)} · 🔊</div>`;
+    } else if(!q.en && !jpIsCJK){
+      cardInner += `<div class="romaji">点卡片听发音 🔊</div>`;
+    }
+    html += `<div class="jpcard" ${jpClickAttr} data-t="${esc(q.jp)}">${cardInner}</div>`;
+  } else if(q.en){
+    const enLang = speakLangFor(q.en, course);
+    let inner = esc(q.en);
+    if(q.zh) inner += `<div class="zh-mean">${esc(q.zh)}</div>`;
+    inner += `<div class="romaji">🔊 点卡片听发音</div>`;
+    html += `<div class="jpcard" style="font-size:24px;" onclick="speak(this.dataset.t,'${enLang}')" data-t="${esc(q.en)}">${inner}</div>`;
+  }
+  html += '<div class="choices">';
+  shuffle(q.options.map((o,i)=>({o,i}))).forEach(({o,i},k)=>{
+    html += `<button class="choice" data-i="${i}"><span class="key">${'ABCDEF'[k]}</span>${esc(o)}</button>`;
+  });
+  html += '</div><div class="hint">选择一个答案，然后点「检查」</div>';
+  area.innerHTML = html;
+  area.querySelectorAll('.choice').forEach(b=>{
+    b.onclick = ()=>{
+      if(L.answeredFlag) return;
+      area.querySelectorAll('.choice').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel'); L.sel = +b.dataset.i;
+    };
+  });
+}
+function renderBuild(q, area){
+  let html = `<div class="prompt">${esc(q.q)}</div>`;
+  const course = S.course;
+  if(q.jp){
+    const jpIsCJK = hasCJKText(q.jp) && !hasJapaneseText(q.jp);
+    const jpLang = speakLangFor(q.jp, course);
+    const jpClickAttr2 = jpIsCJK ? '' : `onclick="speak(this.dataset.t,'${jpLang}')"` ;
+    let inner = esc(q.jp);
+    if(q.zh) inner += `<div class="zh-mean">${esc(q.zh)}</div>`;
+    inner += `<div class="romaji">🔊 点卡片听发音</div>`;
+    html += `<div class="jpcard" ${jpClickAttr2} data-t="${esc(q.jp)}">${inner}</div>`;
+  }
+  if(q.en){
+    const enLang = speakLangFor(q.en, course);
+    let inner = esc(q.en);
+    if(q.zh) inner += `<div class="zh-mean">${esc(q.zh)}</div>`;
+    inner += `<div class="romaji">🔊 点卡片听发音</div>`;
+    html += `<div class="jpcard" style="font-size:24px;" onclick="speak(this.dataset.t,'${enLang}')" data-t="${esc(q.en)}">${inner}</div>`;
+  }
+  html += `<div id="bank"></div><div class="wordbank" id="pool"></div><div class="hint">点击单词放进框里，再点框里的词可以退回</div>`;
+  area.innerHTML = html;
+  const pool = area.querySelector('#pool'), bank = area.querySelector('#bank');
+  L.words = [];
+  const chips = shuffle(q.words.slice());
+  function sync(){
+    const usedCount = {};
+    L.words.forEach(w=> usedCount[w]=(usedCount[w]||0)+1);
+    const seen = {};
+    pool.querySelectorAll('.chip').forEach(c=>{
+      const w = c.dataset.w; seen[w]=(seen[w]||0)+1;
+      c.classList.toggle('used', (usedCount[w]||0) >= seen[w]);
+    });
+    bank.innerHTML = '';
+    if(!L.words.length){
+      bank.innerHTML = '<span style="color:var(--gray);font-weight:700;font-size:14px;align-self:center;">点下方单词组成答案…</span>';
+    }
+    L.words.forEach((w,i)=>{
+      const b = document.createElement('button');
+      b.className = 'chip sel'; b.textContent = w;
+      b.onclick = ()=>{ if(L.answeredFlag) return; L.words.splice(i,1); sync(); };
+      bank.appendChild(b);
+    });
+    const cb = document.getElementById('check-btn');
+    if(cb) cb.disabled = L.words.length === 0;
+  }
+  chips.forEach(w=>{
+    const b = document.createElement('button');
+    b.className = 'chip'; b.dataset.w = w; b.textContent = w;
+    b.onclick = ()=>{ if(L.answeredFlag) return; L.words.push(w); sync(); };
+    pool.appendChild(b);
+  });
+  sync();
+}
+function renderListen(q, area){
+  const zhHint = q.zh ? `<div class="zh-mean">🇨🇳 中文：${esc(q.zh)}</div>` : '';
+  // 多角色：同一课里让不同题次用不同角色，模拟真人对话感
+  const _voiceSeq = ['female','male','female','male'];
+  const _roleIdx = (typeof L !== 'undefined' && L) ? (L.idx % _voiceSeq.length) : 0;
+  const _origSpeak = speak;
+  const speakAsRole = (txt, sl, lang) => {
+    const sv = (typeof S !== 'undefined') ? S.voice : 'female';
+    if(sv === 'auto') return _origSpeak(txt, sl, lang);
+    const alt = _voiceSeq[_roleIdx] === sv ? (sv === 'female' ? 'male' : 'female') : sv;
+    if(typeof S !== 'undefined') S.voice = alt;
+    const r = _origSpeak(txt, sl, lang);
+    if(typeof S !== 'undefined') S.voice = sv;
+    return r;
+  };
+  let html = `<div class="prompt">${esc(q.q)}</div>
+    <button id="audio-btn" title="播放"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"/></svg></button>
+    <div style="text-align:center;"><button id="audio-btn-slow" class="btn sm" style="background:var(--purple);box-shadow:0 4px 0 #a568d6;">🐢 慢速</button></div>
+    <div class="choices" style="margin-top:20px;">`;
+  shuffle(q.options.map((o,i)=>({o,i}))).forEach(({o,i},k)=>{
+    html += `<button class="choice" data-i="${i}"><span class="key">${'ABCDEF'[k]}</span>${esc(o)}</button>`;
+  });
+  html += '</div>' + zhHint;
+  area.innerHTML = html;
+  const play = ()=>{ if(!speakAsRole(q.audio, false, S.course==='ja'?'ja-JP':'en-US')) toast('浏览器不支持朗读，请根据选项作答'); };
+  setTimeout(play, 250);
+  area.querySelector('#audio-btn').onclick = play;
+  area.querySelector('#audio-btn-slow').onclick = ()=> speakAsRole(q.audio, true, S.course==='ja'?'ja-JP':'en-US');
+  area.querySelectorAll('.choice').forEach(b=>{
+    b.onclick = ()=>{
+      if(L.answeredFlag) return;
+      area.querySelectorAll('.choice').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel'); L.sel = +b.dataset.i;
+    };
+  });
+}
+function renderMatch(q, area){
+  L.matched = 0; L.firstPick = null; L.matchBusy = false;
+  const left = q.pairs.map((p,i)=>({txt:p[0], i, side:'L'}));
+  const right = shuffle(q.pairs.map((p,i)=>({txt:p[1], i, side:'R'})));
+  let html = `<div class="prompt">${esc(q.q)}</div><div id="match"></div><div class="hint">先点一列的词，再点另一列配对的词</div>`;
+  area.innerHTML = html;
+  const grid = area.querySelector('#match');
+  const interleaved = [];
+  const maxLen = Math.max(left.length, right.length);
+  for(let i=0;i<maxLen;i++){ if(left[i]) interleaved.push(left[i]); if(right[i]) interleaved.push(right[i]); }
+  const zhMap = {};
+  if(q.pairs) q.pairs.forEach(pr => { if(pr[1]) zhMap[pr[0]] = pr[1]; });
+  interleaved.forEach(t=>{
+    const b = document.createElement('button');
+    b.className = 'mtile';
+    const zhLine = zhMap[t.txt] ? `<div class="zh-line">${esc(zhMap[t.txt])}</div>` : '';
+    b.innerHTML = `<span class="mtile-txt">${esc(t.txt)}</span>${zhLine}`;
+    b.dataset.i = t.i; b.dataset.side = t.side;
+    b.onclick = ()=> onTile(b, t, q);
+    grid.appendChild(b);
+  });
+  const cb = document.getElementById('check-btn');
+  if(cb) cb.classList.add('hidden');
+}
+function onTile(b, t, q){
+  if(L.matchBusy || b.classList.contains('done')) return;
+  const tiles = document.querySelectorAll('.mtile');
+  if(!L.firstPick){
+    tiles.forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel'); L.firstPick = {b, t};
+    speak(t.txt);
+    return;
+  }
+  if(L.firstPick.t.side === t.side){
+    L.firstPick.b.classList.remove('sel');
+    L.firstPick = {b, t}; speak(t.txt); return;
+  }
+  if(L.firstPick.t.i === t.i){
+    L.matchBusy = true;
+    L.firstPick.b.classList.remove('sel');
+    L.firstPick.b.classList.add('done'); b.classList.add('done');
+    L.firstPick = null; L.matched++;
+    beep(true);
+    if(L.matched === q.pairs.length){
+      setTimeout(()=>{
+        recordAnswer(true, q, '✅ 全部配对成功！');
+        setTimeout(nextQuestion, 900);
+      }, 300);
+    }
+    L.matchBusy = false;
+  } else {
+    L.matchBusy = true;
+    const p = L.firstPick; L.firstPick = null;
+    p.b.classList.add('miss'); b.classList.add('miss');
+    beep(false);
+    damageHearts();
+    if(!L.isReview && L.hearts <= 0){ setTimeout(outOfHearts, 700); }
+    setTimeout(()=>{ tiles.forEach(x=>x.classList.remove('miss','sel')); L.matchBusy = false; }, 600);
+  }
+}
+function damageHearts(){
+  if(L.isReview) return;
+  L.hearts = Math.max(0, L.hearts - 1);
+  const hn = document.getElementById('hearts-n'); if(hn) hn.textContent = L.hearts;
+  S.hearts = Math.max(0, S.hearts - 1); save();
+}
+function outOfHearts(){
+  openModal('红心用光了！❤️','红心会随进度自动恢复，先休息一下吧。', ()=>{
+    endLesson('practice');
+  }, ()=> endLesson('practice'));
+}
+function onCheck(){
+  const q = L.queue[L.idx];
+  if(L.answeredFlag){ nextQuestion(); return; }
+  let ok = false;
+  if(q.t === 'choice' || q.t === 'listen'){
+    if(L.sel === null){ toast('先选一个答案吧！'); return; }
+    ok = L.sel === q.a;
+  } else if(q.t === 'build'){
+    if(!L.words || !L.words.length){ toast('先点选单词组成答案！'); return; }
+    ok = norm(L.words.join(' ')) === norm(q.answer);
+  }
+  if(q.t === 'choice' || q.t === 'listen'){
+    main.querySelectorAll('.choice').forEach(c=>{
+      const i = +c.dataset.i;
+      if(i === q.a) c.classList.add('ok');
+      if(i === L.sel && L.sel !== q.a) c.classList.add('bad');
+      c.classList.remove('sel');
+    });
+  }
+  if(q.t === 'build'){
+    const bank = main.querySelector('#bank');
+    if(bank){ bank.style.borderColor = ok ? 'var(--green)' : 'var(--red)'; bank.style.background = ok?'#d7ffb8':'#ffdfe0'; }
+    const pool = main.querySelector('#pool'); if(pool) pool.style.opacity = .5;
+  }
+  recordAnswer(ok, q);
+}
+function recordAnswer(ok, q, overrideMsg){
+  if(L.answeredFlag) return;
+  L.answeredFlag = true;
+  L.answered++; S.totalAnswered++;
+  const footer = document.getElementById('footer'), btn = document.getElementById('check-btn'), verdict = document.getElementById('verdict');
+  if(ok){
+    L.correct++; S.totalCorrect++;
+    L.xpEarned += 10;
+    S.xp += 10;
+    beep(true);
+    footer.classList.add('ok'); footer.classList.remove('bad');
+    verdict.style.display = 'flex';
+    const tip = q.grammar ? `<div class="grammar-box"><span class="rule">${esc(q.grammar)}</span></div>` : '';
+    const zhLine = q.zh ? `<span class="ex" style="color:var(--green-d);">🇨🇳 ${esc(q.zh)}</span>` : '';
+    verdict.innerHTML = `<span class="ic">🎉</span><span>太棒了！<span class="ex">${esc(overrideMsg || q.ex || '')}</span>${zhLine}${tip}</span>`;
+  } else {
+    damageHearts();
+    beep(false);
+    footer.classList.add('bad'); footer.classList.remove('ok');
+    verdict.style.display = 'flex';
+    const correctTxt = (q.t==='build') ? q.answer : (q.options ? q.options[q.a] : '');
+    let echo = '';
+    if(q.t === 'build' && L.words && L.words.length){
+      echo = `<div class="wrong-echo">你写的：${esc(L.words.join(' '))}</div>`;
+    } else if(q.t !== 'build' && L.sel !== null && q.options && L.sel !== q.a){
+      echo = `<div class="wrong-echo">你选的：${esc(q.options[L.sel])}</div>`;
+    }
+    const grammar = q.grammar || q.ex || '';
+    const zhLine2 = q.zh ? `<div class="zh-line-answer">🇨🇳 中文：${esc(q.zh)}</div>` : '';
+    verdict.innerHTML = `<span class="ic">❌</span><span>正确答案：${esc(correctTxt)}${zhLine2}${echo}
+      <div class="grammar-box"><span class="rule">${esc(grammar)}</span></div></span>`;
+    if(!L.isReview && L.hearts <= 0){ setTimeout(outOfHearts, 800); }
+  }
+  save(); updateStats();
+  btn.textContent = (L.idx >= L.queue.length-1) ? '完成' : '继续';
+  btn.classList.remove('blue','red');
+  btn.classList.add(ok ? 'blue' : 'red');
+}
+function finishLesson(){
+  if(!L.isReview){ S.done[L.id] = true; }
+  const acc = L.answered ? Math.round(L.correct/L.answered*100) : 100;
+  const totalXp = L.xpEarned;
+  save(); updateStats();
+  const perfect = acc === 100;
+  main.innerHTML = `
+    <div class="end-screen">
+      <div class="big">${perfect?'🏆':'🎉'}</div>
+      <h1>${perfect?'完美通关！':'课程完成！'}</h1>
+      <div class="rewards">
+        <div class="reward"><div class="t">总经验</div><div class="v y">⚡ +${totalXp}</div></div>
+        <div class="reward"><div class="t">正确率</div><div class="v">🎯 ${acc}%</div></div>
+      </div>
+      <button class="btn block" onclick="endLesson('learn')">继续</button>
+    </div>`;
+}
+
+/* ================= boot ================= */
+updateStats();
+setTab('learn');
+</script>
+</body>
+</html>

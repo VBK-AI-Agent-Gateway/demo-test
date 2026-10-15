@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>点菜系统 · 星火小馆</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:"PingFang SC","Microsoft YaHei",sans-serif; background:#faf7f2; color:#333; min-height:100vh; }
+  header {
+    background: linear-gradient(90deg,#b91c1c,#dc2626);
+    color:#fff; padding:18px 24px; display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:10px; position:sticky; top:0; z-index:20; box-shadow:0 2px 12px rgba(0,0,0,.15);
+  }
+  header h1 { font-size:1.4rem; letter-spacing:2px; }
+  header .sub { font-size:.8rem; opacity:.85; }
+  .cart-btn {
+    background:#fbbf24; color:#7c2d12; border:none; border-radius:999px;
+    padding:8px 18px; font-weight:800; font-size:1rem; cursor:pointer;
+  }
+  .cart-btn:hover { filter:brightness(1.05); }
+  .layout { display:flex; max-width:1100px; margin:20px auto; gap:20px; padding:0 16px; align-items:flex-start; }
+  .menu { flex:1; }
+  .cats { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  .cat {
+    padding:7px 16px; border-radius:999px; background:#fff; border:1px solid #e5e7eb;
+    cursor:pointer; font-size:.9rem;
+  }
+  .cat.on { background:#b91c1c; color:#fff; border-color:#b91c1c; font-weight:700; }
+  .dishes { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
+  .dish {
+    background:#fff; border-radius:14px; padding:14px; display:flex; gap:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,.06); border:1px solid #f0ebe3;
+  }
+  .emoji { font-size:2.6rem; line-height:1; }
+  .dish h3 { font-size:1rem; margin-bottom:4px; }
+  .dish .desc { font-size:.78rem; color:#8a8378; line-height:1.5; margin-bottom:8px; }
+  .dish .price { color:#dc2626; font-weight:800; margin-right:auto; align-self:center; }
+  .add {
+    background:#16a34a; color:#fff; border:none; border-radius:8px;
+    padding:6px 12px; cursor:pointer; font-size:.85rem; font-weight:700;
+  }
+  .add:active { transform:scale(.95); }
+  aside {
+    width:300px; background:#fff; border-radius:16px; padding:16px;
+    box-shadow:0 4px 16px rgba(0,0,0,.08); position:sticky; top:86px;
+  }
+  aside h2 { font-size:1.05rem; margin-bottom:12px; color:#b91c1c; }
+  .empty { color:#b3aca2; font-size:.85rem; text-align:center; padding:24px 0; }
+  .line { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px dashed #eee; font-size:.9rem; }
+  .line .nm { flex:1; }
+  .qty { display:flex; align-items:center; gap:6px; }
+  .qty button {
+    width:24px; height:24px; border-radius:6px; border:1px solid #ddd; background:#f9f9f9;
+    cursor:pointer; font-weight:800;
+  }
+  .total { display:flex; justify-content:space-between; margin-top:14px; font-weight:800; font-size:1.1rem; }
+  .total b { color:#dc2626; }
+  .order-btn {
+    width:100%; margin-top:14px; padding:12px; border:none; border-radius:10px;
+    background:#b91c1c; color:#fff; font-size:1rem; font-weight:800; cursor:pointer;
+  }
+  .order-btn:disabled { background:#d1d5db; cursor:not-allowed; }
+  .clear { background:none; border:none; color:#9ca3af; font-size:.8rem; cursor:pointer; margin-top:8px; width:100%; }
+  .modal-bg {
+    position:fixed; inset:0; background:rgba(0,0,0,.55); display:none;
+    align-items:center; justify-content:center; z-index:50; padding:16px;
+  }
+  .modal {
+    background:#fff; border-radius:16px; padding:24px; width:100%; max-width:400px;
+    max-height:90vh; overflow:auto;
+  }
+  .modal h3 { font-size:1.2rem; margin-bottom:6px; }
+  .modal .hint { font-size:.8rem; color:#8a8378; margin-bottom:14px; }
+  .field { margin-bottom:12px; }
+  .field label { display:block; font-size:.85rem; font-weight:700; margin-bottom:5px; }
+  .field input, .field textarea, .field select {
+    width:100%; padding:9px 11px; border:1px solid #ddd; border-radius:8px; font-size:.95rem;
+    font-family:inherit;
+  }
+  .modal .row { display:flex; gap:10px; margin-top:16px; }
+  .modal .row button { flex:1; padding:11px; border:none; border-radius:9px; font-weight:800; cursor:pointer; }
+  .btn-cancel { background:#f3f4f6; color:#555; }
+  .btn-ok { background:#16a34a; color:#fff; }
+  .ok-box { text-align:center; padding:10px 0; }
+  .ok-box .big { font-size:3rem; }
+  .ok-box .no { font-family:monospace; background:#fef3c7; display:inline-block; padding:6px 14px; border-radius:8px; margin:10px 0; font-weight:800; color:#92400e; }
+  .ok-box p { font-size:.9rem; color:#555; margin-top:6px; }
+  .toast {
+    position:fixed; left:50%; bottom:34px; transform:translateX(-50%);
+    background:#111827; color:#fff; padding:10px 20px; border-radius:999px;
+    font-size:.9rem; opacity:0; transition:opacity .25s; pointer-events:none; z-index:99;
+  }
+  /* ---- 收款码（默认内嵌，收款页常驻可见） ---- */
+  .pay-panel {
+    background:#fff; border:1px solid #f0ebe3; border-left:4px solid #16a34a;
+    border-radius:14px; padding:14px; margin-bottom:18px;
+    box-shadow:0 2px 8px rgba(0,0,0,.06);
+  }
+  .pay-panel h2 { font-size:1.05rem; color:#16a34a; margin-bottom:4px; }
+  .pay-panel .mini-hint { font-size:.78rem; color:#8a8378; margin-bottom:10px; }
+  .pay-tabbar { display:flex; gap:8px; justify-content:center; margin-bottom:12px; }
+  .pay-tab {
+    padding:7px 20px; border-radius:999px; border:1px solid #ddd; background:#f9f9f9;
+    cursor:pointer; font-weight:700; font-size:.9rem;
+  }
+  .pay-tab.on { background:#16a34a; color:#fff; border-color:#16a34a; }
+  .pay-tab.on.ali { background:#1677ff; border-color:#1677ff; }
+  .qr-box {
+    display:flex; flex-direction:column; align-items:center;
+    background:#fff; border:2px dashed #e5e7eb; border-radius:14px; padding:16px;
+  }
+  .qr-box canvas, .qr-box img.ph { width:210px; height:210px; border-radius:8px; }
+  .qr-box .pay-amt { font-size:1.5rem; font-weight:900; color:#dc2626; margin:10px 0 2px; }
+  .qr-box .pay-hint { font-size:.8rem; color:#8a8378; margin-bottom:10px; text-align:center; }
+  .pay-ok-banner {
+    background:#dcfce7; color:#166534; border-radius:10px; padding:10px;
+    text-align:center; font-weight:800; margin-top:10px;
+  }
+  .pay-acts { display:flex; gap:10px; margin-top:12px; }
+  .pay-acts button { flex:1; padding:10px; border:none; border-radius:9px; font-weight:800; cursor:pointer; }
+  .btn-skip { background:#fef3c7; color:#92400e; }
+  .btn-paid { background:#16a34a; color:#fff; }
+  @media (max-width: 780px) {
+    .layout { flex-direction:column; }
+    aside { width:100%; position:static; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🍜 星火小馆 · 点菜系统</h1>
+    <div class="sub">扫码点餐 · 下单即送后厨 · 支持扫码收款</div>
+  </div>
+  <button class="cart-btn" onclick="openOrder()">🛒 购物车（<span id="cnt">0</span>）</button>
+</header>
+
+<div class="layout">
+  <main class="menu">
+    <div class="cats" id="cats"></div>
+    <div class="dishes" id="dishes"></div>
+  </main>
+
+  <aside>
+    <div class="pay-panel">
+      <h2>💰 收款码（扫码付款）</h2>
+      <div class="mini-hint">点菜后把合计金额扫码付给店主；也可先吃饭到店付</div>
+      <div class="pay-tabbar">
+        <button class="pay-tab on" id="sideWx" onclick="switchSide('wx')">微信</button>
+        <button class="pay-tab ali" id="sideAli" onclick="switchSide('ali')">支付宝</button>
+      </div>
+      <div class="qr-box">
+        <canvas id="sideQr" width="210" height="210"></canvas>
+        <div class="pay-amt" id="sideAmt">¥0</div>
+        <div class="pay-hint" id="sideHint">先把菜加入购物车，金额会自动更新</div>
+      </div>
+      <button class="clear" onclick="openQrCfg()">⚙️ 更换我的收款码</button>
+    </div>
+    <h2>🧾 已点菜品</h2>
+    <div id="cartLines"><div class="empty">还没点菜，快去挑选吧～</div></div>
+    <div class="total"><span>合计</span><b id="total">¥0</b></div>
+    <button class="order-btn" id="orderBtn" disabled onclick="openOrder()">去下单</button>
+    <button class="clear" onclick="clearCart()">清空购物车</button>
+  </aside>
+</div>
+
+<!-- 下单表单 -->
+<div class="modal-bg" id="orderModal">
+  <div class="modal">
+    <div id="orderForm">
+      <h3>📝 确认下单</h3>
+      <div class="hint">填写桌号和联系方式，提交后进入收款</div>
+      <div class="field">
+        <label>桌号 *</label>
+        <select id="tableNo"></select>
+      </div>
+      <div class="field">
+        <label>称呼 *</label>
+        <input id="guestName" maxlength="12" placeholder="如：张先生 / 3号桌李女士">
+      </div>
+      <div class="field">
+        <label>手机号（用于叫号通知）</label>
+        <input id="guestPhone" maxlength="11" inputmode="numeric" placeholder="选填">
+      </div>
+      <div class="field">
+        <label>备注</label>
+        <textarea id="remark" rows="2" maxlength="60" placeholder="如：少辣、不要香菜、打包"></textarea>
+      </div>
+      <div class="row">
+        <button class="btn-cancel" onclick="closeOrder()">取消</button>
+        <button class="btn-ok" onclick="submitOrder()">提交订单 · 去支付</button>
+      </div>
+    </div>
+
+    <!-- 收款码 -->
+    <div id="payStep" style="display:none">
+      <h3>💰 扫码支付</h3>
+      <div class="hint">请使用微信或支付宝扫码支付以下金额</div>
+      <div class="pay-tabbar">
+        <button class="pay-tab on" id="tabWx" onclick="switchPay('wx')">微信支付</button>
+        <button class="pay-tab ali" id="tabAli" onclick="switchPay('ali')">支付宝</button>
+      </div>
+      <div class="qr-box">
+        <canvas id="qrCanvas" width="210" height="210"></canvas>
+        <div class="pay-amt" id="payAmt">¥0</div>
+        <div class="pay-hint" id="payHint">扫码向店主转账，备注订单号</div>
+        <div class="pay-ok-banner" id="payOk" style="display:none">✅ 已确认收款</div>
+      </div>
+      <div class="pay-acts">
+        <button class="btn-skip" onclick="finishOrder(true)">暂缓支付（到店付）</button>
+        <button class="btn-paid" onclick="finishOrder(false)">我已付款</button>
+      </div>
+      <div class="hint" style="margin-top:10px">
+        收款码可在下方「收款码设置」里换成你自己的微信/支付宝收款码图片
+      </div>
+      <button class="clear" onclick="showForm()">← 返回修改订单</button>
+    </div>
+
+    <!-- 下单成功 -->
+    <div id="orderDone" style="display:none">
+      <div class="ok-box">
+        <div class="big">🎉</div>
+        <div>订单已提交到后厨！</div>
+        <div class="no" id="orderNo">#----</div>
+        <p id="doneInfo"></p>
+        <p id="donePay" style="font-weight:800"></p>
+        <p>请稍候，服务员即将为您上菜</p>
+        <div class="row">
+          <button class="btn-cancel" onclick="closeOrder()">继续点餐</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 收款码设置 -->
+<div class="modal-bg" id="qrModal">
+  <div class="modal">
+    <h3>⚙️ 收款码设置</h3>
+    <div class="hint">
+      方式一（推荐）：把你的微信/支付宝收款码保存成图片，粘贴图片地址，或直接上传图片转成 Base64 存本地。<br>
+      方式二：粘贴收款码里的文本（如支付宝开店收款链接），页面会自动生成二维码。
+    </div>
+    <div class="field">
+      <label>微信收款码 · 图片地址（https://... 或 data:...）</label>
+      <input id="cfgWxUrl" placeholder="https://example.com/wechat-qr.png">
+    </div>
+    <div class="field">
+      <label>微信收款码 · 或上传图片</label>
+      <input type="file" accept="image/*" onchange="uploadQr(event,'wx')">
+    </div>
+    <div class="field">
+      <label>支付宝收款码 · 图片地址</label>
+      <input id="cfgAliUrl" placeholder="https://example.com/alipay-qr.png">
+    </div>
+    <div class="field">
+      <label>支付宝收款码 · 或上传图片</label>
+      <input type="file" accept="image/*" onchange="uploadQr(event,'ali')">
+    </div>
+    <div class="field">
+      <label>或粘贴收款文本自动生成二维码（留空则用上面的图片）</label>
+      <textarea id="cfgText" rows="2" placeholder="粘贴支付宝收款链接/任意收款信息文本"></textarea>
+    </div>
+    <div class="row">
+      <button class="btn-cancel" onclick="document.getElementById('qrModal').style.display='none'">关闭</button>
+      <button class="btn-ok" onclick="saveQrCfg()">保存设置</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<button class="cart-btn" style="position:fixed;left:16px;bottom:16px;z-index:30" onclick="openQrCfg()">⚙️ 收款码设置</button>
+
+<script>
+/* ================= 菜单 ================= */
+const MENU = [
+  { cat:'招牌热菜', emoji:'🍲', name:'红烧肉',       price:38, desc:'肥而不腻，入口即化，招牌必点' },
+  { cat:'招牌热菜', emoji:'🐟', name:'清蒸鲈鱼',     price:58, desc:'鲜活现蒸，豉油提鲜，原汁原味' },
+  { cat:'招牌热菜', emoji:'🦐', name:'油焖大虾',     price:48, desc:'浓油赤酱，虾肉弹嫩' },
+  { cat:'招牌热菜', emoji:'🥘', name:'麻婆豆腐',     price:22, desc:'麻辣鲜香，下饭神器' },
+  { cat:'小炒',     emoji:'🥒', name:'小炒黄牛肉',   price:36, desc:'猛火快炒，锅气十足' },
+  { cat:'小炒',     emoji:'🍅', name:'番茄炒蛋',     price:16, desc:'国民家常菜，酸甜开胃' },
+  { cat:'小炒',     emoji:'🥬', name:'蒜蓉时蔬',     price:14, desc:'当季绿叶菜，清爽解腻' },
+  { cat:'小炒',     emoji:'🍆', name:'鱼香茄子',     price:20, desc:'咸甜微辣，茄香浓郁' },
+  { cat:'主食',     emoji:'🍜', name:'阳春面',       price:12, desc:'一清二白，汤鲜面滑' },
+  { cat:'主食',     emoji:'🍚', name:'扬州炒饭',     price:18, desc:'粒粒分明，配料丰富' },
+  { cat:'主食',     emoji:'🥟', name:'三鲜水饺（12只）', price:20, desc:'皮薄馅大，现包现煮' },
+  { cat:'主食',     emoji:'🫓', name:'葱油饼',       price:10, desc:'层层起酥，葱香扑鼻' },
+  { cat:'汤羹',     emoji:'🍲', name:'酸辣汤',       price:16, desc:'酸辣过瘾，开胃醒神' },
+  { cat:'汤羹',     emoji:'🥚', name:'紫菜蛋花汤',   price:10, desc:'清淡鲜美，老少皆宜' },
+  { cat:'汤羹',     emoji:'🥘', name:'老母鸡汤',     price:32, desc:'文火慢炖三小时，金黄醇厚' },
+  { cat:'凉菜',     emoji:'🥒', name:'拍黄瓜',       price:10, desc:'蒜香脆爽，饭前开胃' },
+  { cat:'凉菜',     emoji:'🥜', name:'凉拌木耳',     price:14, desc:'酸辣爽口，营养健康' },
+  { cat:'凉菜',     emoji:'🐔', name:'口水鸡',       price:24, desc:'红油浸润，麻辣鲜香' },
+  { cat:'甜品',     emoji:'🍮', name:'双皮奶',       price:12, desc:'奶香浓郁，嫩滑如丝' },
+  { cat:'甜品',     emoji:'🍧', name:'杨枝甘露',     price:16, desc:'芒果西柚，清爽香甜' },
+  { cat:'饮品',     emoji:'🧋', name:'珍珠奶茶',     price:14, desc:'现煮黑糖珍珠，茶香醇厚' },
+  { cat:'饮品',     emoji:'🍋', name:'酸梅汤',       price:8,  desc:'冰镇解腻，古法熬制' },
+  { cat:'饮品',     emoji:'🍺', name:'冰镇啤酒',     price:12, desc:'330ml，透心凉' },
+];
+
+const CATS = ['全部', ...new Set(MENU.map(d => d.cat))];
+let curCat = '全部';
+let cart = {};
+let orders = JSON.parse(localStorage.getItem('orders') || '[]');
+let pending = null;   // 待支付订单
+let payMethod = 'wx';
+let sideMethod = 'wx';   // 侧栏常驻收款码
+
+// 桌号
+const tableSel = document.getElementById('tableNo');
+for (let i = 1; i <= 20; i++) {
+  const o = document.createElement('option');
+  o.value = i + '号桌'; o.textContent = i + '号桌';
+  tableSel.appendChild(o);
+}
+const hall = document.createElement('option');
+hall.value = '打包/外带'; hall.textContent = '打包/外带';
+tableSel.appendChild(hall);
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = 1;
+  clearTimeout(t._tm);
+  t._tm = setTimeout(() => t.style.opacity = 0, 1500);
+}
+
+/* ================= 菜单渲染 ================= */
+function renderCats() {
+  const el = document.getElementById('cats');
+  el.innerHTML = '';
+  CATS.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'cat' + (c === curCat ? ' on' : '');
+    d.textContent = c;
+    d.onclick = () => { curCat = c; renderCats(); renderDishes(); };
+    el.appendChild(d);
+  });
+}
+
+function renderDishes() {
+  const el = document.getElementById('dishes');
+  el.innerHTML = '';
+  MENU.filter(d => curCat === '全部' || d.cat === curCat).forEach(d => {
+    const card = document.createElement('div');
+    card.className = 'dish';
+    card.innerHTML =
+      '<div class="emoji">' + d.emoji + '</div>' +
+      '<div style="flex:1">' +
+        '<h3>' + d.name + '</h3>' +
+        '<div class="desc">' + d.desc + '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          '<span class="price">¥' + d.price + '</span>' +
+          '<button class="add">＋ 加入</button>' +
+        '</div>' +
+      '</div>';
+    card.querySelector('.add').onclick = () => addCart(d.name);
+    el.appendChild(card);
+  });
+}
+
+/* ================= 购物车 ================= */
+function addCart(name) {
+  cart[name] = (cart[name] || 0) + 1;
+  renderCart();
+  toast('已加入：' + name);
+}
+function changeQty(name, delta) {
+  cart[name] = (cart[name] || 0) + delta;
+  if (cart[name] <= 0) delete cart[name];
+  renderCart();
+}
+function clearCart() { cart = {}; renderCart(); }
+
+function renderCart() {
+  const lines = document.getElementById('cartLines');
+  const names = Object.keys(cart);
+  let total = 0, cnt = 0;
+  lines.innerHTML = '';
+  if (!names.length) {
+    lines.innerHTML = '<div class="empty">还没点菜，快去挑选吧～</div>';
+  } else {
+    names.forEach(n => {
+      const dish = MENU.find(d => d.name === n);
+      const q = cart[n];
+      total += dish.price * q; cnt += q;
+      const row = document.createElement('div');
+      row.className = 'line';
+      row.innerHTML =
+        '<span class="nm">' + dish.emoji + ' ' + n + '</span>' +
+        '<span class="qty"><button>−</button><span>' + q + '</span><button>＋</button></span>' +
+        '<b style="color:#dc2626">¥' + dish.price * q + '</b>';
+      const btns = row.querySelectorAll('.qty button');
+      btns[0].onclick = () => changeQty(n, -1);
+      btns[1].onclick = () => changeQty(n, +1);
+      lines.appendChild(row);
+    });
+  }
+  document.getElementById('total').textContent = '¥' + total;
+  document.getElementById('cnt').textContent = cnt;
+  document.getElementById('orderBtn').disabled = !names.length;
+  // 同步常驻收款码金额
+  document.getElementById('sideAmt').textContent = '¥' + total;
+  document.getElementById('sideHint').textContent = total
+    ? '扫码支付合计金额，付款后点「去下单」提交订单'
+    : '先把菜加入购物车，金额会自动更新';
+  drawQrTo('sideQr', 'sideHint', sideMethod, total);
+}
+
+/* ================= 下单流程 ================= */
+function openOrder() {
+  if (!Object.keys(cart).length && document.getElementById('orderModal').style.display !== 'flex') {
+    toast('购物车是空的，先点几个菜吧～');
+    return;
+  }
+  showForm();
+  document.getElementById('orderModal').style.display = 'flex';
+}
+function showForm() {
+  document.getElementById('orderForm').style.display = '';
+  document.getElementById('payStep').style.display = 'none';
+  document.getElementById('orderDone').style.display = 'none';
+}
+function closeOrder() {
+  document.getElementById('orderModal').style.display = 'none';
+}
+
+function submitOrder() {
+  const name = document.getElementById('guestName').value.trim();
+  if (!name) { toast('请填写称呼'); return; }
+  const phone = document.getElementById('guestPhone').value.trim();
+  if (phone && !/^1\d{10}$/.test(phone)) { toast('手机号格式不对'); return; }
+
+  let total = 0;
+  const items = Object.keys(cart).map(n => {
+    const dish = MENU.find(d => d.name === n);
+    total += dish.price * cart[n];
+    return { name: n, qty: cart[n], price: dish.price };
+  });
+  const no = 'SP' + Date.now().toString().slice(-8) + Math.floor(Math.random() * 90 + 10);
+  pending = {
+    no,
+    table: tableSel.value,
+    name, phone,
+    remark: document.getElementById('remark').value.trim(),
+    items, total,
+    time: new Date().toLocaleString('zh-CN'),
+    status: 'new',
+    paid: false,
+  };
+
+  // 进入收款步骤
+  document.getElementById('orderForm').style.display = 'none';
+  document.getElementById('orderDone').style.display = 'none';
+  document.getElementById('payStep').style.display = '';
+  document.getElementById('payAmt').textContent = '¥' + pending.total;
+  document.getElementById('payOk').style.display = 'none';
+  switchPay('wx');
+}
+
+/* ================= 收款码 ================= */
+function qrCfg() {
+  try { return JSON.parse(localStorage.getItem('qrCfg') || '{}'); }
+  catch(e) { return {}; }
+}
+function saveQrCfg() {
+  const cfg = {
+    wx: document.getElementById('cfgWxUrl').value.trim() || qrCfg().wx || '',
+    ali: document.getElementById('cfgAliUrl').value.trim() || qrCfg().ali || '',
+    text: document.getElementById('cfgText').value.trim(),
+  };
+  localStorage.setItem('qrCfg', JSON.stringify(cfg));
+  document.getElementById('qrModal').style.display = 'none';
+  toast('收款码设置已保存');
+}
+function openQrCfg() {
+  const cfg = qrCfg();
+  document.getElementById('cfgWxUrl').value = cfg.wx && cfg.wx.startsWith('data:') ? '' : (cfg.wx || '');
+  document.getElementById('cfgAliUrl').value = cfg.ali && cfg.ali.startsWith('data:') ? '' : (cfg.ali || '');
+  document.getElementById('cfgText').value = cfg.text || '';
+  document.getElementById('qrModal').style.display = 'flex';
+}
+function uploadQr(e, which) {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    const cfg = qrCfg();
+    cfg[which] = r.result;
+    localStorage.setItem('qrCfg', JSON.stringify(cfg));
+    toast((which === 'wx' ? '微信' : '支付宝') + '收款码已上传');
+  };
+  r.readAsDataURL(f);
+}
+
+function switchSide(m) {
+  sideMethod = m;
+  document.getElementById('sideWx').classList.toggle('on', m === 'wx');
+  document.getElementById('sideAli').classList.toggle('on', m === 'ali');
+  const total = Object.keys(cart).reduce((s, n) => s + MENU.find(d => d.name === n).price * cart[n], 0);
+  drawQrTo('sideQr', 'sideHint', m, total);
+}
+
+/* 通用：把收款二维码画到指定 canvas */
+function drawQrTo(canvasId, hintId, method, amount) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const cfg = qrCfg();
+  const img = cfg[method];
+  const label = method === 'wx' ? '微信收款码' : '支付宝收款码';
+  const ctx = canvas.getContext('2d');
+
+  if (img) {
+    const im = new Image();
+    im.onload = () => {
+      ctx.clearRect(0, 0, 210, 210);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 210, 210);
+      const s = Math.min(210 / im.width, 210 / im.height);
+      const w = im.width * s, h = im.height * s;
+      ctx.drawImage(im, (210 - w) / 2, (210 - h) / 2, w, h);
+      document.getElementById(hintId).textContent = amount
+        ? '扫码支付 ¥' + amount + '，付款后点「去下单」'
+        : label + '（已设置为你自己的收款码）';
+    };
+    im.onerror = () => drawGenerated(canvas, hintId, label, amount);
+    im.src = img;
+  } else {
+    drawGenerated(canvas, hintId, label, amount);
+  }
+}
+
+function drawGenerated(canvas, hintId, label, amount) {
+  const cfg = qrCfg();
+  const text = cfg.text && cfg.text.trim()
+    ? cfg.text.trim()
+    : '星火小馆收款|' + label + (amount ? '|金额¥' + amount : '') + '|请在设置中上传你的收款码';
+  const url = 'https://api.qrserver.com/v1/create-qr-code/?size=210x210&margin=8&data=' + encodeURIComponent(text);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 210, 210);
+  const im = new Image();
+  im.crossOrigin = 'anonymous';
+  im.onload = () => { ctx.drawImage(im, 0, 0, 210, 210); };
+  im.onerror = () => {
+    ctx.fillStyle = '#111'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('二维码生成失败', 105, 100);
+    ctx.fillText('请点「更换我的收款码」上传', 105, 124);
+  };
+  im.src = url;
+  document.getElementById(hintId).textContent = cfg.text
+    ? (amount ? '扫码支付 ¥' + amount : '扫码打开收款信息')
+    : label + '示例码 · 点下方按钮换成你自己的';
+}
+
+function switchPay(m) {
+  payMethod = m;
+  document.getElementById('tabWx').classList.toggle('on', m === 'wx');
+  document.getElementById('tabAli').classList.toggle('on', m === 'ali');
+  document.getElementById('payOk').style.display = 'none';
+  const amt = pending ? pending.total : Object.keys(cart).reduce((s, n) => s + MENU.find(d => d.name === n).price * cart[n], 0);
+  drawQrTo('qrCanvas', 'payHint', m, amt);
+}
+
+function finishOrder(skipPay) {
+  if (!pending) return;
+  pending.paid = !skipPay;
+  pending.paidMethod = skipPay ? '到店支付' : (payMethod === 'wx' ? '微信支付' : '支付宝');
+  orders.push(pending);
+  localStorage.setItem('orders', JSON.stringify(orders));
+
+  document.getElementById('orderNo').textContent = '#' + pending.no;
+  document.getElementById('doneInfo').textContent =
+    pending.table + ' · ' + pending.name + ' · 共 ' +
+    pending.items.reduce((s, i) => s + i.qty, 0) + ' 件 · 合计 ¥' + pending.total;
+  document.getElementById('donePay').textContent = pending.paid
+    ? '💰 已支付（' + pending.paidMethod + '）'
+    : '🕓 待支付（到店支付）';
+
+  cart = {};
+  renderCart();
+  document.getElementById('payStep').style.display = 'none';
+  document.getElementById('orderForm').style.display = 'none';
+  document.getElementById('orderDone').style.display = '';
+  pending = null;
+}
+
+/* ================= 初始化 ================= */
+renderCats();
+renderDishes();
+renderCart();
+</script>
+</body>
+</html>

@@ -1,386 +1,168 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>俄罗斯方块 Tetris</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>task-optimistic-lock · 任务乐观锁（409 并发冲突）</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-    color: #fff;
-    padding: 16px;
-  }
-  h1 {
-    text-align: center;
-    font-size: 26px;
-    letter-spacing: 6px;
-    margin-bottom: 14px;
-    background: linear-gradient(90deg, #00e5ff, #ff4dd2, #ffd54d);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .wrap { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
-  .board-box {
-    position: relative;
-    padding: 10px;
-    background: rgba(0,0,0,.45);
-    border-radius: 12px;
-    box-shadow: 0 0 30px rgba(0,229,255,.25), inset 0 0 20px rgba(0,0,0,.5);
-  }
-  canvas { display: block; border-radius: 6px; }
-  .side { display: flex; flex-direction: column; gap: 14px; width: 170px; }
-  .panel {
-    background: rgba(0,0,0,.4);
-    border: 1px solid rgba(255,255,255,.15);
-    border-radius: 10px;
-    padding: 12px;
-  }
-  .panel h2 { font-size: 13px; color: #9adfff; letter-spacing: 3px; margin-bottom: 8px; }
-  .panel .val { font-size: 24px; font-weight: bold; color: #ffd54d; }
-  canvas#next { display: block; margin: 0 auto; }
-  .overlay {
-    position: absolute;
-    inset: 10px;
-    background: rgba(0,0,0,.75);
-    border-radius: 6px;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    text-align: center;
-  }
-  .overlay.show { display: flex; }
-  .overlay .big { font-size: 30px; font-weight: bold; color: #ff4dd2; }
-  .overlay .sub { font-size: 14px; color: #ccc; }
-  button {
-    padding: 10px 22px;
-    border: none;
-    border-radius: 24px;
-    background: linear-gradient(90deg, #00e5ff, #0083b0);
-    color: #012;
-    font-weight: bold;
-    font-size: 15px;
-    cursor: pointer;
-    letter-spacing: 2px;
-    transition: transform .15s, box-shadow .15s;
-  }
-  button:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,229,255,.4); }
-  .keys { font-size: 12.5px; line-height: 1.9; color: #bbb; }
-  .keys b { color: #fff; background: rgba(255,255,255,.12); padding: 1px 7px; border-radius: 4px; }
-  .controls { display: flex; gap: 10px; justify-content: center; margin-top: 4px; }
-  .controls button { flex: 1; padding: 8px 4px; font-size: 13px; letter-spacing: 1px; }
-  @media (max-width: 640px) {
-    .side { width: 100%; flex-direction: row; flex-wrap: wrap; }
-    .panel { flex: 1; min-width: 130px; }
-  }
+  :root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--fg:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 -apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}
+  header{padding:48px 24px 32px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#161b22,#0d1117)}
+  h1{margin:0 0 8px;font-size:28px}
+  .sub{color:var(--muted);max-width:920px}
+  main{max-width:980px;margin:0 auto;padding:32px 24px 80px}
+  section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:24px}
+  h2{margin-top:0;font-size:20px;border-left:3px solid var(--accent);padding-left:10px}
+  h3{font-size:16px;color:var(--accent);margin:22px 0 8px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#21262d}
+  code{background:#21262d;border-radius:4px;padding:2px 6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+  pre{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:14px;overflow:auto}
+  pre code{background:none;padding:0}
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;margin:0 6px 6px 0}
+  .ok{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.4)}
+  .bad{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.4)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
+  .card{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:14px}
+  .card b{display:block;margin-bottom:6px;color:var(--accent)}
+  .flow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;padding:12px 0}
+  .node{background:#0d1117;border:1px solid var(--accent);border-radius:8px;padding:10px 14px;text-align:center;font-size:13px}
+  .node.bad{border-color:var(--red)}
+  .node.good{border-color:var(--green)}
+  .arrow{color:var(--muted);font-size:18px}
+  footer{color:var(--muted);text-align:center;padding:24px;font-size:13px}
+  @media(max-width:640px){h1{font-size:22px}table{font-size:13px}pre{font-size:12px}}
 </style>
 </head>
 <body>
-<div>
-  <h1>俄 罗 斯 方 块</h1>
-  <div class="wrap">
-    <div class="board-box">
-      <canvas id="board" width="300" height="600"></canvas>
-      <div class="overlay show" id="overlay">
-        <div class="big" id="ovTitle">TETRIS</div>
-        <div class="sub" id="ovSub">方向键 / WASD 控制，空格硬降</div>
-        <button id="ovBtn" onclick="startGame()">开始游戏</button>
-      </div>
-    </div>
-    <div class="side">
-      <div class="panel"><h2>分数 SCORE</h2><div class="val" id="score">0</div></div>
-      <div class="panel"><h2>等级 LEVEL</h2><div class="val" id="level">1</div></div>
-      <div class="panel"><h2>行数 LINES</h2><div class="val" id="lines">0</div></div>
-      <div class="panel"><h2>下一个 NEXT</h2><canvas id="next" width="120" height="90"></canvas></div>
-      <div class="panel keys">
-        <b>← →</b> 左右移动<br>
-        <b>↑ / X</b> 旋转<br>
-        <b>↓</b> 软降<br>
-        <b>空格</b> 硬降<br>
-        <b>P</b> 暂停
-      </div>
-      <div class="controls">
-        <button onclick="togglePause()">暂停/继续</button>
-        <button onclick="startGame()">重新开始</button>
-      </div>
-    </div>
+<header>
+  <h1>task-optimistic-lock</h1>
+  <div class="sub">任务更新的<b>乐观锁 / 版本号</b>实现：更新必须携带读到的 <code>version</code>，服务端原子 CAS 比对——并发冲突返回 <b style="color:var(--red)">409 Conflict</b>，前端弹出「任务已被他人修改，请刷新」并提供一键刷新。附并发测试（两个请求同时改同一任务 → 一 200 一 409）。</div>
+  <p>
+    <span class="tag ok">version 字段乐观锁</span>
+    <span class="tag ok">原子 CAS UPDATE</span>
+    <span class="tag bad">409 CONFLICT</span>
+    <span class="tag ok">前端刷新提示</span>
+    <span class="tag ok">并发集成测试</span>
+    <span class="tag ok">docker compose up</span>
+  </p>
+</header>
+
+<main>
+<section>
+  <h2>冲突检测流程</h2>
+  <div class="flow">
+    <div class="node">读任务<br>拿到 <code>version=3</code></div>
+    <div class="arrow">→</div>
+    <div class="node">PUT 带 <code>version:3</code></div>
+    <div class="arrow">→</div>
+    <div class="node"><code>UPDATE ... WHERE id=? AND version=3</code></div>
+    <div class="arrow">→</div>
+    <div class="node good">changes=1<br>✅ 200 · version→4</div>
+    <div class="node bad">changes=0<br>❌ 409 CONFLICT</div>
   </div>
-</div>
+  <div class="flow">
+    <div class="node bad">并发写者先改了行<br>version 已变 4</div>
+    <div class="arrow">→</div>
+    <div class="node bad">409 + details:<br>expectedVersion / currentVersion / task</div>
+    <div class="arrow">→</div>
+    <div class="node">前端 toast<br>「任务已被他人修改」</div>
+    <div class="arrow">→</div>
+    <div class="node good">⟳ 刷新拿 v4<br>再提交</div>
+  </div>
+</section>
 
-<script>
-const COLS = 10, ROWS = 20, SIZE = 30;
-const canvas = document.getElementById('board');
-const ctx = canvas.getContext('2d');
-const nCanvas = document.getElementById('next');
-const nctx = nCanvas.getContext('2d');
-
-const COLORS = {
-  I: '#00e5ff', O: '#ffd54d', T: '#c86bff', S: '#4dff88',
-  Z: '#ff4d6a', J: '#4d8bff', L: '#ff9b3d'
-};
-const SHAPES = {
-  I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
-  O: [[1,1],[1,1]],
-  T: [[0,1,0],[1,1,1],[0,0,0]],
-  S: [[0,1,1],[1,1,0],[0,0,0]],
-  Z: [[1,1,0],[0,1,1],[0,0,0]],
-  J: [[1,0,0],[1,1,1],[0,0,0]],
-  L: [[0,0,1],[1,1,1],[0,0,0]]
-};
-const TYPES = ['I','O','T','S','Z','J','L'];
-
-let grid, piece, nextType, score, level, lines;
-let dropInterval, dropTimer, running = false, paused = false;
-let animId = null, bag = [];
-
-function newBag() {
-  const b = TYPES.slice();
-  for (let i = b.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [b[i], b[j]] = [b[j], b[i]];
-  }
-  return b;
-}
-function nextFromBag() {
-  if (bag.length === 0) bag = newBag();
-  return bag.pop();
-}
-
-function startGame() {
-  grid = Array.from({length: ROWS}, () => Array(COLS).fill(null));
-  score = 0; level = 1; lines = 0;
-  bag = [];
-  dropInterval = 800;
-  dropTimer = 0;
-  paused = false; running = true;
-  document.getElementById('ovBtn').onclick = startGame;
-  document.getElementById('ovTitle').textContent = 'TETRIS';
-  nextType = nextFromBag();
-  spawn();
-  document.getElementById('overlay').classList.remove('show');
-  updateHUD();
-  if (animId) cancelAnimationFrame(animId);
-  let last = performance.now();
-  function loop(t) {
-    animId = requestAnimationFrame(loop);
-    if (!running) { draw(); return; }
-    if (paused) { last = t; draw(); return; }
-    const dt = t - last; last = t;
-    dropTimer += dt;
-    if (dropTimer > dropInterval) { dropTimer = 0; moveDown(); }
-    draw();
-  }
-  animId = requestAnimationFrame(loop);
-}
-
-function spawn() {
-  const type = nextType;
-  nextType = nextFromBag();
-  const shape = SHAPES[type].map(r => r.slice());
-  piece = {
-    type, shape,
-    x: Math.floor((COLS - shape[0].length) / 2),
-    y: 0
-  };
-  drawNext();
-  if (collides(piece.x, piece.y, piece.shape)) gameOver();
-}
-
-function collides(px, py, shape) {
-  for (let r = 0; r < shape.length; r++)
-    for (let c = 0; c < shape[r].length; c++) {
-      if (!shape[r][c]) continue;
-      const x = px + c, y = py + r;
-      if (x < 0 || x >= COLS || y >= ROWS) return true;
-      if (y >= 0 && grid[y][x]) return true;
-    }
-  return false;
-}
-
-function rotateShape(shape) {
-  const n = shape.length;
-  const out = Array.from({length: n}, () => Array(n).fill(0));
-  for (let r = 0; r < n; r++)
-    for (let c = 0; c < n; c++)
-      out[c][n - 1 - r] = shape[r][c];
-  return out;
-}
-
-function tryRotate() {
-  if (piece.type === 'O') return;
-  const rotated = rotateShape(piece.shape);
-  for (const kick of [0, -1, 1, -2, 2]) {
-    if (!collides(piece.x + kick, piece.y, rotated)) {
-      piece.shape = rotated;
-      piece.x += kick;
-      return;
+<section>
+  <h2>409 响应信封</h2>
+<pre><code>HTTP/1.1 409 Conflict
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "Version conflict: this task was modified by another request. Refresh to get the latest version.",
+    "details": {
+      "expectedVersion": 3,
+      "currentVersion": 4,
+      "task": { "id": "t-...", "title": "最新的标题", "version": 4 }
     }
   }
-}
+}</code></pre>
+  <p>校验失败（缺 version / 非法字段）→ <code>400 BAD_REQUEST</code>；未知任务 → <code>404 NOT_FOUND</code>。全部统一信封 <code>{error:{code,message,details?}}</code>。</p>
+</section>
 
-function moveHoriz(dx) {
-  if (!collides(piece.x + dx, piece.y, piece.shape)) piece.x += dx;
-}
+<section>
+  <h2>快速启动</h2>
+<pre><code># 起 API + 看板（SQLite 持久化 + 种子）
+docker compose up --build
+# 看板 UI:  http://localhost:3000/
+# API 索引: http://localhost:3000/api
 
-function moveDown() {
-  if (!collides(piece.x, piece.y + 1, piece.shape)) {
-    piece.y++;
-  } else {
-    lockPiece();
-  }
-}
+# 跑并发测试（两条验收）
+npm install &amp;&amp; npm test
+# 或
+docker compose --profile test run --rm test
 
-function hardDrop() {
-  let d = 0;
-  while (!collides(piece.x, piece.y + 1, piece.shape)) { piece.y++; d++; }
-  score += d * 2;
-  lockPiece();
-}
+# 手动验证 409
+curl -X PUT http://localhost:3000/api/tasks/t-1 \
+  -H 'content-type: application/json' -d '{"version":1,"title":"A"}'   # 200
+curl -X PUT http://localhost:3000/api/tasks/t-1 \
+  -H 'content-type: application/json' -d '{"version":1,"title":"B"}'   # 409</code></pre>
+</section>
 
-function lockPiece() {
-  for (let r = 0; r < piece.shape.length; r++)
-    for (let c = 0; c < piece.shape[r].length; c++) {
-      if (piece.shape[r][c]) {
-        const y = piece.y + r, x = piece.x + c;
-        if (y >= 0) grid[y][x] = piece.type;
-      }
-    }
-  clearLines();
-  spawn();
-  updateHUD();
-}
+<section>
+  <h2>API</h2>
+  <table>
+    <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+    <tr><td>GET</td><td><code>/api/tasks</code></td><td>列表（<code>page</code> <code>pageSize</code> <code>q</code>），每项含 <code>version</code></td></tr>
+    <tr><td>GET</td><td><code>/api/tasks/:id</code></td><td>详情（含 <code>version</code>）</td></tr>
+    <tr><td>POST</td><td><code>/api/tasks</code></td><td>创建 <code>{title, description?, status?}</code>，version=1</td></tr>
+    <tr><td>PUT</td><td><code>/api/tasks/:id</code></td><td><b>必须带 version</b>；不匹配 → 409；缺省 → 400；成功 → version+1</td></tr>
+    <tr><td>DELETE</td><td><code>/api/tasks/:id?version=N</code></td><td>带版本守卫删除；不匹配 → 409；204 成功</td></tr>
+    <tr><td>GET</td><td><code>/health</code> · <code>/api</code></td><td>健康检查 · 端点索引</td></tr>
+  </table>
+</section>
 
-function clearLines() {
-  let cleared = 0;
-  for (let r = ROWS - 1; r >= 0; r--) {
-    if (grid[r].every(v => v)) {
-      grid.splice(r, 1);
-      grid.unshift(Array(COLS).fill(null));
-      cleared++;
-      r++;
-    }
-  }
-  if (cleared) {
-    const pts = [0, 100, 300, 500, 800][cleared];
-    score += pts * level;
-    lines += cleared;
-    const newLevel = Math.floor(lines / 10) + 1;
-    if (newLevel !== level) {
-      level = newLevel;
-      dropInterval = Math.max(90, 800 - (level - 1) * 70);
-    }
-    updateHUD();
-  }
-}
+<section>
+  <h2>并发测试覆盖（Jest + Supertest）</h2>
+  <div class="grid">
+    <div class="card"><b>① 两个请求同时改同一任务</b><code>Promise.all</code> 发两个携带相同 version 的 PUT → 断言状态码集合恰为 <code>{200, 409}</code>；赢家 version+1；输家信封含 expectedVersion/currentVersion；最终 DB version 只 +1、title 为赢家写入值</div>
+    <div class="card"><b>② 5 写者踩踏</b>5 个同 version 请求并发 → 恰好 1 个 200、4 个 409、version 只 +1（CAS 只允许单个胜者）</div>
+    <div class="card"><b>③ 正常路径</b>正确 version → 200 且 version+1；过期 version → 409 且 details.currentVersion 正确；缺 version → 400；未知 id → 404</div>
+    <div class="card"><b>④ 带版本删除</b>过期 ?version → 409；正确 → 204 后 GET 404</div>
+  </div>
+</section>
 
-function gameOver() {
-  running = false;
-  document.getElementById('ovTitle').textContent = '游戏结束';
-  document.getElementById('ovSub').textContent = '最终得分：' + score;
-  document.getElementById('ovBtn').textContent = '再来一局';
-  document.getElementById('overlay').classList.add('show');
-  draw();
-}
+<section>
+  <h2>前端（看板 UI）</h2>
+  <div class="grid">
+    <div class="card"><b>409 提示</b>更新失败弹 toast「⚠️ 409 版本冲突 · 任务已被他人修改（当前版本 vN），请刷新获取最新版本后再改」，按钮 <b>⟳ 刷新并重试</b> / <b>仅刷新</b></div>
+    <div class="card"><b>⚡ 模拟并发冲突</b>一键对同一任务同时发两个相同 version 的 PUT，直观展示 200 / 409 与刷新提示</div>
+    <div class="card"><b>乐观并发操作</b>编辑标题 / 推进状态 / 带版本删除，全部回传读到的 version，冲突时统一走刷新流程</div>
+    <div class="card"><b>零依赖单文件</b><code>public/index.html</code>（原生 fetch + CSS，无框架、无需构建）</div>
+  </div>
+</section>
 
-function togglePause() {
-  if (!running) return;
-  paused = !paused;
-  const btn = document.getElementById('ovBtn');
-  if (paused) {
-    document.getElementById('ovTitle').textContent = '已暂停';
-    document.getElementById('ovSub').textContent = '点击按钮继续';
-    btn.textContent = '继续';
-    btn.onclick = togglePause;
-    document.getElementById('overlay').classList.add('show');
-  } else {
-    document.getElementById('ovSub').textContent = '方向键 / WASD 控制，空格硬降';
-    document.getElementById('overlay').classList.remove('show');
-    btn.onclick = startGame;
-  }
-}
+<section>
+  <h2>目录结构</h2>
+<pre><code>src/
+  db.js                 # SQLite 建表 + version 列迁移 + 种子
+  routes/tasks.js       # 乐观锁 CAS 更新（核心）+ 列表分页搜索
+  middleware/error.js   # 统一错误信封 + 409 CONFLICT
+  middleware/validate.js# zod 校验（updateBody.version 必填）
+  app.js  server.js
+public/index.html       # 任务看板（409 刷新提示 + 并发演示）
+tests/tasks.test.js     # 并发测试（一 200 一 409 / 5 写者踩踏）
+docker-compose.yml      # api（+ test profile）
+Dockerfile  README.md  jest.config.js  package.json  .env.example</code></pre>
+</section>
 
-function updateHUD() {
-  document.getElementById('score').textContent = score;
-  document.getElementById('level').textContent = level;
-  document.getElementById('lines').textContent = lines;
-}
+<section>
+  <h2>技术栈</h2>
+  <p>Node 20 · Express 4 · better-sqlite3（进程内原子 CAS，无需外部服务）· zod 3 · Jest + Supertest 7 · Docker Compose</p>
+</section>
+</main>
 
-function drawCell(c, x, y, color, size) {
-  const px = x * size, py = y * size;
-  c.fillStyle = color;
-  c.fillRect(px + 1, py + 1, size - 2, size - 2);
-  c.fillStyle = 'rgba(255,255,255,.3)';
-  c.fillRect(px + 1, py + 1, size - 2, 4);
-  c.fillStyle = 'rgba(0,0,0,.25)';
-  c.fillRect(px + 1, py + size - 5, size - 2, 4);
-}
-
-function draw() {
-  ctx.fillStyle = '#101020';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = 'rgba(255,255,255,.06)';
-  for (let x = 1; x < COLS; x++) {
-    ctx.beginPath(); ctx.moveTo(x * SIZE, 0); ctx.lineTo(x * SIZE, canvas.height); ctx.stroke();
-  }
-  for (let y = 1; y < ROWS; y++) {
-    ctx.beginPath(); ctx.moveTo(0, y * SIZE); ctx.lineTo(canvas.width, y * SIZE); ctx.stroke();
-  }
-  for (let r = 0; r < ROWS; r++)
-    for (let c = 0; c < COLS; c++)
-      if (grid && grid[r][c]) drawCell(ctx, c, r, COLORS[grid[r][c]], SIZE);
-
-  if (piece && grid) {
-    let gy = piece.y;
-    while (!collides(piece.x, gy + 1, piece.shape)) gy++;
-    ctx.globalAlpha = 0.25;
-    for (let r = 0; r < piece.shape.length; r++)
-      for (let c = 0; c < piece.shape[r].length; c++)
-        if (piece.shape[r][c] && gy + r >= 0)
-          drawCell(ctx, piece.x + c, gy + r, COLORS[piece.type], SIZE);
-    ctx.globalAlpha = 1;
-    for (let r = 0; r < piece.shape.length; r++)
-      for (let c = 0; c < piece.shape[r].length; c++)
-        if (piece.shape[r][c] && piece.y + r >= 0)
-          drawCell(ctx, piece.x + c, piece.y + r, COLORS[piece.type], SIZE);
-  }
-}
-
-function drawNext() {
-  nctx.clearRect(0, 0, nCanvas.width, nCanvas.height);
-  const shape = SHAPES[nextType];
-  const size = 22;
-  const w = shape[0].length * size, h = shape.length * size;
-  const ox = (nCanvas.width - w) / 2, oy = (nCanvas.height - h) / 2;
-  nctx.save();
-  nctx.translate(ox, oy);
-  for (let r = 0; r < shape.length; r++)
-    for (let c = 0; c < shape[r].length; c++)
-      if (shape[r][c]) drawCell(nctx, c, r, COLORS[nextType], size);
-  nctx.restore();
-}
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'p' || e.key === 'P') { togglePause(); e.preventDefault(); return; }
-  if (!running || paused) return;
-  switch (e.key) {
-    case 'ArrowLeft': case 'a': case 'A': moveHoriz(-1); e.preventDefault(); break;
-    case 'ArrowRight': case 'd': case 'D': moveHoriz(1); e.preventDefault(); break;
-    case 'ArrowDown': case 's': case 'S': moveDown(); score += 1; updateHUD(); e.preventDefault(); break;
-    case 'ArrowUp': case 'w': case 'W': case 'x': case 'X': tryRotate(); e.preventDefault(); break;
-    case ' ': hardDrop(); e.preventDefault(); break;
-  }
-});
-
-grid = Array.from({length: ROWS}, () => Array(COLS).fill(null));
-draw();
-</script>
+<footer>task-optimistic-lock · 交付说明页（GitHub Pages）</footer>
 </body>
 </html>

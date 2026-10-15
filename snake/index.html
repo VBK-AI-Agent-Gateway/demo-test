@@ -2,196 +2,384 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>贪吃蛇 Snake</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>俄罗斯方块 Tetris</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-  min-height: 100vh;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  color: #e0f7fa;
-  user-select: none;
-  touch-action: none;
-}
-h1 { font-size: 2rem; margin-bottom: 12px; text-shadow: 0 0 12px #4dd0e1; letter-spacing: 4px; }
-.panel { display: flex; gap: 24px; margin-bottom: 12px; font-size: 1.1rem; }
-.panel span b { color: #ffd54f; font-family: monospace; font-size: 1.3rem; }
-#board {
-  background: rgba(0,0,0,0.35);
-  border: 3px solid #4dd0e1;
-  border-radius: 8px;
-  box-shadow: 0 0 30px rgba(77,208,225,0.4);
-}
-.hint { margin-top: 12px; font-size: 0.9rem; opacity: 0.7; }
-#overlay {
-  position: absolute; inset: 0;
-  background: rgba(0,0,0,0.75);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  border-radius: 8px;
-}
-#overlay h2 { font-size: 2.4rem; color: #ff5252; margin-bottom: 8px; text-shadow: 0 0 16px #ff5252; }
-#overlay p { font-size: 1.4rem; margin-bottom: 20px; }
-#overlay button {
-  padding: 12px 36px; font-size: 1.2rem; border: none; border-radius: 30px;
-  background: linear-gradient(90deg, #4dd0e1, #00e676); color: #003;
-  font-weight: bold; cursor: pointer; box-shadow: 0 4px 16px rgba(0,230,118,0.5);
-  transition: transform .15s;
-}
-#overlay button:hover { transform: scale(1.08); }
-.hidden { display: none !important; }
-.wrap { position: relative; }
-#dpad {
-  display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px);
-  gap: 6px; margin-top: 16px;
-}
-#dpad button {
-  background: rgba(77,208,225,0.2); border: 2px solid #4dd0e1; color: #e0f7fa;
-  font-size: 1.5rem; border-radius: 10px; cursor: pointer;
-}
-#dpad button:active { background: #4dd0e1; color: #003; }
-#dpad .empty { background: none; border: none; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    color: #fff;
+    padding: 16px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 26px;
+    letter-spacing: 6px;
+    margin-bottom: 14px;
+    background: linear-gradient(90deg, #00e5ff, #ff4dd2, #ffd54d);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .wrap { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+  .board-box {
+    position: relative;
+    padding: 10px;
+    background: rgba(0,0,0,.45);
+    border-radius: 12px;
+    box-shadow: 0 0 30px rgba(0,229,255,.25), inset 0 0 20px rgba(0,0,0,.5);
+  }
+  canvas { display: block; border-radius: 6px; }
+  .side { display: flex; flex-direction: column; gap: 14px; width: 170px; }
+  .panel {
+    background: rgba(0,0,0,.4);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .panel h2 { font-size: 13px; color: #9adfff; letter-spacing: 3px; margin-bottom: 8px; }
+  .panel .val { font-size: 24px; font-weight: bold; color: #ffd54d; }
+  canvas#next { display: block; margin: 0 auto; }
+  .overlay {
+    position: absolute;
+    inset: 10px;
+    background: rgba(0,0,0,.75);
+    border-radius: 6px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+  }
+  .overlay.show { display: flex; }
+  .overlay .big { font-size: 30px; font-weight: bold; color: #ff4dd2; }
+  .overlay .sub { font-size: 14px; color: #ccc; }
+  button {
+    padding: 10px 22px;
+    border: none;
+    border-radius: 24px;
+    background: linear-gradient(90deg, #00e5ff, #0083b0);
+    color: #012;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: transform .15s, box-shadow .15s;
+  }
+  button:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,229,255,.4); }
+  .keys { font-size: 12.5px; line-height: 1.9; color: #bbb; }
+  .keys b { color: #fff; background: rgba(255,255,255,.12); padding: 1px 7px; border-radius: 4px; }
+  .controls { display: flex; gap: 10px; justify-content: center; margin-top: 4px; }
+  .controls button { flex: 1; padding: 8px 4px; font-size: 13px; letter-spacing: 1px; }
+  @media (max-width: 640px) {
+    .side { width: 100%; flex-direction: row; flex-wrap: wrap; }
+    .panel { flex: 1; min-width: 130px; }
+  }
 </style>
 </head>
 <body>
-<h1>贪吃蛇</h1>
-<div class="panel">
-  <span>得分 <b id="score">0</b></span>
-  <span>最高 <b id="best">0</b></span>
-  <span>速度 <b id="spd">1</b></span>
-</div>
-<div class="wrap">
-  <canvas id="board" width="400" height="400"></canvas>
-  <div id="overlay">
-    <h2 id="ovTitle">贪吃蛇</h2>
-    <p id="ovMsg">方向键 / WASD 控制</p>
-    <button id="ovBtn">开始游戏</button>
+<div>
+  <h1>俄 罗 斯 方 块</h1>
+  <div class="wrap">
+    <div class="board-box">
+      <canvas id="board" width="300" height="600"></canvas>
+      <div class="overlay show" id="overlay">
+        <div class="big" id="ovTitle">TETRIS</div>
+        <div class="sub" id="ovSub">方向键 / WASD 控制，空格硬降</div>
+        <button id="ovBtn" onclick="startGame()">开始游戏</button>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel"><h2>分数 SCORE</h2><div class="val" id="score">0</div></div>
+      <div class="panel"><h2>等级 LEVEL</h2><div class="val" id="level">1</div></div>
+      <div class="panel"><h2>行数 LINES</h2><div class="val" id="lines">0</div></div>
+      <div class="panel"><h2>下一个 NEXT</h2><canvas id="next" width="120" height="90"></canvas></div>
+      <div class="panel keys">
+        <b>← →</b> 左右移动<br>
+        <b>↑ / X</b> 旋转<br>
+        <b>↓</b> 软降<br>
+        <b>空格</b> 硬降<br>
+        <b>P</b> 暂停
+      </div>
+      <div class="controls">
+        <button onclick="togglePause()">暂停/继续</button>
+        <button onclick="startGame()">重新开始</button>
+      </div>
+    </div>
   </div>
-</div>
-<div class="hint">方向键 / WASD 移动 · 空格暂停 · 吃到食物加速</div>
-<div id="dpad">
-  <div class="empty"></div><button data-d="up">&#9650;</button><div class="empty"></div>
-  <button data-d="left">&#9664;</button><div class="empty"></div><button data-d="right">&#9654;</button>
-  <div class="empty"></div><button data-d="down">&#9660;</button><div class="empty"></div>
 </div>
 
 <script>
-const cvs = document.getElementById('board');
-const ctx = cvs.getContext('2d');
-const CELL = 20, COLS = 20, ROWS = 20;
-let snake, dir, nextDir, food, score, best, alive, paused, speed, timer;
+const COLS = 10, ROWS = 20, SIZE = 30;
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+const nCanvas = document.getElementById('next');
+const nctx = nCanvas.getContext('2d');
 
-best = +localStorage.getItem('snake_best') || 0;
-document.getElementById('best').textContent = best;
+const COLORS = {
+  I: '#00e5ff', O: '#ffd54d', T: '#c86bff', S: '#4dff88',
+  Z: '#ff4d6a', J: '#4d8bff', L: '#ff9b3d'
+};
+const SHAPES = {
+  I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+  O: [[1,1],[1,1]],
+  T: [[0,1,0],[1,1,1],[0,0,0]],
+  S: [[0,1,1],[1,1,0],[0,0,0]],
+  Z: [[1,1,0],[0,1,1],[0,0,0]],
+  J: [[1,0,0],[1,1,1],[0,0,0]],
+  L: [[0,0,1],[1,1,1],[0,0,0]]
+};
+const TYPES = ['I','O','T','S','Z','J','L'];
 
-function reset() {
-  snake = [{x:10,y:10},{x:9,y:10},{x:8,y:10}];
-  dir = {x:1,y:0}; nextDir = dir;
-  score = 0; alive = true; paused = false; speed = 1;
-  placeFood();
+let grid, piece, nextType, score, level, lines;
+let dropInterval, dropTimer, running = false, paused = false;
+let animId = null, bag = [];
+
+function newBag() {
+  const b = TYPES.slice();
+  for (let i = b.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
+function nextFromBag() {
+  if (bag.length === 0) bag = newBag();
+  return bag.pop();
+}
+
+function startGame() {
+  grid = Array.from({length: ROWS}, () => Array(COLS).fill(null));
+  score = 0; level = 1; lines = 0;
+  bag = [];
+  dropInterval = 800;
+  dropTimer = 0;
+  paused = false; running = true;
+  document.getElementById('ovBtn').onclick = startGame;
+  document.getElementById('ovTitle').textContent = 'TETRIS';
+  nextType = nextFromBag();
+  spawn();
+  document.getElementById('overlay').classList.remove('show');
   updateHUD();
-  schedule();
+  if (animId) cancelAnimationFrame(animId);
+  let last = performance.now();
+  function loop(t) {
+    animId = requestAnimationFrame(loop);
+    if (!running) { draw(); return; }
+    if (paused) { last = t; draw(); return; }
+    const dt = t - last; last = t;
+    dropTimer += dt;
+    if (dropTimer > dropInterval) { dropTimer = 0; moveDown(); }
+    draw();
+  }
+  animId = requestAnimationFrame(loop);
 }
-function placeFood() {
-  do {
-    food = {x: (Math.random()*COLS)|0, y: (Math.random()*ROWS)|0};
-  } while (snake.some(s => s.x===food.x && s.y===food.y));
+
+function spawn() {
+  const type = nextType;
+  nextType = nextFromBag();
+  const shape = SHAPES[type].map(r => r.slice());
+  piece = {
+    type, shape,
+    x: Math.floor((COLS - shape[0].length) / 2),
+    y: 0
+  };
+  drawNext();
+  if (collides(piece.x, piece.y, piece.shape)) gameOver();
 }
+
+function collides(px, py, shape) {
+  for (let r = 0; r < shape.length; r++)
+    for (let c = 0; c < shape[r].length; c++) {
+      if (!shape[r][c]) continue;
+      const x = px + c, y = py + r;
+      if (x < 0 || x >= COLS || y >= ROWS) return true;
+      if (y >= 0 && grid[y][x]) return true;
+    }
+  return false;
+}
+
+function rotateShape(shape) {
+  const n = shape.length;
+  const out = Array.from({length: n}, () => Array(n).fill(0));
+  for (let r = 0; r < n; r++)
+    for (let c = 0; c < n; c++)
+      out[c][n - 1 - r] = shape[r][c];
+  return out;
+}
+
+function tryRotate() {
+  if (piece.type === 'O') return;
+  const rotated = rotateShape(piece.shape);
+  for (const kick of [0, -1, 1, -2, 2]) {
+    if (!collides(piece.x + kick, piece.y, rotated)) {
+      piece.shape = rotated;
+      piece.x += kick;
+      return;
+    }
+  }
+}
+
+function moveHoriz(dx) {
+  if (!collides(piece.x + dx, piece.y, piece.shape)) piece.x += dx;
+}
+
+function moveDown() {
+  if (!collides(piece.x, piece.y + 1, piece.shape)) {
+    piece.y++;
+  } else {
+    lockPiece();
+  }
+}
+
+function hardDrop() {
+  let d = 0;
+  while (!collides(piece.x, piece.y + 1, piece.shape)) { piece.y++; d++; }
+  score += d * 2;
+  lockPiece();
+}
+
+function lockPiece() {
+  for (let r = 0; r < piece.shape.length; r++)
+    for (let c = 0; c < piece.shape[r].length; c++) {
+      if (piece.shape[r][c]) {
+        const y = piece.y + r, x = piece.x + c;
+        if (y >= 0) grid[y][x] = piece.type;
+      }
+    }
+  clearLines();
+  spawn();
+  updateHUD();
+}
+
+function clearLines() {
+  let cleared = 0;
+  for (let r = ROWS - 1; r >= 0; r--) {
+    if (grid[r].every(v => v)) {
+      grid.splice(r, 1);
+      grid.unshift(Array(COLS).fill(null));
+      cleared++;
+      r++;
+    }
+  }
+  if (cleared) {
+    const pts = [0, 100, 300, 500, 800][cleared];
+    score += pts * level;
+    lines += cleared;
+    const newLevel = Math.floor(lines / 10) + 1;
+    if (newLevel !== level) {
+      level = newLevel;
+      dropInterval = Math.max(90, 800 - (level - 1) * 70);
+    }
+    updateHUD();
+  }
+}
+
+function gameOver() {
+  running = false;
+  document.getElementById('ovTitle').textContent = '游戏结束';
+  document.getElementById('ovSub').textContent = '最终得分：' + score;
+  document.getElementById('ovBtn').textContent = '再来一局';
+  document.getElementById('overlay').classList.add('show');
+  draw();
+}
+
+function togglePause() {
+  if (!running) return;
+  paused = !paused;
+  const btn = document.getElementById('ovBtn');
+  if (paused) {
+    document.getElementById('ovTitle').textContent = '已暂停';
+    document.getElementById('ovSub').textContent = '点击按钮继续';
+    btn.textContent = '继续';
+    btn.onclick = togglePause;
+    document.getElementById('overlay').classList.add('show');
+  } else {
+    document.getElementById('ovSub').textContent = '方向键 / WASD 控制，空格硬降';
+    document.getElementById('overlay').classList.remove('show');
+    btn.onclick = startGame;
+  }
+}
+
 function updateHUD() {
   document.getElementById('score').textContent = score;
-  document.getElementById('spd').textContent = speed;
+  document.getElementById('level').textContent = level;
+  document.getElementById('lines').textContent = lines;
 }
-function schedule() {
-  clearInterval(timer);
-  const ms = Math.max(70, 160 - (speed-1)*12);
-  timer = setInterval(tick, ms);
+
+function drawCell(c, x, y, color, size) {
+  const px = x * size, py = y * size;
+  c.fillStyle = color;
+  c.fillRect(px + 1, py + 1, size - 2, size - 2);
+  c.fillStyle = 'rgba(255,255,255,.3)';
+  c.fillRect(px + 1, py + 1, size - 2, 4);
+  c.fillStyle = 'rgba(0,0,0,.25)';
+  c.fillRect(px + 1, py + size - 5, size - 2, 4);
 }
-function tick() {
-  if (paused || !alive) return;
-  dir = nextDir;
-  const head = {x:(snake[0].x+dir.x+COLS)%COLS, y:(snake[0].y+dir.y+ROWS)%ROWS};
-  if (snake.some(s => s.x===head.x && s.y===head.y)) {
-    alive = false; gameOver(); return;
-  }
-  snake.unshift(head);
-  if (head.x===food.x && head.y===food.y) {
-    score += 10;
-    if (score % 50 === 0) speed++;
-    placeFood(); updateHUD(); schedule();
-  } else {
-    snake.pop();
-  }
-  draw();
-}
+
 function draw() {
-  ctx.clearRect(0,0,cvs.width,cvs.height);
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-  for (let i=0;i<=COLS;i++) {
-    ctx.beginPath(); ctx.moveTo(i*CELL,0); ctx.lineTo(i*CELL,ROWS*CELL); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,i*CELL); ctx.lineTo(COLS*CELL,i*CELL); ctx.stroke();
+  ctx.fillStyle = '#101020';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = 'rgba(255,255,255,.06)';
+  for (let x = 1; x < COLS; x++) {
+    ctx.beginPath(); ctx.moveTo(x * SIZE, 0); ctx.lineTo(x * SIZE, canvas.height); ctx.stroke();
   }
-  ctx.fillStyle = '#ff5252';
-  ctx.shadowColor = '#ff5252'; ctx.shadowBlur = 12;
-  ctx.beginPath();
-  ctx.arc(food.x*CELL+CELL/2, food.y*CELL+CELL/2, CELL/2-3, 0, Math.PI*2);
-  ctx.fill(); ctx.shadowBlur = 0;
-  snake.forEach((s,i) => {
-    const t = i/snake.length;
-    ctx.fillStyle = i===0 ? '#b2ff59' : 'rgb('+Math.floor(76+t*100)+','+Math.floor(208-t*60)+','+Math.floor(225-t*100)+')';
-    ctx.fillRect(s.x*CELL+1, s.y*CELL+1, CELL-2, CELL-2);
-  });
-}
-function gameOver() {
-  clearInterval(timer);
-  if (score > best) {
-    best = score;
-    localStorage.setItem('snake_best', best);
-    document.getElementById('best').textContent = best;
+  for (let y = 1; y < ROWS; y++) {
+    ctx.beginPath(); ctx.moveTo(0, y * SIZE); ctx.lineTo(canvas.width, y * SIZE); ctx.stroke();
   }
-  showOverlay('游戏结束', '得分 ' + score, '再来一局');
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (grid && grid[r][c]) drawCell(ctx, c, r, COLORS[grid[r][c]], SIZE);
+
+  if (piece && grid) {
+    let gy = piece.y;
+    while (!collides(piece.x, gy + 1, piece.shape)) gy++;
+    ctx.globalAlpha = 0.25;
+    for (let r = 0; r < piece.shape.length; r++)
+      for (let c = 0; c < piece.shape[r].length; c++)
+        if (piece.shape[r][c] && gy + r >= 0)
+          drawCell(ctx, piece.x + c, gy + r, COLORS[piece.type], SIZE);
+    ctx.globalAlpha = 1;
+    for (let r = 0; r < piece.shape.length; r++)
+      for (let c = 0; c < piece.shape[r].length; c++)
+        if (piece.shape[r][c] && piece.y + r >= 0)
+          drawCell(ctx, piece.x + c, piece.y + r, COLORS[piece.type], SIZE);
+  }
 }
-function showOverlay(title, msg, btn) {
-  document.getElementById('ovTitle').textContent = title;
-  document.getElementById('ovMsg').textContent = msg;
-  document.getElementById('ovBtn').textContent = btn;
-  document.getElementById('overlay').classList.remove('hidden');
+
+function drawNext() {
+  nctx.clearRect(0, 0, nCanvas.width, nCanvas.height);
+  const shape = SHAPES[nextType];
+  const size = 22;
+  const w = shape[0].length * size, h = shape.length * size;
+  const ox = (nCanvas.width - w) / 2, oy = (nCanvas.height - h) / 2;
+  nctx.save();
+  nctx.translate(ox, oy);
+  for (let r = 0; r < shape.length; r++)
+    for (let c = 0; c < shape[r].length; c++)
+      if (shape[r][c]) drawCell(nctx, c, r, COLORS[nextType], size);
+  nctx.restore();
 }
-function hideOverlay() {
-  document.getElementById('overlay').classList.add('hidden');
-}
-function setDir(d) {
-  const map = {up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}};
-  const nd = map[d];
-  if (!nd) return;
-  if (nd.x === -dir.x && nd.y === -dir.y) return;
-  nextDir = nd;
-}
+
 document.addEventListener('keydown', e => {
-  const k = e.key.toLowerCase();
-  const ks = {arrowup:'up',w:'up',arrowdown:'down',s:'down',arrowleft:'left',a:'left',arrowright:'right',d:'right'};
-  if (ks[k]) { e.preventDefault(); setDir(ks[k]); }
-  if (k === ' ') { e.preventDefault(); togglePause(); }
-  if (k === 'enter' && !alive) start();
+  if (e.key === 'p' || e.key === 'P') { togglePause(); e.preventDefault(); return; }
+  if (!running || paused) return;
+  switch (e.key) {
+    case 'ArrowLeft': case 'a': case 'A': moveHoriz(-1); e.preventDefault(); break;
+    case 'ArrowRight': case 'd': case 'D': moveHoriz(1); e.preventDefault(); break;
+    case 'ArrowDown': case 's': case 'S': moveDown(); score += 1; updateHUD(); e.preventDefault(); break;
+    case 'ArrowUp': case 'w': case 'W': case 'x': case 'X': tryRotate(); e.preventDefault(); break;
+    case ' ': hardDrop(); e.preventDefault(); break;
+  }
 });
-function togglePause() {
-  if (!alive) return;
-  paused = !paused;
-  if (paused) showOverlay('暂停', '按空格继续', '继续');
-  else hideOverlay();
-}
-function start() {
-  hideOverlay();
-  reset();
-  draw();
-}
-document.getElementById('ovBtn').addEventListener('click', () => {
-  if (paused && alive) { paused = false; hideOverlay(); }
-  else start();
-});
-document.querySelectorAll('#dpad button').forEach(b => {
-  b.addEventListener('click', e => { e.preventDefault(); setDir(b.dataset.d); });
-});
+
+grid = Array.from({length: ROWS}, () => Array(COLS).fill(null));
 draw();
 </script>
 </body>

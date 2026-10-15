@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>俄罗斯方块 · 方块坠落</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:'PingFang SC','Microsoft YaHei',sans-serif;
+  background:linear-gradient(150deg,#1e1b4b 0%,#312e81 50%,#0f172a 100%);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;user-select:none;
+}
+.wrap{width:min(460px,100vw);height:min(780px,100vh);display:flex;flex-direction:column;padding:14px;position:relative;}
+h1{font-size:24px;text-align:center;color:#c7d2fe;font-weight:900;letter-spacing:3px;text-shadow:0 4px 14px rgba(0,0,0,.5);}
+.sub{text-align:center;color:#a5b4fc;font-size:13px;margin-top:4px;font-weight:700;letter-spacing:2px;}
+.top{display:flex;justify-content:space-between;align-items:center;margin:12px 0 10px;gap:8px;}
+.scores{display:flex;gap:8px;}
+.sbox{background:rgba(0,0,0,.35);border-radius:14px;padding:7px 13px;text-align:center;min-width:74px;border:1px solid rgba(165,180,252,.25);}
+.sbox .t{font-size:11px;color:#a5b4fc;font-weight:800;letter-spacing:1px;}
+.sbox .v{font-size:21px;color:#ffd166;font-weight:900;}
+.btns{display:flex;gap:8px;}
+.btn{background:linear-gradient(145deg,#ffd166,#f08c00);color:#3d2500;border:none;border-radius:14px;padding:9px 13px;font-weight:900;font-size:13px;cursor:pointer;box-shadow:0 4px 0 #a35a00;transition:.1s;}
+.btn:active{transform:translateY(3px);box-shadow:none;}
+.btn.p{background:linear-gradient(145deg,#818cf8,#4f46e5);color:#fff;box-shadow:0 4px 0 #3730a3;}
+.main{display:flex;gap:12px;flex:1;min-height:0;}
+.board-frame{position:relative;background:rgba(0,0,0,.45);border-radius:16px;padding:8px;border:2px solid rgba(165,180,252,.3);
+  box-shadow:0 20px 50px rgba(0,0,0,.5);flex:0 0 auto;align-self:flex-start;}
+#cv{display:block;background:
+  repeating-linear-gradient(0deg, transparent 0 27px, rgba(255,255,255,.04) 27px 28px),
+  repeating-linear-gradient(90deg, transparent 0 27px, rgba(255,255,255,.04) 27px 28px),
+  #0b1026;border-radius:9px;}
+.side{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0;}
+.card{background:rgba(255,255,255,.07);border:1px solid rgba(165,180,252,.25);border-radius:16px;padding:10px 12px;}
+.card h4{font-size:13px;color:#a5b4fc;font-weight:900;letter-spacing:2px;margin-bottom:8px;}
+#nextCv{display:block;margin:0 auto;background:rgba(0,0,0,.3);border-radius:10px;}
+.stat-line{display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:#e0e7ff;padding:3px 0;}
+.stat-line b{color:#ffd166;font-size:16px;}
+.hold-hint{font-size:12px;color:#818cf8;font-weight:700;text-align:center;margin-top:6px;}
+.dpad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:6px;margin-top:auto;}
+.dbtn{background:linear-gradient(145deg,#818cf8,#4f46e5);color:#fff;border:none;border-radius:14px;font-size:22px;font-weight:900;cursor:pointer;box-shadow:0 4px 0 #3730a3;transition:.08s;min-height:48px;}
+.dbtn:active{transform:translateY(3px);box-shadow:none;}
+.dbtn.wide{grid-column:span 1;}
+.dbtn.soft{background:linear-gradient(145deg,#34d399,#059669);box-shadow:0 4px 0 #065f46;font-size:16px;}
+.dbtn.hard{background:linear-gradient(145deg,#fb7185,#e11d48);box-shadow:0 4px 0 #9f1239;font-size:16px;}
+.dbtn.ghost{background:rgba(255,255,255,.06);box-shadow:none;color:#818cf8;}
+.dbtn.empty{background:none;box-shadow:none;cursor:default;}
+.overlay{position:absolute;inset:0;background:rgba(8,10,35,.94);backdrop-filter:blur(5px);border-radius:16px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;z-index:6;}
+.overlay.hide{display:none;}
+.overlay .big{font-size:60px;}
+.overlay h2{font-size:30px;background:linear-gradient(90deg,#ffd166,#818cf8);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900;}
+.overlay p{font-size:14px;color:#c7d2fe;line-height:1.8;}
+.bigbtn{padding:13px 38px;border:none;border-radius:30px;font-size:17px;font-weight:900;cursor:pointer;
+  background:linear-gradient(145deg,#ffd166,#f08c00);color:#3d2500;box-shadow:0 6px 0 #a35a00;}
+.bigbtn:active{transform:translateY(4px);box-shadow:none;}
+.bigbtn.p{background:linear-gradient(145deg,#818cf8,#4f46e5);color:#fff;box-shadow:0 6px 0 #3730a3;}
+#toast{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.92);color:#fff;
+  padding:11px 24px;border-radius:30px;font-weight:900;font-size:17px;opacity:0;transition:.25s;pointer-events:none;
+  z-index:9;border:2px solid #818cf8;}
+#toast.show{opacity:1;transform:translate(-50%,-62%);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧊 俄罗斯方块</h1>
+  <div class="sub">方块坠落 · 消行得分</div>
+  <div class="top">
+    <div class="scores">
+      <div class="sbox"><div class="t">分数</div><div class="v" id="score">0</div></div>
+      <div class="sbox"><div class="t">最佳</div><div class="v" id="best">0</div></div>
+    </div>
+    <div class="btns">
+      <button class="btn" onclick="openHelp()">❓ 玩法</button>
+      <button class="btn p" onclick="startGame()">🔄 新局</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="board-frame">
+      <canvas id="cv"></canvas>
+      <div class="overlay" id="startOv">
+        <div class="big">🧊</div>
+        <h2>俄罗斯方块</h2>
+        <p>← → 移动 · ⬆ 旋转 · ⬇ 软降 · 空格 硬降<br>把方块填满一行即可消除！<br>同时消多行有<b>额外加分</b> 💥</p>
+        <button class="bigbtn" onclick="startGame()">开始游戏</button>
+      </div>
+      <div class="overlay hide" id="overOv">
+        <div class="big">😵</div>
+        <h2>游戏结束</h2>
+        <p>最终得分：<b id="finalScore">0</b><br>历史最佳：<b id="finalBest">0</b></p>
+        <div style="display:flex;gap:12px;">
+          <button class="bigbtn" onclick="startGame()">再来一局</button>
+          <button class="bigbtn p" onclick="openHelp()">📖 玩法</button>
+        </div>
+      </div>
+      <div class="overlay hide" id="helpOv">
+        <div class="big">📖</div>
+        <h2>玩法说明</h2>
+        <p>① ←→ 移动，⬆ / X 旋转，↓ 软降，空格 硬降<br>② C 键暂存方块（也可点 暂存 按钮）<br>③ 填满一整行即消除，多行同消加倍<br>④ 消行得分：1行40 / 2行100 / 3行300 / 4行1200<br>⑤ 方块堆到顶部 = 游戏结束<br>⑥ 每 10 行提速一档 🚀</p>
+        <button class="bigbtn p" onclick="closeHelp()">明白啦</button>
+      </div>
+      <div id="toast"></div>
+    </div>
+    <div class="side">
+      <div class="card">
+        <h4>下一个</h4>
+        <canvas id="nextCv" width="96" height="96"></canvas>
+      </div>
+      <div class="card">
+        <div class="stat-line"><span>等级</span><b id="level">1</b></div>
+        <div class="stat-line"><span>已消行</span><b id="lines">0</b></div>
+        <div class="stat-line"><span>方块数</span><b id="pieces">0</b></div>
+        <div class="hold-hint">⌨ ←→移动 ⬆旋转 空格硬降 C暂存</div>
+      </div>
+      <div class="dpad">
+        <div class="dbtn empty"></div>
+        <button class="dbtn" onclick="doRotate()">🔄</button>
+        <button class="dbtn" onclick="holdPiece()">📦</button>
+        <button class="dbtn" onclick="doMove(-1)">⬅</button>
+        <button class="dbtn soft" onclick="doSoftDrop()">⬇</button>
+        <button class="dbtn" onclick="doMove(1)">➡</button>
+        <button class="dbtn ghost" onclick="openHelp()">❓</button>
+        <button class="dbtn hard" onclick="doHardDrop()">⏬</button>
+        <button class="dbtn" onclick="startGame()">🔄</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const COLS = 10, ROWS = 20, CELL = 30;
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const nextCv = document.getElementById('nextCv');
+const nctx = nextCv.getContext('2d');
+cv.width = COLS * CELL; cv.height = ROWS * CELL;
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+cv.width = COLS * CELL * DPR; cv.height = ROWS * CELL * DPR;
+cv.style.width = (COLS * CELL) + 'px'; cv.style.height = (ROWS * CELL) + 'px';
+ctx.setTransform(DPR,0,0,DPR,0,0);
+
+const SHAPES = {
+  I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+  O: [[1,1],[1,1]],
+  T: [[0,1,0],[1,1,1],[0,0,0]],
+  S: [[0,1,1],[1,1,0],[0,0,0]],
+  Z: [[1,1,0],[0,1,1],[0,0,0]],
+  J: [[1,0,0],[1,1,1],[0,0,0]],
+  L: [[0,0,1],[1,1,1],[0,0,0]]
+};
+const COLORS = {
+  I: '#22d3ee', O: '#facc15', T: '#a78bfa', S: '#4ade80',
+  Z: '#f87171', J: '#60a5fa', L: '#fb923c'
+};
+const TYPES = Object.keys(SHAPES);
+
+let grid, cur, next, bag, hold, canHold, score, best, lines, level, pieces, over, started, timer, tickMs, dropAcc;
+
+best = +(localStorage.getItem('tetrisBest') || 0);
+document.getElementById('best').textContent = best;
+
+function refillBag(){
+  bag = TYPES.slice();
+  for(let i = bag.length-1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i+1));
+    [bag[i], bag[j]] = [bag[j], bag[i]];
+  }
+}
+function nextType(){
+  if(!bag || !bag.length) refillBag();
+  return bag.pop();
+}
+
+function makePiece(type){
+  const shape = SHAPES[type].map(r => r.slice());
+  return {type, shape, x: Math.floor((COLS - shape[0].length)/2), y: 0};
+}
+
+function startGame(){
+  grid = Array.from({length:ROWS}, () => Array(COLS).fill(0));
+  refillBag();
+  cur = makePiece(nextType());
+  next = makePiece(nextType());
+  hold = null; canHold = true;
+  score = 0; lines = 0; level = 1; pieces = 0; over = false; started = true;
+  tickMs = 700; dropAcc = 0;
+  document.getElementById('score').textContent = 0;
+  document.getElementById('level').textContent = 1;
+  document.getElementById('lines').textContent = 0;
+  document.getElementById('pieces').textContent = 0;
+  document.getElementById('startOv').classList.add('hide');
+  document.getElementById('overOv').classList.add('hide');
+  document.getElementById('helpOv').classList.add('hide');
+  if(timer) cancelAnimationFrame(timer);
+  let last = performance.now();
+  const loop = (now) => {
+    if(over || !started){ draw(); return; }
+    const dt = now - last; last = now;
+    dropAcc += dt;
+    if(dropAcc >= tickMs){
+      dropAcc = 0;
+      if(!collides(cur.shape, cur.x, cur.y + 1)){
+        cur.y++;
+      } else {
+        lockPiece();
+      }
+    }
+    draw();
+    timer = requestAnimationFrame(loop);
+  };
+  timer = requestAnimationFrame(loop);
+}
+
+function collides(shape, ox, oy){
+  for(let r=0; r<shape.length; r++) for(let c=0; c<shape[r].length; c++){
+    if(!shape[r][c]) continue;
+    const x = ox + c, y = oy + r;
+    if(x < 0 || x >= COLS || y >= ROWS) return true;
+    if(y >= 0 && grid[y][x]) return true;
+  }
+  return false;
+}
+
+function rotateShape(shape){
+  const N = shape.length;
+  const out = Array.from({length:N}, () => Array(N).fill(0));
+  for(let r=0; r<N; r++) for(let c=0; c<N; c++) out[c][N-1-r] = shape[r][c];
+  return out;
+}
+
+function doRotate(){
+  if(over || !started) return;
+  const rotated = rotateShape(cur.shape);
+  // wall kick
+  for(const kick of [0, -1, 1, -2, 2]){
+    if(!collides(rotated, cur.x + kick, cur.y)){
+      cur.shape = rotated; cur.x += kick;
+      return;
+    }
+  }
+}
+
+function doMove(dx){
+  if(over || !started) return;
+  if(!collides(cur.shape, cur.x + dx, cur.y)) cur.x += dx;
+}
+
+function doSoftDrop(){
+  if(over || !started) return;
+  if(!collides(cur.shape, cur.x, cur.y + 1)){
+    cur.y++; score += 1;
+    document.getElementById('score').textContent = score;
+    dropAcc = 0;
+  } else lockPiece();
+}
+
+function doHardDrop(){
+  if(over || !started) return;
+  let dist = 0;
+  while(!collides(cur.shape, cur.x, cur.y + 1)){ cur.y++; dist++; }
+  score += dist * 2;
+  document.getElementById('score').textContent = score;
+  lockPiece();
+}
+
+function holdPiece(){
+  if(over || !started || !canHold) return;
+  canHold = false;
+  const t = cur.type;
+  if(hold){
+    cur = makePiece(hold);
+    hold = t;
+  } else {
+    hold = t;
+    cur = makePiece(nextType());
+    next = makePiece(nextType());
+    pieces++;
+    document.getElementById('pieces').textContent = pieces;
+  }
+  toast('📦 已暂存');
+}
+
+function lockPiece(){
+  const {shape, x, y, type} = cur;
+  for(let r=0; r<shape.length; r++) for(let c=0; c<shape[r].length; c++){
+    if(!shape[r][c]) continue;
+    const gy = y + r, gx = x + c;
+    if(gy < 0){ endGame(); return; }
+    grid[gy][gx] = type;
+  }
+  clearLines();
+  if(over) return;
+  cur = next;
+  next = makePiece(nextType());
+  pieces++;
+  document.getElementById('pieces').textContent = pieces;
+  canHold = true;
+  if(collides(cur.shape, cur.x, cur.y)) endGame();
+}
+
+function clearLines(){
+  let cleared = 0;
+  for(let r = ROWS-1; r >= 0; r--){
+    if(grid[r].every(v => v !== 0)){
+      grid.splice(r, 1);
+      grid.unshift(Array(COLS).fill(0));
+      cleared++;
+      r++; // recheck same row
+    }
+  }
+  if(cleared > 0){
+    const pts = [0, 40, 100, 300, 1200][cleared] * level;
+    score += pts;
+    lines += cleared;
+    level = 1 + Math.floor(lines / 10);
+    const newTick = Math.max(80, 700 - (level-1) * 60);
+    tickMs = newTick;
+    document.getElementById('score').textContent = score;
+    document.getElementById('lines').textContent = lines;
+    document.getElementById('level').textContent = level;
+    if(score > best){ best = score; localStorage.setItem('tetrisBest', best); document.getElementById('best').textContent = best; }
+    const names = ['', '单消', '双消！', '三消！！', '四连消 TETRIS 💥'];
+    toast(names[cleared] + ' +' + pts);
+    if(lines % 10 === 0) toast('🚀 升到 ' + level + ' 级！');
+  }
+}
+
+function endGame(){
+  over = true; started = false;
+  if(timer) cancelAnimationFrame(timer);
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('finalBest').textContent = best;
+  draw();
+  setTimeout(() => document.getElementById('overOv').classList.remove('hide'), 500);
+}
+
+function drawCell(context, x, y, size, type, alpha=1){
+  const col = COLORS[type];
+  context.save();
+  context.globalAlpha = alpha;
+  context.fillStyle = col;
+  context.fillRect(x+1, y+1, size-2, size-2);
+  // 高光
+  context.fillStyle = 'rgba(255,255,255,.35)';
+  context.fillRect(x+1, y+1, size-2, Math.max(3, size*0.22));
+  // 描边
+  context.strokeStyle = 'rgba(0,0,0,.35)';
+  context.lineWidth = 2;
+  context.strokeRect(x+1, y+1, size-2, size-2);
+  context.restore();
+}
+
+function drawGhost(){
+  let gy = cur.y;
+  while(!collides(cur.shape, cur.x, gy + 1)) gy++;
+  for(let r=0; r<cur.shape.length; r++) for(let c=0; c<cur.shape[r].length; c++){
+    if(!cur.shape[r][c]) continue;
+    const y = (gy + r) * CELL, x = (cur.x + c) * CELL;
+    ctx.save();
+    ctx.globalAlpha = .28;
+    ctx.fillStyle = COLORS[cur.type];
+    ctx.fillRect(x+1, y+1, CELL-2, CELL-2);
+    ctx.restore();
+  }
+}
+
+function draw(){
+  ctx.clearRect(0, 0, COLS*CELL, ROWS*CELL);
+  for(let r=0; r<ROWS; r++) for(let c=0; c<COLS; c++){
+    if(grid && grid[r][c]) drawCell(ctx, c*CELL, r*CELL, CELL, grid[r][c]);
+  }
+  if(cur && started && !over){
+    drawGhost();
+    for(let r=0; r<cur.shape.length; r++) for(let c=0; c<cur.shape[r].length; c++){
+      if(!cur.shape[r][c]) continue;
+      const y = (cur.y + r) * CELL, x = (cur.x + c) * CELL;
+      if(y >= 0) drawCell(ctx, x, y, CELL, cur.type);
+    }
+  }
+  // next preview
+  nctx.clearRect(0, 0, 96, 96);
+  if(next){
+    const shape = SHAPES[next.type];
+    const sz = 20;
+    const w = shape[0].length * sz, h = shape.length * sz;
+    const ox = (96 - w)/2, oy = (96 - h)/2;
+    for(let r=0; r<shape.length; r++) for(let c=0; c<shape[r].length; c++){
+      if(shape[r][c]) drawCell(nctx, ox + c*sz, oy + r*sz, sz, next.type);
+    }
+  }
+}
+
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1300);
+}
+function openHelp(){ document.getElementById('helpOv').classList.remove('hide'); }
+function closeHelp(){ document.getElementById('helpOv').classList.add('hide'); }
+
+window.addEventListener('keydown', e => {
+  if(e.key === 'ArrowLeft'){ e.preventDefault(); doMove(-1); }
+  else if(e.key === 'ArrowRight'){ e.preventDefault(); doMove(1); }
+  else if(e.key === 'ArrowDown'){ e.preventDefault(); doSoftDrop(); }
+  else if(e.key === 'ArrowUp' || e.key === 'x' || e.key === 'X'){ e.preventDefault(); doRotate(); }
+  else if(e.key === ' '){ e.preventDefault(); doHardDrop(); }
+  else if(e.key === 'c' || e.key === 'C'){ e.preventDefault(); holdPiece(); }
+});
+
+// swipe
+let tx=0, ty=0;
+const frame = document.querySelector('.board-frame');
+frame.addEventListener('pointerdown', e => { tx = e.clientX; ty = e.clientY; });
+frame.addEventListener('pointerup', e => {
+  if(!started || over) return;
+  const dx = e.clientX - tx, dy = e.clientY - ty;
+  if(Math.abs(dx) < 20 && Math.abs(dy) < 20){ doRotate(); return; }
+  if(Math.abs(dx) > Math.abs(dy)){
+    const steps = Math.max(1, Math.round(Math.abs(dx) / 30));
+    for(let i=0; i<steps; i++) doMove(dx > 0 ? 1 : -1);
+  } else {
+    if(dy > 60) doHardDrop();
+    else doSoftDrop();
+  }
+});
+
+startGame();
+document.getElementById('startOv').classList.remove('hide');
+started = false;
+if(timer) cancelAnimationFrame(timer);
+</script>
+</body>
+</html>

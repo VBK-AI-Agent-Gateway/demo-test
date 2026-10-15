@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>厨房接单台 · 星火小馆</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:"PingFang SC","Microsoft YaHei",sans-serif; background:#1c1917; color:#f5f5f4; min-height:100vh; }
+  header {
+    background:#292420; padding:16px 22px; display:flex; align-items:center;
+    justify-content:space-between; flex-wrap:wrap; gap:10px;
+    border-bottom:3px solid #f59e0b; position:sticky; top:0; z-index:10;
+  }
+  header h1 { font-size:1.25rem; color:#fbbf24; }
+  header .stats { display:flex; gap:16px; font-size:.85rem; }
+  header .stats b { color:#fbbf24; }
+  .tabs { display:flex; gap:8px; padding:16px 22px 0; flex-wrap:wrap; }
+  .tab {
+    padding:8px 18px; border-radius:10px 10px 0 0; background:#292420;
+    cursor:pointer; font-size:.9rem; border:none; color:#d6d3d1;
+  }
+  .tab.on { background:#f59e0b; color:#1c1917; font-weight:800; }
+  .board { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px; padding:16px 22px; }
+  .ticket {
+    background:#292420; border-radius:14px; padding:14px; border-left:5px solid #f59e0b;
+    box-shadow:0 4px 14px rgba(0,0,0,.35);
+  }
+  .ticket.done { border-left-color:#16a34a; opacity:.75; }
+  .ticket.cancel { border-left-color:#dc2626; opacity:.55; }
+  .ticket .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .ticket .no { font-family:monospace; color:#fbbf24; font-weight:800; }
+  .ticket .badge { font-size:.7rem; background:#f59e0b; color:#1c1917; padding:2px 8px; border-radius:99px; font-weight:800; }
+  .ticket .badge.done { background:#16a34a; color:#fff; }
+  .ticket .badge.cancel { background:#dc2626; color:#fff; }
+  .ticket .who { font-size:.95rem; margin-bottom:6px; }
+  .ticket .who small { color:#a8a29e; }
+  .ticket ul { list-style:none; margin:8px 0; }
+  .ticket li { font-size:.9rem; padding:3px 0; display:flex; justify-content:space-between; border-bottom:1px dashed #44403c; }
+  .ticket .remark { font-size:.8rem; color:#fca5a5; background:#3a1d1d; padding:5px 8px; border-radius:6px; margin-top:6px; }
+  .ticket .paid { font-size:.78rem; color:#86efac; margin-top:6px; }
+  .ticket .unpaid { font-size:.78rem; color:#fcd34d; margin-top:6px; }
+  .acts { display:flex; gap:8px; margin-top:10px; }
+  .acts button {
+    flex:1; padding:8px; border:none; border-radius:8px; cursor:pointer;
+    font-weight:800; font-size:.85rem;
+  }
+  .b-done { background:#16a34a; color:#fff; }
+  .b-undo { background:#44403c; color:#e7e5e4; }
+  .b-cancel { background:#dc2626; color:#fff; }
+  .empty { grid-column:1/-1; text-align:center; color:#78716c; padding:60px 0; font-size:1rem; }
+  .tip { padding:0 22px 24px; color:#78716c; font-size:.8rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>👨‍🍳 厨房接单台 · 星火小馆</h1>
+  <div class="stats">
+    <span>待处理 <b id="stNew">0</b></span>
+    <span>制作中 <b id="stCook">0</b></span>
+    <span>今日已完成 <b id="stDone">0</b></span>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab on" data-f="new">🆕 新订单</button>
+  <button class="tab" data-f="cook">🔥 制作中</button>
+  <button class="tab" data-f="done">✅ 已完成</button>
+  <button class="tab" data-f="all">📋 全部</button>
+</div>
+
+<div class="board" id="board"></div>
+<div class="tip">提示：本页与点菜页通过浏览器 localStorage 共享订单（storage 事件实时同步）。同一台设备/同一浏览器打开即可实时接单。</div>
+
+<script>
+let filter = 'new';
+let orders = JSON.parse(localStorage.getItem('orders') || '[]');
+
+// 状态存放在 order.status: new / cook / done / cancel
+window.addEventListener('storage', e => {
+  if (e.key === 'orders') {
+    orders = JSON.parse(e.newValue || '[]');
+    render();
+  }
+});
+// 同标签页内改动时也刷新
+const _origSet = localStorage.setItem.bind(localStorage);
+localStorage.setItem = function(k, v) {
+  _origSet(k, v);
+  if (k === 'orders') { orders = JSON.parse(v || '[]'); render(); }
+};
+
+function setStatus(no, st) {
+  const o = orders.find(x => x.no === no);
+  if (o) { o.status = st; _origSet('orders', JSON.stringify(orders)); render(); }
+}
+
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+    t.classList.add('on');
+    filter = t.dataset.f;
+    render();
+  };
+});
+
+function fmtTime(t) {
+  const d = new Date(t);
+  return isNaN(d) ? t : d.toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit' });
+}
+
+function render() {
+  orders.forEach(o => { if (!o.status) o.status = 'new'; });
+  const board = document.getElementById('board');
+  const list = orders
+    .filter(o => filter === 'all' ? true : o.status === filter)
+    .slice().reverse();
+
+  document.getElementById('stNew').textContent = orders.filter(o => o.status === 'new').length;
+  document.getElementById('stCook').textContent = orders.filter(o => o.status === 'cook').length;
+  document.getElementById('stDone').textContent = orders.filter(o => o.status === 'done').length;
+
+  board.innerHTML = '';
+  if (!list.length) {
+    board.innerHTML = '<div class="empty">🍽️ 暂无该状态的订单</div>';
+    return;
+  }
+
+  list.forEach(o => {
+    const div = document.createElement('div');
+    div.className = 'ticket' + (o.status === 'done' ? ' done' : o.status === 'cancel' ? ' cancel' : '');
+    const badge = o.status === 'done' ? '<span class="badge done">已完成</span>'
+                : o.status === 'cancel' ? '<span class="badge cancel">已取消</span>'
+                : o.status === 'cook' ? '<span class="badge">制作中</span>'
+                : '<span class="badge">新订单</span>';
+    const pay = o.paid
+      ? '<div class="paid">✅ 已支付 ¥' + o.total + (o.paidMethod ? ' · ' + o.paidMethod : '') + '</div>'
+      : '<div class="unpaid">⏳ 待支付 ¥' + o.total + '</div>';
+    div.innerHTML =
+      '<div class="top"><span class="no">#' + o.no + '</span>' + badge + '</div>' +
+      '<div class="who">' + o.table + ' · ' + o.name +
+        ' <small>' + fmtTime(o.time) + '</small></div>' +
+      '<ul>' + o.items.map(i => '<li><span>' + i.name + '</span><b>×' + i.qty + '</b></li>').join('') + '</ul>' +
+      (o.remark ? '<div class="remark">📝 ' + o.remark + '</div>' : '') +
+      pay;
+    const acts = document.createElement('div');
+    acts.className = 'acts';
+    if (o.status === 'new') {
+      acts.innerHTML = '<button class="b-done">开始制作</button><button class="b-cancel">取消</button>';
+      acts.children[0].onclick = () => setStatus(o.no, 'cook');
+      acts.children[1].onclick = () => setStatus(o.no, 'cancel');
+    } else if (o.status === 'cook') {
+      acts.innerHTML = '<button class="b-done">出锅完成</button><button class="b-undo">撤回</button>';
+      acts.children[0].onclick = () => setStatus(o.no, 'done');
+      acts.children[1].onclick = () => setStatus(o.no, 'new');
+    } else if (o.status === 'cancel') {
+      acts.innerHTML = '<button class="b-undo">恢复订单</button>';
+      acts.children[0].onclick = () => setStatus(o.no, 'new');
+    } else {
+      acts.innerHTML = '<button class="b-undo">重新打开</button>';
+      acts.children[0].onclick = () => setStatus(o.no, 'cook');
+    }
+    div.appendChild(acts);
+    board.appendChild(div);
+  });
+}
+render();
+</script>
+</body>
+</html>

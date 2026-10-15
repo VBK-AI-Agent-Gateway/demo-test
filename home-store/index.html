@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>宜居家 HomeStore · 家具商城</title>
+<meta name="description" content="宜居家家具商城：沙发、床、桌椅、柜架、照明、储物、家纺、户外全分类，图片挑选，购物车下单。">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+</head>
+<body>
+<!-- 顶部公告条 -->
+<div class="announce">🚚 全场满 999 元包邮 · 30 天无理由退换 · 新用户首单立减 100 元</div>
+
+<!-- 导航 -->
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#" id="brandHome"><span class="brand-box">宜</span>居家 <em>HomeStore</em></a>
+    <nav class="menu" id="menu">
+      <button class="m-item active" data-cat="all">全部商品</button>
+      <button class="m-item" data-cat="sofa">沙发</button>
+      <button class="m-item" data-cat="bed">床与床垫</button>
+      <button class="m-item" data-cat="table">桌几</button>
+      <button class="m-item" data-cat="chair">椅凳</button>
+      <button class="m-item" data-cat="cabinet">柜架</button>
+      <button class="m-item" data-cat="more" id="moreBtn">更多 ▾</button>
+    </nav>
+    <div class="nav-right">
+      <div class="search"><input id="searchInput" placeholder="搜索沙发、床、灯…"><span>🔍</span></div>
+      <button class="cart-btn" id="cartBtn">🛒<i class="badge" id="cartBadge">0</i></button>
+    </div>
+  </div>
+  <div class="dropdown" id="moreDrop" style="display:none">
+    <button class="m-item" data-cat="light">💡 照明</button>
+    <button class="m-item" data-cat="storage">📦 储物收纳</button>
+    <button class="m-item" data-cat="textile">🧺 家纺纺织</button>
+    <button class="m-item" data-cat="outdoor">⛱️ 户外</button>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-txt">
+      <div class="hero-tag">春季焕新季</div>
+      <h1>把家，装成<br>喜欢的样子</h1>
+      <p>9 大分类 · 26+ 款精选家具 · 设计师搭配灵感</p>
+      <div class="hero-cta">
+        <button class="btn-yellow" id="heroShop">立即选购</button>
+        <button class="btn-blue" id="heroDeal">看特惠 →</button>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 360 240">
+        <rect x="20" y="140" width="320" height="80" rx="16" fill="#0058a3" opacity=".12"/>
+        <rect x="60" y="120" width="150" height="60" rx="14" fill="#f3d9b8" stroke="#c98b52" stroke-width="5"/>
+        <rect x="52" y="98" width="34" height="76" rx="12" fill="#f3d9b8" stroke="#c98b52" stroke-width="5"/>
+        <rect x="184" y="98" width="34" height="76" rx="12" fill="#f3d9b8" stroke="#c98b52" stroke-width="5"/>
+        <rect x="96" y="106" width="44" height="34" rx="8" fill="#fff" opacity=".6"/>
+        <rect x="250" y="150" width="70" height="12" rx="6" fill="#b98a4b"/>
+        <rect x="256" y="162" width="7" height="40" fill="#b98a4b"/><rect x="308" y="162" width="7" height="40" fill="#b98a4b"/>
+        <line x1="286" y1="60" x2="286" y2="120" stroke="#e0a93c" stroke-width="5"/>
+        <path d="M262 120 q0-26 24-26 q24 0 24 26 z" fill="#ffe9a3" stroke="#e0a93c" stroke-width="5"/>
+        <circle cx="60" cy="52" r="22" fill="#ffd66b"/>
+        <rect x="318" y="60" width="6" height="150" fill="#9cc9a5"/>
+        <ellipse cx="321" cy="66" rx="26" ry="18" fill="#9cc9a5"/><ellipse cx="304" cy="84" rx="18" ry="13" fill="#81b29a"/><ellipse cx="338" cy="86" rx="16" ry="12" fill="#81b29a"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- 分类快捷 -->
+<section class="cats" id="catsBox"></section>
+
+<!-- 商品列表 -->
+<section class="listing">
+  <div class="listing-head">
+    <h2 id="listTitle">全部商品</h2>
+    <div class="tools">
+      <select id="sortSel">
+        <option value="def">默认排序</option>
+        <option value="asc">价格从低到高</option>
+        <option value="desc">价格从高到低</option>
+        <option value="rating">好评优先</option>
+      </select>
+    </div>
+  </div>
+  <div class="grid" id="gridBox"></div>
+  <div class="empty" id="emptyBox" style="display:none">没有找到相关商品，换个关键词试试～</div>
+</section>
+
+<!-- 服务保障 -->
+<section class="promise">
+  <div class="p-item">🚚<b>满 999 匹邮</b><span>大件送货上门</span></div>
+  <div class="p-item">🔄<b>30 天退换</b><span>不满意可退</span></div>
+  <div class="p-item">🛠️<b>免费安装</b><span>专业师傅上门</span></div>
+  <div class="p-item">🌱<b>环保选材</b><span>低甲醛更安心</span></div>
+</section>
+
+<footer class="foot">
+  <div>© 2025 宜居家 HomeStore · 儿童房/客厅/卧室全屋家具</div>
+  <div>演示站点 · 订单与支付仅为展示用途</div>
+</footer>
+
+<!-- 商品详情弹窗 -->
+<div class="modal" id="detailModal">
+  <div class="detail-card">
+    <button class="x" id="detailClose" aria-label="关闭">✕</button>
+    <div class="d-pic" id="dPic"></div>
+    <div class="d-info">
+      <div class="d-tag" id="dTag"></div>
+      <h3 id="dName"></h3>
+      <div class="d-rate" id="dRate"></div>
+      <div class="d-price"><b id="dPrice"></b><s id="dOld"></s></div>
+      <p id="dDesc"></p>
+      <div class="d-spec">规格：标准款 · 颜色可选 · 含安装说明</div>
+      <button class="btn-yellow big" id="dAdd">加入购物车 🛒</button>
+    </div>
+  </div>
+</div>
+
+<!-- 购物车抽屉 -->
+<div class="drawer-mask" id="cartMask"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-label="购物车">
+  <div class="cd-head"><h3>🛒 我的购物车</h3><button class="x" id="cartClose">✕</button></div>
+  <div class="cd-list" id="cartList"></div>
+  <div class="cd-foot">
+    <div class="cd-total">合计 <b id="cartTotal">¥0</b></div>
+    <button class="btn-yellow big" id="checkoutBtn">去结算</button>
+    <p class="cd-note">演示站点，结算为展示流程</p>
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

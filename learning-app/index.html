@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LangLeaf · 日语英语学习</title>
+<style>
+:root{
+  --green:#58cc02; --green-d:#4aa802; --blue:#1cb0f6; --blue-d:#1899d6;
+  --red:#ff4b4b; --orange:#ff9600; --gold:#ffc800;
+  --ink:#3c3c3c; --gray:#afafaf; --line:#e5e5e5; --bg:#ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Noto Sans JP","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+.banner{margin:10px 20px 4px;background:linear-gradient(135deg,#58cc02,#3fa302);border-radius:18px;color:#fff;padding:16px 18px}
+.banner h2{font-size:17px;font-weight:900;margin-bottom:4px}
+.banner p{font-size:13px;opacity:.92}
+.home-head{padding:18px 20px 6px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:24px;font-weight:900;letter-spacing:-.5px;color:var(--green)}
+.logo span{color:var(--blue)}
+.lang-switch{display:flex;background:#f7f7f7;border-radius:12px;padding:3px;gap:2px}
+.lang-switch button{padding:7px 14px;border-radius:9px;font-weight:800;font-size:13px;color:var(--gray)}
+.lang-switch button.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.10)}
+.tree{padding:16px 0 40px;max-width:520px;width:100%;margin:0 auto}
+.unit{margin:0 16px 26px;background:#fff;border:2px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.unit.active{border-color:var(--green);box-shadow:0 4px 0 var(--green-d)}
+.unit.locked{opacity:.55}
+.unit-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;background:#f7f7f7;flex:0 0 auto}
+.unit.active .unit-icon{background:var(--green);color:#fff}
+.unit-info h3{font-size:15px;font-weight:900}
+.unit-info p{font-size:12px;color:var(--gray);margin-top:2px}
+.unit-status{margin-left:auto;font-size:12px;font-weight:800;color:var(--gray)}
+.unit.active .unit-status{color:var(--green)}
+.node-row{display:flex;justify-content:center;gap:18px;margin:6px 0 4px}
+.node{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;background:var(--green);color:#fff;box-shadow:0 5px 0 var(--green-d);transition:transform .1s;position:relative}
+.node:active{transform:translateY(3px);box-shadow:0 2px 0 var(--green-d)}
+.node.done{background:var(--gold);box-shadow:0 5px 0 #d9a600}
+.node.current{background:var(--blue);box-shadow:0 5px 0 var(--blue-d);animation:pulse 1.6s infinite}
+.node.lock{background:var(--line);color:var(--gray);box-shadow:0 5px 0 #cfcfcf}
+@keyframes pulse{0%,100%{box-shadow:0 5px 0 var(--blue-d),0 0 0 0 rgba(28,176,246,.4)}50%{box-shadow:0 5px 0 var(--blue-d),0 0 0 10px rgba(28,176,246,0)}}
+.node-label{font-size:11px;font-weight:800;color:var(--gray);text-align:center;margin-top:6px}
+.node-cell{display:flex;flex-direction:column;align-items:center;width:80px}
+.node-cell.off{transform:translateY(24px)}
+.lesson-top{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:20}
+.back-btn{font-size:22px;color:var(--gray);width:34px;height:34px;flex:0 0 auto}
+.bar-wrap{flex:1;height:16px;background:var(--line);border-radius:999px;overflow:hidden}
+.bar-fill{height:100%;width:0%;background:var(--green);border-radius:999px;transition:width .35s ease;position:relative}
+.bar-fill::after{content:"";position:absolute;top:3px;left:6px;right:6px;height:4px;background:rgba(255,255,255,.35);border-radius:4px}
+.hearts{flex:0 0 auto;font-weight:800;color:var(--red);font-size:15px;display:flex;align-items:center;gap:4px}
+.exercise{flex:1;display:flex;flex-direction:column;max-width:560px;width:100%;margin:0 auto;padding:8px 20px 0}
+.ex-title{font-size:20px;font-weight:900;margin:14px 0 18px}
+.audio-row{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.speaker{width:52px;height:52px;border-radius:14px;background:var(--blue);color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 var(--blue-d)}
+.speaker:active{transform:translateY(2px);box-shadow:0 1px 0 var(--blue-d)}
+.speaker.slow{background:var(--orange);box-shadow:0 4px 0 #d97e00;width:44px;height:44px;font-size:18px}
+.choices{display:flex;flex-direction:column;gap:12px}
+.choice{border:2px solid var(--line);border-bottom-width:4px;border-radius:14px;padding:14px 16px;font-size:17px;font-weight:700;text-align:left;background:#fff;transition:.12s;display:flex;align-items:center;gap:12px}
+.choice .kbd{border:2px solid var(--line);border-radius:8px;font-size:12px;color:var(--gray);width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-weight:800}
+.choice:hover{background:#f2fbef}
+.choice.sel{border-color:var(--blue);background:#ddf4ff;color:var(--blue-d)}
+.choice.correct{border-color:var(--green);background:#d7ffb8;color:#3fa302}
+.choice.wrong{border-color:var(--red);background:#ffdfe0;color:var(--red)}
+.choice:disabled{cursor:default}
+.listen-box{display:flex;gap:12px;margin-bottom:18px;align-items:center}
+.type-input{width:100%;border:2px solid var(--line);border-radius:14px;padding:14px 16px;font-size:18px;font-weight:700;outline:none}
+.type-input:focus{border-color:var(--blue)}
+.pool,.sentence{border:2px dashed var(--line);border-radius:14px;min-height:60px;padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;margin-bottom:14px}
+.pool{min-height:70px;background:#f7f7f7}
+.sentence{border-style:solid;background:#fff}
+.chip{border:2px solid var(--line);border-bottom-width:4px;border-radius:12px;background:#fff;padding:8px 14px;font-size:16px;font-weight:800}
+.chip:active{transform:translateY(2px)}
+.chip.ghost{opacity:.35;pointer-events:none}
+.match-cell{border:2px solid var(--line);border-bottom-width:4px;border-radius:14px;padding:16px 10px;font-size:16px;font-weight:800;background:#fff;min-height:60px}
+.match-cell.sel{border-color:var(--blue);background:#ddf4ff;color:var(--blue-d)}
+.match-cell.done{border-color:var(--green);background:#d7ffb8;color:#3fa302;pointer-events:none;opacity:.85}
+.match-cell.bad{animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.footer{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:14px 20px 18px;transition:.2s}
+.footer.good{background:#d7ffb8;border-color:#a8e86c}
+.footer.bad{background:#ffdfe0;border-color:#ffb3b3}
+.footer-inner{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:14px}
+.fb-icon{font-size:30px;display:none}
+.fb-text{display:none;flex:1}
+.fb-text h4{font-size:17px;font-weight:900}
+.fb-text p{font-size:13px;color:#5a5a5a;margin-top:2px}
+.footer.good .fb-icon,.footer.good .fb-text,.footer.bad .fb-icon,.footer.bad .fb-text{display:block}
+.check-btn{margin-left:auto;padding:13px 40px;border-radius:14px;background:var(--line);color:var(--gray);font-size:15px;font-weight:900;letter-spacing:1px;text-transform:uppercase;box-shadow:0 4px 0 #cfcfcf;transition:.12s;white-space:nowrap}
+.check-btn.ready{background:var(--green);color:#fff;box-shadow:0 4px 0 var(--green-d)}
+.check-btn.ready:active{transform:translateY(3px);box-shadow:0 1px 0 var(--green-d)}
+.continue-btn{display:none;margin-left:auto;padding:13px 40px;border-radius:14px;background:var(--blue);color:#fff;font-size:15px;font-weight:900;letter-spacing:1px;box-shadow:0 4px 0 var(--blue-d);white-space:nowrap}
+.continue-btn:active{transform:translateY(3px)}
+.footer.good .continue-btn,.footer.bad .continue-btn{display:block}
+.footer.good .check-btn,.footer.bad .check-btn{display:none}
+.done-screen{align-items:center;justify-content:center;text-align:center;padding:30px}
+.done-emoji{font-size:80px;animation:bounce .8s infinite alternate}
+@keyframes bounce{to{transform:translateY(-14px)}}
+.done-screen h1{font-size:28px;font-weight:900;color:var(--green);margin:16px 0 8px}
+.done-screen p{color:var(--gray);font-size:15px;margin-bottom:26px}
+.stats{display:flex;gap:14px;margin-bottom:34px}
+.stat{border:2px solid var(--line);border-radius:16px;padding:14px 22px;min-width:110px}
+.stat b{display:block;font-size:24px;font-weight:900;color:var(--gold)}
+.stat span{font-size:12px;color:var(--gray);font-weight:700}
+.big-btn{padding:15px 46px;border-radius:14px;background:var(--green);color:#fff;font-size:16px;font-weight:900;letter-spacing:1px;box-shadow:0 5px 0 var(--green-d)}
+.big-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--green-d)}
+.done-screen .big-btn{background:var(--blue);box-shadow:0 5px 0 var(--blue-d)}
+
+/* ---- 多角色选择条 ---- */
+.role-bar{background:#fff;border-bottom:1px solid var(--line);padding:8px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.role-picker{display:flex;gap:8px;min-width:max-content}
+.role-chip{display:flex;align-items:center;gap:8px;border:2px solid var(--line);border-radius:999px;padding:5px 12px 5px 6px;background:#fff;transition:.15s}
+.role-chip.on{border-color:var(--blue);background:#ddf4ff;box-shadow:0 2px 0 var(--blue-d)}
+.role-face{font-size:20px;width:30px;height:30px;border-radius:50%;background:#f2f2f2;display:flex;align-items:center;justify-content:center}
+.role-chip.on .role-face{background:#fff}
+.role-meta{display:flex;flex-direction:column;line-height:1.1;text-align:left}
+.role-meta b{font-size:13px;font-weight:900;color:var(--ink)}
+.role-meta i{font-size:10px;font-style:normal;color:var(--gray);font-weight:700}
+.role-play{width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;margin-left:4px;flex:0 0 auto}
+.role-play:active{transform:scale(.9)}
+/* ---- 反馈朗读气泡 ---- */
+.speak-btn{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);border-bottom-width:3px;border-radius:12px;padding:8px 14px;font-size:14px;font-weight:800;background:#fff;color:var(--ink);margin-top:8px}
+.speak-btn:active{transform:translateY(2px)}
+.footer.good .speak-btn,.footer.bad .speak-btn{border-color:rgba(0,0,0,.15)}
+.slow-btn{background:var(--orange);color:#fff;border:none;box-shadow:0 3px 0 #d97e00}
+.slow-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #d97e00}
+</style>
+</head>
+<body>
+
+<div class="screen active" id="screen-home">
+  <div class="home-head">
+    <div class="logo">Lang<span>Leaf</span></div>
+    <div class="lang-switch">
+      <button id="tab-ja" class="on" onclick="setTrack('ja')">🇯🇵 日语</button>
+      <button id="tab-en" onclick="setTrack('en')">🇬🇧 英语</button>
+    </div>
+  </div>
+  <div class="banner">
+    <h2 id="banner-title">日语 · 发音与基础</h2>
+    <p id="banner-sub">从零开始，掌握假名与日常表达</p>
+  </div>
+  <div class="tree" id="tree"></div>
+</div>
+
+<div class="screen" id="screen-lesson">
+  <div class="lesson-top">
+    <button class="back-btn" onclick="quitLesson()">✕</button>
+    <div class="bar-wrap"><div class="bar-fill" id="lesson-bar"></div></div>
+    <div class="hearts">❤️ <span id="hearts">5</span></div>
+  </div>
+  <div class="role-bar"><div class="role-picker" id="role-picker"></div></div>
+  <div class="exercise" id="exercise"></div>
+  <div class="footer" id="footer">
+    <div class="footer-inner">
+      <div class="fb-icon" id="fb-icon"></div>
+      <div class="fb-text"><h4 id="fb-title"></h4><p id="fb-detail"></p></div>
+      <button class="check-btn" id="btn-check" onclick="onCheck()">检查</button>
+      <button class="continue-btn" id="btn-next" onclick="onNext()">继续</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen done-screen" id="screen-done">
+  <div class="done-emoji">🎉</div>
+  <h1>课程完成！</h1>
+  <p>继续保持，你做得非常棒</p>
+  <div class="stats">
+    <div class="stat"><b id="stat-acc">100%</b><span>正确率</span></div>
+    <div class="stat"><b id="stat-xp">+10</b><span>经验</span></div>
+  </div>
+  <button class="big-btn" onclick="goHome()">继续学习</button>
+</div>
+
+<script>
+/* ================= 课程内容 ================= */
+const TRACKS = {
+  ja:{
+    name:"日语", title:"日语 · 发音与基础", sub:"从零开始，掌握假名与日常表达",
+    units:[
+      {icon:"🔡",title:"第1课 · 五十音",sub:"あ い う え お 行",build:unitHiragana},
+      {icon:"💬",title:"第2课 · 自我介绍",sub:"はじめまして",build:unitIntro},
+      {icon:"🍜",title:"第3课 · 餐厅点餐",sub:"おいしいです",build:unitFood},
+      {icon:"🕐",title:"第4课 · 时间与数字",sub:"いま なんじ",build:unitTime},
+      {icon:"🛒",title:"第5课 · 购物",sub:"いくらですか",build:unitShop}
+    ]
+  },
+  en:{
+    name:"英语", title:"英语 · 基础入门", sub:"从字母到日常会话，稳步提升",
+    units:[
+      {icon:"🔤",title:"Unit 1 · 问候语",sub:"Hello, nice to meet you",build:unitGreet},
+      {icon:"🐾",title:"Unit 2 · 动物",sub:"cat, dog, bird",build:unitAnimal},
+      {icon:"🍎",title:"Unit 3 · 食物",sub:"apple, bread, milk",build:unitFoodEn},
+      {icon:"🔢",title:"Unit 4 · 数字与颜色",sub:"one ~ ten, red blue",build:unitNumColor},
+      {icon:"🧑‍💼",title:"Unit 5 · 日常会话",sub:"What's your name?",build:unitDaily}
+    ]
+  }
+};
+function mc(question, choices, answer, say, explain){return {type:"mc",question,choices,answer,say,explain:explain||""}}
+function dictation(answer, accept, say){return {type:"dict",prompt:"听录音，输入你听到的内容",answer,accept:accept||[answer],say}}
+function arrange(prompt, answer, tokens, say){return {type:"arrange",prompt,answer,tokens:tokens||answer.split(" "),say}}
+function matching(pairs){return {type:"match",pairs}}
+
+function unitHiragana(){
+  const q=[
+    ["哪一个是「あ」？",["あ","さ","き","て"],"あ"],
+    ["哪一个是「か」？",["ま","か","は","た"],"か"],
+    ["哪一个是「ん」？",["る","そ","ん","を"],"ん"],
+    ["哪一个是「な」？",["な","た","に","だ"],"な"],
+    ["哪一个是「り」？",["ち","り","る","ろ"],"り"]
+  ];
+  const ex=q.map(x=>mc(x[0],x[1].map(c=>({t:c,say:c})),x[1].indexOf(x[2]),x[2]));
+  return ex.concat([
+    dictation("こんにちは",["こんにちは"],"こんにちは"),
+    matching([["ありがとう","谢谢"],["おはよう","早上好"],["こんばんは","晚上好"],["さようなら","再见"]]),
+    arrange("把词语排成敬语问候","こんにちは ございます",["ございます","こんにちは"]),
+    mc("「ありがとう」是什么意思？",[{t:"谢谢",say:"ありがとうございます"},{t:"早上好",say:"おはよう"},{t:"晚安",say:"おやすみ"},{t:"对不起",say:"ごめんなさい"}],0,"ありがとう","ありがとう = 谢谢"),
+    dictation("おやすみなさい",["おやすみなさい"],"おやすみなさい")
+  ]);
+}
+function unitIntro(){
+  return [
+    mc("「わたし」是什么意思？",[{t:"我",say:"わたし"},{t:"你",say:"あなた"},{t:"他",say:"彼"},{t:"名字",say:"なまえ"}],0,"わたし"),
+    mc("补全：わたし（　）学生です。",[{t:"は",say:"わたしはがくせいです"},{t:"を",say:"を"},{t:"が",say:"が"},{t:"の",say:"の"}],0,"は","は 提示主题"),
+    arrange("翻译：我是学生。","わたしは がくせい です",["です","がくせい","は","わたし"],"わたしはがくせいです"),
+    mc("「はじめまして」在什么时候说？",[{t:"初次见面",say:"はじめまして"},{t:"再见",say:"さようなら"},{t:"谢谢",say:"ありがとう"},{t:"好热",say:"あつい"}],0,"はじめまして"),
+    matching([["はじめまして","请多关照"],["わたしの名前はリナです","我叫Lina"],["中国人です","是中国人"],["よろしくお願いします","请多指教"]]),
+    dictation("なまえは なんですか",["なまえはなんですか","なまえは なんですか"],"なまえはなんですか"),
+    arrange("翻译：请多关照。","よろしく お願いします",["お願いします","よろしく"],"よろしくおねがいします"),
+    mc("「学生（がくせい）」的读音是？",[{t:"がくせい",say:"がくせい"},{t:"がくしゃ",say:"がくしゃ"},{t:"がっき",say:"がっき"},{t:"こうこう",say:"こうこう"}],0,"がくせい")
+  ];
+}
+function unitFood(){
+  return [
+    mc("「たべもの」是什么意思？",[{t:"食物",say:"たべもの"},{t:"饮料",say:"のみもの"},{t:"水果",say:"くだもの"},{t:"蔬菜",say:"やさい"}],0,"たべもの"),
+    arrange("饭前用语：我开动了","いただきます",["いただきます"]),
+    mc("补全：これは（　）です。",[{t:"おいしい",say:"これはおいしいです"},{t:"あつい",say:"あつい"},{t:"たかい",say:"たかい"},{t:"ちいさい",say:"ちいさい"}],0,"おいしい","おいしい = 好吃"),
+    matching([["りんご","苹果"],["みず","水"],["にく","肉"],["ごはん","米饭"]]),
+    dictation("すしを たべます",["すしをたべます","すしを たべます"],"すしをたべます"),
+    arrange("翻译：我喜欢吃拉面。","ラーメンを たべることが すきです",["すきです","たべる","ことが","を","ラーメン"],"ラーメンをたべることがすきです"),
+    mc("「のどがかわいています」的意思是？",[{t:"我口渴了",say:"のどがかわいています"},{t:"我饿了",say:"おなかすいています"},{t:"我饱了",say:"おなかいっぱいです"},{t:"很好吃",say:"おいしいです"}],0,"のどがかわいています"),
+    dictation("いただきます",["いただきます"],"いただきます")
+  ];
+}
+function unitTime(){
+  return [
+    mc("「いち」是数字几？",[{t:"1",say:"いち"},{t:"2",say:"に"},{t:"3",say:"さん"},{t:"4",say:"よん"}],0,"いち"),
+    mc("「にじ」是什么意思？",[{t:"两点",say:"にじ"},{t:"二岁",say:"にさい"},{t:"二人",say:"ふたり"},{t:"第二",say:"だいに"}],0,"にじ","にじ=两点；にさい=两岁"),
+    arrange("现在几点？","いま なんじ ですか",["ですか","なんじ","いま"],"いまなんじですか"),
+    matching([["いちじ","1点"],["さんじ","3点"],["ごじ","5点"],["くじ","9点"]]),
+    dictation("さんじ です",["さんじです","さんじ です"],"さんじです"),
+    mc("「あさ」是什么时候？",[{t:"早上",say:"あさ"},{t:"中午",say:"ひる"},{t:"晚上",say:"よる"},{t:"昨天",say:"きのう"}],0,"あさ"),
+    arrange("翻译：明天见。","あした また 会いましょう",["会いましょう","また","あした"],"あしたまたあいましょう"),
+    mc("「よんじかん」中的「じかん」表示？",[{t:"小时/时间",say:"じかん"},{t:"分钟",say:"ふん"},{t:"天",say:"ひ"},{t:"周",say:"しゅう"}],0,"じかん")
+  ];
+}
+function unitShop(){
+  return [
+    mc("「いくらですか」是什么意思？",[{t:"多少钱？",say:"いくらですか"},{t:"这是什么？",say:"これはなんですか"},{t:"在哪里？",say:"どこですか"},{t:"什么时候？",say:"いつですか"}],0,"多少钱？"),
+    arrange("翻译：这个多少钱？","これは いくら ですか",["ですか","いくら","これは"],"これはいくらですか"),
+    matching([["たかい","贵"],["やすい","便宜"],["おおきい","大"],["ちいさい","小"]]),
+    dictation("これを ください",["これをください","これを ください"],"これをください"),
+    mc("「かんたんでんわ」的意思是？",[{t:"简易手机",say:"かんたんでんわ"},{t:"家庭电话",say:"かていでんわ"},{t:"固定电话",say:"こていでんわ"},{t:"无线电话",say:"むせんでんわ"}],0,"かんたんでんわ","「簡易電話」= 智能手机"),
+    arrange("我要买这个。","これを かいます",["かいます","これを"],"これをかいます"),
+    mc("店员说「かしこまりました」表示？",[{t:"好的，马上为您办理",say:"かしこまりました"},{t:"谢谢惠顾",say:"ありがとうございました"},{t:"欢迎光临",say:"いらっしゃいませ"},{t:"请慢走",say:"いってらっしゃい"}],0,"かしこまりました"),
+    dictation("カードで いいです",["カードでいいです","カードで いいです"],"カードでいいです")
+  ];
+}
+function unitGreet(){
+  return [
+    mc("「Good morning」是什么意思？",[{t:"早上好",say:"Good morning"},{t:"晚上好",say:"Good evening"},{t:"晚安",say:"Good night"},{t:"再见",say:"Goodbye"}],0,"Good morning"),
+    arrange("翻译：很高兴见到你。","Nice  to  meet  you",["meet","to","Nice","you"],"Nice to meet you"),
+    dictation("hello",["hello","Hello"],"hello"),
+    matching([["Hello","你好"],["Thank you","谢谢"],["Sorry","对不起"],["Goodbye","再见"]]),
+    mc("别人说 Thank you，应回答：",[{t:"You're welcome",say:"You're welcome"},{t:"Hello",say:"Hello"},{t:"Nice to meet you",say:"Nice to meet you"},{t:"Good night",say:"Good night"}],0,"You're welcome"),
+    arrange("翻译：早上好！","Good  morning !",["morning","Good","!"],"Good morning"),
+    dictation("goodbye",["goodbye","Goodbye"],"goodbye"),
+    mc("「How are you?」的回答是：",[{t:"I'm fine, thank you.",say:"I'm fine thank you"},{t:"My name is Tom.",say:"My name is Tom"},{t:"It is a apple.",say:"It is an apple"},{t:"Good night.",say:"Good night"}],0,"I'm fine, thank you.")
+  ];
+}
+function unitAnimal(){
+  return [
+    mc("「dog」是什么意思？",[{t:"狗",say:"a dog"},{t:"猫",say:"a cat"},{t:"鸟",say:"a bird"},{t:"鱼",say:"a fish"}],0,"dog"),
+    matching([["cat","猫"],["bird","鸟"],["fish","鱼"],["horse","马"]]),
+    dictation("cat",["cat"],"cat"),
+    arrange("翻译：我有一只猫。","I  have  a  cat",["cat","a","I","have"],"I have a cat"),
+    mc("哪种动物会「meow」叫？",[{t:"cat",say:"The cat says meow"},{t:"dog",say:"The dog says woof"},{t:"duck",say:"The duck says quack"},{t:"cow",say:"The cow says moo"}],0,"cat"),
+    dictation("bird",["bird"],"bird"),
+    mc("「rabbit」是什么动物？",[{t:"兔子",say:"a rabbit"},{t:"老鼠",say:"a mouse"},{t:"熊猫",say:"a panda"},{t:"老虎",say:"a tiger"}],0,"rabbit"),
+    arrange("翻译：这只狗很大。","The  dog  is  very  big",["very","big","is","The","dog"],"The dog is very big")
+  ];
+}
+function unitFoodEn(){
+  return [
+    mc("「apple」是什么？",[{t:"苹果",say:"an apple"},{t:"香蕉",say:"a banana"},{t:"面包",say:"bread"},{t:"牛奶",say:"milk"}],0,"apple"),
+    matching([["bread","面包"],["milk","牛奶"],["egg","鸡蛋"],["rice","米饭"]]),
+    dictation("water",["water"],"water"),
+    arrange("翻译：我喜欢吃苹果。","I  like  apples",["apples","like","I"],"I like apples"),
+    mc("早餐常吃的「cereal」是？",[{t:"麦片",say:"cereal"},{t:"汉堡",say:"hamburger"},{t:"披萨",say:"pizza"},{t:"冰淇淋",say:"ice cream"}],0,"cereal"),
+    dictation("milk",["milk"],"milk"),
+    mc("「I'm hungry」的意思是：",[{t:"我饿了",say:"I'm hungry"},{t:"我渴了",say:"I'm thirsty"},{t:"我累了",say:"I'm tired"},{t:"我饱了",say:"I'm full"}],0,"I'm hungry"),
+    arrange("翻译：请给我一些水。","Can  I  have  some  water ,  please",["some","Can","water","have","I",",","please"],"Can I have some water please")
+  ];
+}
+function unitNumColor(){
+  return [
+    mc("「seven」是数字几？",[{t:"7",say:"seven"},{t:"6",say:"six"},{t:"8",say:"eight"},{t:"9",say:"nine"}],0,"7"),
+    matching([["red","红色"],["blue","蓝色"],["green","绿色"],["yellow","黄色"]]),
+    dictation("ten",["ten"],"ten"),
+    arrange("翻译：三只猫。","three  cats",["cats","three"],"three cats"),
+    mc("「purple」是什么颜色？",[{t:"紫色",say:"purple"},{t:"粉色",say:"pink"},{t:"棕色",say:"brown"},{t:"黑色",say:"black"}],0,"purple"),
+    dictation("blue",["blue"],"blue"),
+    mc("「How many」用来询问：",[{t:"数量多少",say:"How many"},{t:"多大",say:"How old"},{t:"多远",say:"How far"},{t:"多快",say:"How fast"}],0,"数量多少"),
+    arrange("翻译：十个苹果。","ten  apples",["apples","ten"],"ten apples")
+  ];
+}
+function unitDaily(){
+  return [
+    mc("问别人名字应该说：",[{t:"What's your name?",say:"What's your name"},{t:"How old are you?",say:"How old are you"},{t:"Where are you from?",say:"Where are you from"},{t:"How much is it?",say:"How much is it"}],0,"What's your name?"),
+    arrange("翻译：我叫Tom。","My  name  is  Tom",["is","name","My","Tom"],"My name is Tom"),
+    dictation("nice to meet you",["nice to meet you","Nice to meet you"],"nice to meet you"),
+    matching([["Where are you from?","你来自哪里？"],["How old are you?","你几岁了？"],["What time is it?","现在几点？"],["How much is it?","这个多少钱？"]]),
+    mc("迟到了应该说：",[{t:"Sorry, I'm late.",say:"Sorry I'm late"},{t:"You're welcome.",say:"You're welcome"},{t:"I'm fine.",say:"I'm fine"},{t:"See you tomorrow!",say:"See you tomorrow"}],0,"Sorry, I'm late."),
+    arrange("翻译：现在几点？","What  time  is  it",["is","time","it","What"],"What time is it"),
+    dictation("see you tomorrow",["see you tomorrow","See you tomorrow"],"see you tomorrow"),
+    mc("想借过一下应该说：",[{t:"Excuse me.",say:"Excuse me"},{t:"Good luck.",say:"Good luck"},{t:"Well done!",say:"Well done"},{t:"Never mind.",say:"Never mind"}],0,"Excuse me.")
+  ];
+}
+
+/* ================= 状态 ================= */
+const LS="langleaf_v1";
+let state;
+try{state=JSON.parse(localStorage.getItem(LS)||"null")}catch(e){state=null}
+if(!state)state={track:"ja",done:{},xp:0};
+function save(){try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}}
+let track=state.track||"ja";
+
+function setTrack(t){
+  track=t;state.track=t;save();
+  document.getElementById("tab-ja").classList.toggle("on",t==="ja");
+  document.getElementById("tab-en").classList.toggle("on",t==="en");
+  renderTree();
+}
+function renderTree(){
+  const cfg=TRACKS[track];
+  document.getElementById("banner-title").textContent=cfg.title;
+  document.getElementById("banner-sub").textContent=cfg.sub;
+  const tree=document.getElementById("tree");
+  tree.innerHTML="";
+  cfg.units.forEach((u,i)=>{
+    const key=track+"-"+i;
+    const done=!!state.done[key];
+    const prevDone=i===0||state.done[track+"-"+(i-1)];
+    const locked=!done&&!prevDone;
+    const active=prevDone&&!done;
+    const div=document.createElement("div");
+    div.className="unit"+(active?" active":locked?" locked":"");
+    div.innerHTML='<div class="unit-icon">'+u.icon+'</div>'+
+      '<div class="unit-info"><h3>'+u.title+'</h3><p>'+u.sub+'</p></div>'+
+      '<div class="unit-status">'+(done?"✅ 已完成":locked?"🔒 未解锁":"> 开始")+'</div>';
+    const row=document.createElement("div");
+    row.className="node-row";
+    for(let s=0;s<3;s++){
+      const cell=document.createElement("div");
+      cell.className="node-cell"+(s===1?" off":"");
+      const node=document.createElement("button");
+      const st=done?"done":(locked?"lock":(s===0?"current":""));
+      node.className="node "+st;
+      node.textContent=done?"✓":locked?"🔒":(s===0?"★":"○");
+      node.disabled=locked;
+      (function(idx){node.onclick=function(){startLesson(track,idx)}})(i);
+      cell.appendChild(node);
+      const lab=document.createElement("div");
+      lab.className="node-label";
+      lab.textContent=done?"完成":locked?"锁定":(s===0?"开始":s===1?"练习":"测试");
+      cell.appendChild(lab);
+      row.appendChild(cell);
+    }
+    tree.appendChild(div);tree.appendChild(row);
+  });
+}
+function goHome(){show("screen-home");renderTree()}
+function show(id){
+  const els=document.querySelectorAll(".screen");
+  for(let i=0;i<els.length;i++)els[i].classList.remove("active");
+  document.getElementById(id).classList.add("active");
+}
+/* ================= 多角色音频系统 ================= */
+const VOICES=[
+  // 日语角色
+  {id:"hana",lang:"ja",flag:"🌸",name:"Hana",hint:"温柔女声",pitch:1.15,rate:.82,gender:"female"},
+  {id:"kenji",lang:"ja",flag:"🏯",name:"Kenji",hint:"沉稳男声",pitch:.8,rate:.85,gender:"male"},
+  {id:"yuki",lang:"ja",flag:"❄️",name:"Yuki",hint:"活泼少女",pitch:1.5,rate:.9,gender:"female"},
+  // 英语角色
+  {id:"emma",lang:"en",flag:"🎀",name:"Emma",hint:"清晰女声",pitch:1.1,rate:.8,gender:"female"},
+  {id:"oliver",lang:"en",flag:"🎩",name:"Oliver",hint:"英式男声",pitch:.78,rate:.82,gender:"male"},
+  {id:"liam",lang:"en",flag:"🎧",name:"Liam",hint:"阳光男声",pitch:1.0,rate:.88,gender:"male"}
+];
+let curVoiceId=null;
+function langOf(){return track==="ja"?"ja":"en"}
+function voicesForLang(){return VOICES.filter(v=>v.lang===langOf())}
+function getVoice(){
+  const list=voicesForLang();
+  if(!curVoiceId||!list.find(v=>v.id===curVoiceId))curVoiceId=list[0].id;
+  return list.find(v=>v.id===curVoiceId);
+}
+function setVoice(id){curVoiceId=id;try{localStorage.setItem("langleaf_voice",id)}catch(e){}}
+try{const sv=localStorage.getItem("langleaf_voice");if(sv&&VOICES.find(v=>v.id===sv))curVoiceId=sv}catch(e){}
+function pickSystemVoice(langCode,gender){
+  if(!("speechSynthesis" in window))return null;
+  let all=[];try{all=window.speechSynthesis.getVoices()||[]}catch(e){}
+  if(!all.length)return null;
+  const pref=langCode==="ja"
+    ?[/ja[-_]JP/i,/ja[-_]/i,/Japanese/i]
+    :[/en[-_]US/i,/en[-_]GB/i,/English/i];
+  for(let pi=0;pi<pref.length;pi++){
+    let m=all.filter(v=>pref[pi].test(v.lang||"")||pref[pi].test(v.name||""));
+    if(!m.length)continue;
+    if(gender==="male"){
+      const b=m.filter(v=>/male|daniel|david|oliver|alex|guy|kumiko.*male|男子/i.test(v.name||""));
+      if(b.length)m=b;
+    }else if(gender==="female"){
+      const g=m.filter(v=>/female|woman|samantha|karen|zira|kyoko|haruka|siri|aria|jenny|susan|heami|女/i.test(v.name||""));
+      if(g.length)m=g;
+    }
+    return m[0];
+  }
+  return all[0];
+}
+function speak(text,opts){
+  opts=opts||{};
+  try{
+    if(!("speechSynthesis" in window))return;
+    window.speechSynthesis.cancel();
+    if(!text)return;
+    const role=getVoice();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang=role.lang==="ja"?"ja-JP":"en-US";
+    const rateMul=opts.slow?.62:(opts.fast?1.12:1);
+    u.rate=Math.min(1.6,role.rate*rateMul*(opts.rateMul||1));
+    u.pitch=Math.max(.1,Math.min(2,role.pitch+(opts.pitchAdd||0)));
+    u.volume=opts.volume||1;
+    const sv=pickSystemVoice(role.lang,role.gender);
+    if(sv)u.voice=sv;
+    if(opts.onend){u.onend=opts.onend;u.onerror=opts.onend}
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+/* 角色选择 UI（学习页顶部） */
+function renderRolePicker(){
+  const box=document.getElementById("role-picker");
+  if(!box)return;
+  const list=voicesForLang();
+  const cur=getVoice();
+  box.innerHTML=list.map(v=>{
+    const greet=langOf()==="ja"?"こんにちは":"Hello";
+    return '<button class="role-chip'+(v.id===cur.id?" on":"")+'" data-vid="'+v.id+'">'+
+    '<span class="role-face">'+v.flag+'</span>'+
+    '<span class="role-meta"><b>'+v.name+'</b><i>'+v.hint+'</i></span>'+
+    '<span class="role-play" data-vid="'+v.id+'">▶</span>'+
+    '</button>';
+  }).join("");
+  const chips=box.querySelectorAll(".role-chip");
+  for(let i=0;i<chips.length;i++){
+    chips[i].addEventListener("click",function(e){
+      const vid=this.getAttribute("data-vid");
+      const role=VOICES.find(v=>v.id===vid);
+      setVoice(vid);renderRolePicker();
+      const greet=langOf()==="ja"?("こんにちは、わたしは"+role.name+"です"):("Hello, I am "+role.name);
+      speak(greet);
+    });
+  }
+}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t}return a}
+
+/* ================= 课程进行 ================= */
+let lesson=null;
+function startLesson(t,ui){
+  const exs=TRACKS[t].units[ui].build();
+  lesson={track:t,ui,idx:0,exs:exs,correct:0,wrong:0,hearts:5,answered:false,sel:null,tokens:null,matchSel:null};
+  show("screen-lesson");
+  renderExercise();
+}
+function quitLesson(){if(confirm("确定退出本课？进度不保存"))goHome()}
+function setBar(){
+  document.getElementById("lesson-bar").style.width=((lesson.idx/lesson.exs.length)*100)+"%";
+}
+function footerState(s){
+  const f=document.getElementById("footer");
+  f.classList.remove("good","bad");
+  if(s)f.classList.add(s);
+}
+function renderExercise(){
+  setBar();
+  renderRolePicker();
+  document.getElementById("hearts").textContent=lesson.hearts;
+  footerState(null);
+  lesson.sel=null;lesson.answered=false;
+  const ex=lesson.exs[lesson.idx];
+  const box=document.getElementById("exercise");
+  let html="";
+  if(ex.type==="mc"){
+    html='<div class="ex-title">'+ex.question+'</div><div class="choices">'+
+      ex.choices.map((c,i)=>'<button class="choice" data-i="'+i+'" onclick="pickChoice('+i+')"><span class="kbd">'+(i+1)+'</span><span>'+c.t+'</span></button>').join("")+
+      '</div>';
+  }else if(ex.type==="dict"){
+    const sp=ex.say.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+    html='<div class="ex-title">'+ex.prompt+'</div>'+
+      '<div class="listen-box">'+
+      '<button class="speaker" onclick=s\''+'(\'\''+'</button>'.replace("XX","")+
+      '</div>';
+    html='<div class="ex-title">'+ex.prompt+'</div>'+
+      '<div class="listen-box">'+
+      '<button class="speaker" data-say="'+sp+'" data-speed="normal">🔊</button>'+
+      '<button class="speaker slow" data-say="'+sp+'" data-speed="slow">🐢</button>'+
+      '</div>'+
+      '<input class="type-input" id="dict-input" placeholder="在此输入你听到的内容" autocomplete="off" autocapitalize="off">'+
+      '<p style="margin-top:10px;font-size:13px;color:var(--gray)">提示：🔊 常速 · 🐢 慢速，可反复播放；点上方角色可换声音</p>';
+  }else if(ex.type==="arrange"){
+    lesson.tokens=ex.tokens.map((t,i)=>({t:t,i:i,used:false}));
+    html='<div class="ex-title">'+ex.prompt+'</div>'+
+      '<div class="sentence" id="sentence"></div>'+
+      '<div class="pool" id="pool"></div>';
+  }else if(ex.type==="match"){
+    lesson.matchSel={left:null,right:null,matched:0};
+    const lefts=ex.pairs.map((p,i)=>({t:p[0],i:i,done:false}));
+    const rights=shuffle(ex.pairs.map((p,i)=>({t:p[1],i:i,done:false})));
+    lesson.matchLeft=lefts;lesson.matchRight=rights;
+    html='<div class="ex-title">把词语和意思配成对</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
+      '<div style="display:flex;flex-direction:column;gap:12px" id="ml"></div>'+
+      '<div style="display:flex;flex-direction:column;gap:12px" id="mr"></div>'+
+      '</div>';
+  }
+  box.innerHTML=html;
+  if(ex.type==="arrange")renderArrange();
+  if(ex.type==="match"){renderList("ml",lesson.matchLeft,true);renderList("mr",lesson.matchRight,false)}
+  if(ex.type==="dict")setTimeout(function(){const el=document.getElementById("dict-input");if(el)el.focus()},50);
+  const spBtns=box.querySelectorAll("[data-say]");
+  for(let i=0;i<spBtns.length;i++)spBtns[i].onclick=function(){
+    const sp2=this.getAttribute("data-say");
+    const spd=this.getAttribute("data-speed");
+    if(spd==="slow")speak(sp2,{slow:true});
+    else if(spd==="fast")speak(sp2,{fast:true});
+    else speak(sp2);
+  };
+  document.getElementById("btn-check").classList.toggle("ready",ex.type==="mc"||ex.type==="arrange");
+}
+function pickChoice(i){
+  if(lesson.answered)return;
+  lesson.sel=i;
+  const bs=document.querySelectorAll(".choice");
+  for(let j=0;j<bs.length;j++)bs[j].classList.toggle("sel",j===i);
+  document.getElementById("btn-check").classList.add("ready");
+  const ex=lesson.exs[lesson.idx];
+  if(ex.type==="mc"&&ex.choices[i]&&ex.choices[i].say)speak(ex.choices[i].say,{fast:true});
+}
+function renderList(id,arr,isLeft){
+  const el=document.getElementById(id);
+  el.innerHTML="";
+  arr.forEach(function(o){
+    const b=document.createElement("button");
+    b.className="match-cell"+(o.done?" done":"");
+    b.textContent=o.t;
+    b.dataset.i=o.i;
+    b.dataset.left=isLeft?"1":"0";
+    b.onclick=function(){matchPick(o.i,isLeft,b)};
+    el.appendChild(b);
+  });
+}
+function matchPick(i,isLeft,btn){
+  if(btn.classList.contains("done"))return;
+  const ms=lesson.matchSel;
+  if(isLeft)ms.left=i;else ms.right=i;
+  document.querySelectorAll('.match-cell[data-left="1"]').forEach(function(b){b.classList.toggle("sel",+b.dataset.i===ms.left)});
+  document.querySelectorAll('.match-cell[data-left="0"]').forEach(function(b){b.classList.toggle("sel",+b.dataset.i===ms.right)});
+  if(ms.left!==null&&ms.right!==null){
+    if(ms.left===ms.right){
+      const pair=lesson.exs[lesson.idx].pairs[ms.left];
+      document.querySelectorAll('.match-cell[data-i="'+ms.left+'"]').forEach(function(b){b.classList.add("done");b.classList.remove("sel")});
+      lesson.matchSel.matched++;
+      ms.left=null;ms.right=null;
+      if(lesson.matchSel.matched===lesson.exs[lesson.idx].pairs.length){
+        lesson.correct++;setBar();
+        setTimeout(nextExercise,600);
+      }
+    }else{
+      document.querySelectorAll('.match-cell.sel').forEach(function(b){
+        b.classList.add("bad");
+        (function(bb){setTimeout(function(){bb.classList.remove("bad","sel")},350)})(b);
+      });
+      lesson.wrong++;
+      ms.left=null;ms.right=null;
+    }
+  }
+}
+function renderArrange(){
+  const pool=document.getElementById("pool");
+  const sen=document.getElementById("sentence");
+  pool.innerHTML="";sen.innerHTML="";
+  lesson.tokens.forEach(function(tk){
+    const b=document.createElement("button");
+    b.className="chip"+(tk.used?" ghost":"");
+    b.textContent=tk.t;
+    b.onclick=function(){if(lesson.answered)return;tk.used=!tk.used;renderArrange()};
+    pool.appendChild(b);
+  });
+  lesson.tokens.forEach(function(tk){
+    if(!tk.used)return;
+    const b=document.createElement("button");
+    b.className="chip";
+    b.textContent=tk.t;
+    b.onclick=function(){if(lesson.answered)return;tk.used=false;renderArrange()};
+    sen.appendChild(b);
+  });
+}
+function onCheck(){
+  if(lesson.answered)return;
+  const ex=lesson.exs[lesson.idx];
+  let ok=false,detail="";
+  if(ex.type==="mc"){
+    ok=lesson.sel===ex.answer;
+    const bs=document.querySelectorAll(".choice");
+    for(let i=0;i<bs.length;i++){
+      bs[i].disabled=true;bs[i].classList.remove("sel");
+      if(i===ex.answer)bs[i].classList.add("correct");
+      if(i===lesson.sel&&!ok)bs[i].classList.add("wrong");
+    }
+    detail=ex.explain||(ok?"正确！":"正确答案："+ex.choices[ex.answer].t);
+  }else if(ex.type==="dict"){
+    const v=(document.getElementById("dict-input").value||"").trim().toLowerCase().replace(/\s+/g," ");
+    ok=ex.accept.some(function(a){return a.toLowerCase().replace(/\s+/g," ")===v});
+    document.getElementById("dict-input").disabled=true;
+    detail=ok?"正确！":"正确答案："+ex.answer;
+  }else if(ex.type==="arrange"){
+    const picked=lesson.tokens.filter(function(t){return t.used});
+    const got=picked.map(function(t){return t.t}).join(" ");
+    ok=got===ex.answer;
+    detail=ok?"正确！":"正确答案："+ex.answer;
+  }
+  if(ok)lesson.correct++;
+  else{lesson.wrong++;lesson.hearts=Math.max(0,lesson.hearts-1)}
+  document.getElementById("hearts").textContent=lesson.hearts;
+  footerState(ok?"good":"bad");
+  document.getElementById("fb-icon").textContent=ok?"✅":"❌";
+  document.getElementById("fb-title").textContent=ok?"回答正确":"再试一次，记住了";
+  document.getElementById("fb-detail").textContent=detail;
+  const say=ex.say||(ex.type==="arrange"?ex.answer.replace(/\s+/g," "):null);
+  const fbText=document.getElementById("fb-text");
+  const oldBtn=fbText.querySelector(".speak-btn");
+  if(oldBtn)oldBtn.remove();
+  if(say){
+    const btn=document.createElement("button");
+    btn.className="speak-btn";
+    btn.innerHTML="🔊 朗读 "+(ok?"":"正确答案");
+    btn.onclick=function(){speak(say)};
+    fbText.appendChild(btn);
+    if(ok)speak(say);else speak(say,{slow:true});
+  }
+  setBar();
+}
+function nextExercise(){
+  lesson.idx++;
+  if(lesson.idx>=lesson.exs.length){finishLesson();return}
+  renderExercise();
+}
+function onNext(){nextExercise()}
+function finishLesson(){
+  const total=lesson.correct+lesson.wrong;
+  const acc=total?Math.round(lesson.correct/total*100):100;
+  state.done[lesson.track+"-"+lesson.ui]=true;state.xp+=10;save();
+  document.getElementById("stat-acc").textContent=acc+"%";
+  document.getElementById("stat-xp").textContent="+10";
+  show("screen-done");
+}
+document.addEventListener("keydown",function(e){
+  const scr=document.getElementById("screen-lesson");
+  if(!scr.classList.contains("active"))return;
+  if(!lesson)return;
+  const ex=lesson.exs[lesson.idx];
+  if(e.key==="Enter"){
+    if(!lesson.answered&&ex.type==="dict")return;
+    if(!lesson.answered)onCheck();else onNext();
+  }
+  if(!lesson.answered&&ex.type==="mc"&&"1234".indexOf(e.key)>=0){
+    pickChoice(+e.key-1);
+  }
+});
+renderTree();
+if("speechSynthesis" in window){
+  window.speechSynthesis.onvoiceschanged=function(){renderRolePicker()};
+  setTimeout(function(){window.speechSynthesis.getVoices()},50);
+}
+</script>
+</body>
+</html>

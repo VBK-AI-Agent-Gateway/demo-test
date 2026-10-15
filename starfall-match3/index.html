@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星陨消消乐 - 三消小游戏</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  h1 { font-size: 2rem; text-shadow: 0 0 20px #7f5af0; margin-bottom: 8px; }
+  .sub { color: #a78bfa; margin-bottom: 16px; font-size: 0.9rem; }
+  .hud {
+    display: flex; gap: 24px; margin-bottom: 14px;
+    background: rgba(255,255,255,.07); padding: 10px 24px;
+    border-radius: 14px; backdrop-filter: blur(6px);
+  }
+  .hud div { text-align: center; }
+  .hud span { display: block; font-size: 14px; font-weight: 700; color: #fbbf24; }
+  .hud small { color: #c4b5fd; }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(8, 44px);
+    grid-template-rows: repeat(8, 44px);
+    gap: 5px;
+    background: rgba(255,255,255,.08);
+    padding: 10px;
+    border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(127,90,240,.35);
+    touch-action: none;
+    user-select: none;
+  }
+  .cell {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; cursor: pointer;
+    background: rgba(255,255,255,.10);
+    transition: transform .12s, opacity .12s;
+  }
+  .cell:hover { transform: scale(1.08); }
+  .cell.sel { outline: 3px solid #fbbf24; transform: scale(1.1); }
+  .cell.pop { animation: pop .25s ease; }
+  @keyframes pop { 50% { transform: scale(1.3); opacity: .4; } }
+  .cell.fall { animation: fall .3s ease; }
+  @keyframes fall { from { transform: translateY(-40px); opacity: 0; } }
+  .tips { margin-top: 14px; color: #a78bfa; font-size: .85rem; text-align: center; line-height: 1.6; }
+  .btn {
+    margin-top: 16px; padding: 10px 32px;
+    background: linear-gradient(90deg, #7f5af0, #6c3ce0);
+    border: none; border-radius: 999px;
+    color: #fff; font-size: 1rem; font-weight: 700;
+    cursor: pointer; box-shadow: 0 4px 20px rgba(127,90,240,.5);
+  }
+  .btn:hover { filter: brightness(1.15); }
+  #gameover {
+    position: fixed; inset: 0; background: rgba(10,8,30,.88);
+    display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9;
+  }
+  #gameover h2 { font-size: 2.4rem; color: #fbbf24; margin-bottom: 12px; }
+  #gameover p { font-size: 1.2rem; margin-bottom: 24px; }
+  @media (max-width: 480px) {
+    #board { grid-template-columns: repeat(8, 36px); grid-template-rows: repeat(8, 36px); }
+    .cell { width: 36px; height: 36px; font-size: 19px; }
+  }
+</style>
+</head>
+<body>
+<h1>🌌 星陨消消乐</h1>
+<div class="sub">交换相邻陨石，三个及以上连成一线即可消除</div>
+<div class="hud">
+  <div><span id="score">0</span><small>得分</small></div>
+  <div><span id="moves">30</span><small>剩余步数</small></div>
+  <div><span id="best">0</span><small>最高分</small></div>
+</div>
+<div id="board"></div>
+<div class="tips">点击两个相邻的格子交换位置，三个及以上连线即可消除<br>连击（连锁消除）可获得翻倍分数</div>
+<button class="btn" onclick="restart()">重新开始</button>
+<div id="gameover">
+  <h2>步数用完啦！</h2>
+  <p>本局得分：<b id="finalScore">0</b></p>
+  <button class="btn" onclick="restart()">再来一局</button>
+</div>
+
+<script>
+const N = 8, TYPES = ['🔴','🟡','🟢','🔵','🟣','⚪'];
+const board = [];
+const boardEl = document.getElementById('board');
+let score = 0, moves = 30, busy = false, selected = null;
+let best = +(localStorage.getItem('starfall_best') || 0);
+document.getElementById('best').textContent = best;
+
+function rnd() { return Math.floor(Math.random() * TYPES.length); }
+
+function hasMatch() {
+  for (let r = 0; r < N; r++)
+    for (let c = 0; c < N; c++) {
+      const v = board[r][c];
+      if (v < 0) continue;
+      if (c < N - 2 && board[r][c+1] === v && board[r][c+2] === v) return true;
+      if (r < N - 2 && board[r+1][c] === v && board[r+2][c] === v) return true;
+    }
+  return false;
+}
+
+function fill() {
+  do {
+    for (let r = 0; r < N; r++)
+      for (let c = 0; c < N; c++) {
+        if (board[r][c] != null) continue;
+        let v;
+        do { v = rnd(); } while (
+          (c >= 2 && board[r][c-1] === v && board[r][c-2] === v) ||
+          (r >= 2 && board[r-1][c] === v && board[r-2][c] === v)
+        );
+        board[r][c] = v;
+      }
+  } while (hasMatch());
+}
+
+function render() {
+  boardEl.innerHTML = '';
+  for (let r = 0; r < N; r++)
+    for (let c = 0; c < N; c++) {
+      const d = document.createElement('div');
+      d.className = 'cell';
+      d.textContent = TYPES[board[r][c]];
+      d.dataset.r = r; d.dataset.c = c;
+      if (selected && selected.r === r && selected.c === c) d.classList.add('sel');
+      d.addEventListener('click', () => onTap(r, c));
+      boardEl.appendChild(d);
+    }
+}
+
+function updHud() {
+  document.getElementById('score').textContent = score;
+  document.getElementById('moves').textContent = moves;
+  if (score > best) { best = score; localStorage.setItem('starfall_best', best); }
+  document.getElementById('best').textContent = best;
+}
+
+function onTap(r, c) {
+  if (busy) return;
+  if (!selected) { selected = { r, c }; render(); return; }
+  if (selected.r === r && selected.c === c) { selected = null; render(); return; }
+  const dr = Math.abs(selected.r - r), dc = Math.abs(selected.c - c);
+  if (dr + dc !== 1) { selected = { r, c }; render(); return; }
+  const a = selected, b = { r, c };
+  selected = null;
+  busy = true;
+  swap(a, b);
+  setTimeout(() => {
+    if (!hasMatch()) { swap(a, b); render(); busy = false; return; }
+    moves--;
+    updHud();
+    resolve().then(() => {
+      busy = false;
+      if (moves <= 0) {
+        document.getElementById('finalScore').textContent = score;
+        document.getElementById('gameover').style.display = 'flex';
+      }
+    });
+  }, 160);
+}
+
+function swap(a, b) {
+  const t = board[a.r][a.c];
+  board[a.r][a.c] = board[b.r][b.c];
+  board[b.r][b.c] = t;
+}
+
+function findMatches() {
+  const set = new Set();
+  for (let r = 0; r < N; r++)
+    for (let c = 0; c < N; c++) {
+      const v = board[r][c];
+      if (c < N - 2 && board[r][c+1] === v && board[r][c+2] === v) {
+        let e = c; while (e + 1 < N && board[r][e+1] === v) e++;
+        for (let i = c; i <= e; i++) set.add(r * N + i);
+      }
+      if (r < N - 2 && board[r+1][c] === v && board[r+2][c] === v) {
+        let e = r; while (e + 1 < N && board[e+1][c] === v) e++;
+        for (let i = r; i <= e; i++) set.add(i * N + c);
+      }
+    }
+  return set;
+}
+
+function popCells(set, chain) {
+  return new Promise(res => {
+    score += set.size * 10 * chain;
+    set.forEach(k => { board[Math.floor(k / N)][k % N] = null; });
+    render();
+    boardEl.querySelectorAll('.cell').forEach(el => {
+      if (set.has(+el.dataset.r * N + +el.dataset.c)) el.classList.add('pop');
+    });
+    updHud();
+    setTimeout(res, 240);
+  });
+}
+
+function drop() {
+  for (let c = 0; c < N; c++) {
+    let write = N - 1;
+    for (let r = N - 1; r >= 0; r--)
+      if (board[r][c] != null) { const v = board[r][c]; board[r][c] = null; board[write--][c] = v; }
+    while (write >= 0) board[write--][c] = rnd();
+  }
+}
+
+function resolve(chain = 1) {
+  const set = findMatches();
+  if (!set.size) return Promise.resolve();
+  return popCells(set, chain).then(() => {
+    drop();
+    render();
+    boardEl.querySelectorAll('.cell').forEach(el => el.classList.add('fall'));
+    return new Promise(r => setTimeout(r, 260)).then(() => resolve(chain + 1));
+  });
+}
+
+function restart() {
+  score = 0; moves = 30; selected = null; busy = false;
+  for (let r = 0; r < N; r++) board[r] = new Array(N).fill(null);
+  document.getElementById('gameover').style.display = 'none';
+  fill();
+  render();
+  updHud();
+}
+restart();
+</script>
+</body>
+</html>

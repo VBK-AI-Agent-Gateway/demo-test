@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>任务看板 · 乐观锁演示</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--fg:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 -apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}
+  header{padding:36px 24px 24px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#161b22,#0d1117)}
+  h1{margin:0 0 6px;font-size:26px}
+  .sub{color:var(--muted);max-width:920px}
+  main{max-width:1000px;margin:0 auto;padding:24px}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+  button{background:var(--accent);border:0;color:#04121f;font-weight:600;padding:9px 16px;border-radius:8px;cursor:pointer;font-size:14px}
+  button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+  button.danger{background:var(--red);color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  input,select{background:#0d1117;border:1px solid var(--border);color:var(--fg);padding:9px 12px;border-radius:8px;font-size:14px}
+  input:focus,select:focus{outline:1px solid var(--accent)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
+  .card h3{margin:0 0 6px;font-size:16px}
+  .meta{color:var(--muted);font-size:12px;margin-bottom:10px}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;border:1px solid var(--border);margin-right:6px}
+  .pill.v{color:var(--yellow);border-color:var(--yellow)}
+  .pill.TODO{color:var(--muted)}
+  .pill.IN_PROGRESS{color:var(--accent);border-color:var(--accent)}
+  .pill.DONE{color:var(--green);border-color:var(--green)}
+  .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .toast-wrap{position:fixed;top:16px;right:16px;display:flex;flex-direction:column;gap:10px;z-index:50;max-width:360px}
+  .toast{background:var(--panel);border:1px solid var(--red);border-left:4px solid var(--red);border-radius:8px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.5);font-size:14px}
+  .toast.ok{border-color:var(--green);border-left-color:var(--green)}
+  .toast b{display:block;margin-bottom:4px}
+  .toast .act{margin-top:8px;display:flex;gap:8px}
+  .toast small{color:var(--muted);display:block;margin-top:4px}
+  .empty{color:var(--muted);text-align:center;padding:40px;border:1px dashed var(--border);border-radius:10px}
+  footer{color:var(--muted);text-align:center;padding:20px;font-size:13px}
+  code{background:#21262d;border-radius:4px;padding:1px 5px;font-size:12px}
+  @media(max-width:640px){h1{font-size:21px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>任务看板 · 乐观锁演示</h1>
+  <div class="sub">每个任务带 <code>version</code>。更新时把读到的 version 一起提交；若期间被别人改过，服务端返回 <b style="color:var(--red)">409 CONFLICT</b>，这里会弹出提示让你<b>刷新</b>拿最新版本再改。</div>
+</header>
+
+<main>
+  <div class="bar">
+    <input id="newTitle" placeholder="新任务标题…" style="flex:1;min-width:200px">
+    <button id="btnCreate">＋ 新建任务</button>
+    <button id="btnRefresh" class="ghost">⟳ 刷新</button>
+    <button id="btnRace" class="ghost" title="对同一任务同时发两个相同 version 的更新，演示 409">⚡ 模拟并发冲突</button>
+  </div>
+  <div id="list" class="grid"><div class="empty">加载中…</div></div>
+</main>
+
+<div class="toast-wrap" id="toasts"></div>
+<footer>task-optimistic-lock · PUT 携带 version · 冲突返回 409</footer>
+
+<script>
+const API = ''; // same origin
+let tasks = [];
+
+function toast({ ok=false, title, msg, actions=[] }) {
+  const wrap = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = 'toast' + (ok ? ' ok' : '');
+  el.innerHTML = `<b>${title}</b><div>${msg || ''}</div>` +
+    (actions.length ? `<div class="act"></div>` : '');
+  if (actions.length) {
+    const act = el.querySelector('.act');
+    actions.forEach(a => {
+      const b = document.createElement('button');
+      b.textContent = a.label;
+      b.className = a.primary === false ? 'ghost' : '';
+      b.onclick = () => { el.remove(); a.run(); };
+      act.appendChild(b);
+    });
+  }
+  wrap.appendChild(el);
+  if (ok && !actions.length) setTimeout(() => el.remove(), 2500);
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, {
+    headers: { 'content-type': 'application/json' },
+    ...opts,
+  });
+  if (res.status === 204) return { ok: true, status: 204 };
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(body.error?.message || res.statusText);
+    err.status = res.status;
+    err.code = body.error?.code;
+    err.details = body.error?.details;
+    throw err;
+  }
+  return body;
+}
+
+async function load() {
+  try {
+    const body = await api('/api/tasks?pageSize=100');
+    tasks = body.data;
+    render();
+  } catch (e) {
+    document.getElementById('list').innerHTML =
+      `<div class="empty">加载失败：${e.message}<br><small>（需要后端 API 运行：docker compose up）</small></div>`;
+  }
+}
+
+function render() {
+  const el = document.getElementById('list');
+  if (!tasks.length) {
+    el.innerHTML = '<div class="empty">还没有任务，点上方「新建任务」创建。</div>';
+    return;
+  }
+  el.innerHTML = tasks.map(t => `
+    <div class="card" data-id="${t.id}">
+      <h3>${escapeHtml(t.title)}</h3>
+      <div class="meta">
+        <span class="pill ${t.status}">${t.status}</span>
+        <span class="pill v">v${t.version}</span>
+        <span>${new Date(t.updatedAt).toLocaleString()}</span>
+      </div>
+      <div>${escapeHtml(t.description || '')}</div>
+      <div class="row">
+        <button class="act-edit">✎ 编辑标题</button>
+        <button class="act-advance ghost">→ 推进状态</button>
+        <button class="act-del danger">删</button>
+      </div>
+    </div>
+  `).join('');
+
+  el.querySelectorAll('.card').forEach(card => {
+    const id = card.dataset.id;
+    card.querySelector('.act-edit').onclick = () => editTitle(id);
+    card.querySelector('.act-advance').onclick = () => advance(id);
+    card.querySelector('.act-del').onclick = () => del(id);
+  });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function onConflict(err, retry) {
+  const cur = err.details?.currentVersion;
+  const curTitle = err.details?.task?.title;
+  toast({
+    title: '⚠️ 409 版本冲突',
+    msg: `任务已被他人修改${cur ? `（当前版本 v${cur}${curTitle ? `，现在是「${escapeHtml(curTitle)}」` : ''}）` : ''}。请刷新获取最新版本后再改。`,
+    actions: [
+      { label: '⟳ 刷新并重试', run: async () => { await load(); if (retry) retry(); } },
+      { label: '仅刷新', primary: false, run: load },
+    ],
+  });
+}
+
+async function editTitle(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  const next = prompt(`修改标题（当前 version v${t.version}）`, t.title);
+  if (next === null) return;
+  try {
+    // NOTE: sends the version we last read — the optimistic-lock token.
+    const body = await api(`/api/tasks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ version: t.version, title: next }),
+    });
+    toast({ ok: true, title: '✅ 已保存', msg: `新版本 v${body.data.version}` });
+    await load();
+  } catch (e) {
+    if (e.status === 409) onConflict(e, () => editTitle(id));
+    else toast({ title: '❌ 失败', msg: e.message });
+  }
+}
+
+async function advance(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  const order = ['TODO', 'IN_PROGRESS', 'DONE'];
+  const next = order[(order.indexOf(t.status) + 1) % order.length];
+  try {
+    const body = await api(`/api/tasks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ version: t.version, status: next }),
+    });
+    toast({ ok: true, title: '✅ 状态已更新', msg: `${next} · v${body.data.version}` });
+    await load();
+  } catch (e) {
+    if (e.status === 409) onConflict(e, () => advance(id));
+    else toast({ title: '❌ 失败', msg: e.message });
+  }
+}
+
+async function del(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  if (!confirm(`删除「${t.title}」？`)) return;
+  try {
+    await api(`/api/tasks/${id}?version=${t.version}`, { method: 'DELETE' });
+    toast({ ok: true, title: '🗑️ 已删除' });
+    await load();
+  } catch (e) {
+    if (e.status === 409) onConflict(e, () => del(id));
+    else toast({ title: '❌ 失败', msg: e.message });
+  }
+}
+
+async function createTask() {
+  const input = document.getElementById('newTitle');
+  const title = input.value.trim();
+  if (!title) return;
+  try {
+    await api('/api/tasks', { method: 'POST', body: JSON.stringify({ title }) });
+    input.value = '';
+    toast({ ok: true, title: '✅ 已创建', msg: 'version 从 1 开始' });
+    await load();
+  } catch (e) {
+    toast({ title: '❌ 失败', msg: e.message });
+  }
+}
+
+// ⚡ Demo: two simultaneous PUTs with the SAME version -> one 200, one 409.
+async function simulateRace() {
+  if (!tasks.length) { toast({ title: '没有任务', msg: '先创建一个任务' }); return; }
+  const t = tasks[0];
+  const shared = t.version;
+  const put = (label) =>
+    api(`/api/tasks/${t.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ version: shared, title: `${label} @ ${new Date().toLocaleTimeString()}` }),
+    }).then(
+      body => ({ status: 200, body }),
+      err => ({ status: err.status, err })
+    );
+
+  toast({ ok: true, title: '⚡ 并发中…', msg: `两个请求同时用 version v${shared} 更新「${escapeHtml(t.title)}」` });
+
+  const [r1, r2] = await Promise.all([put('写者A'), put('写者B')]);
+  const statuses = [r1.status, r2.status].sort().join(' / ');
+
+  if (r1.status === 200 && r2.status === 409 || r2.status === 200 && r1.status === 409) {
+    toast({
+      title: '⚡ 并发结果：200 / 409',
+      msg: `一个写入成功（version → v${shared + 1}），另一个被乐观锁拒绝并返回 <b>409 CONFLICT</b>。前端提示刷新。`,
+      actions: [{ label: '⟳ 刷新', run: load }],
+    });
+  } else {
+    toast({ title: '并发结果', msg: `HTTP ${statuses}` });
+    await load();
+  }
+}
+
+document.getElementById('btnCreate').onclick = createTask;
+document.getElementById('btnRefresh').onclick = load;
+document.getElementById('btnRace').onclick = simulateRace;
+document.getElementById('newTitle').addEventListener('keydown', e => { if (e.key === 'Enter') createTask(); });
+
+load();
+</script>
+</body>
+</html>
