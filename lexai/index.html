@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>LexAI · 智能法务与 AI 合规工作台</title>
+<meta name="description" content="LexAI 深色法务合规工作台：合同审查双栏对照、Redline 红绿对比、AI 合规 AIA 仪表盘，PC/手机完美适配。">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: { extend: {
+    colors: {
+      ink: "#0D0E11", ink2: "#14161B", ink3: "#1B1E25",
+      brand: "#3B82F6", risk: "#EF4444", warn: "#F59E0B", ok: "#10B981"
+    },
+    extend: { fontFamily: { sans: ['"Noto Sans SC"','"PingFang SC"','"Microsoft YaHei"','system-ui','sans-serif'] },
+      boxShadow: { glow: "0 0 0 1px rgba(59,130,246,.35), 0 12px 40px rgba(59,130,246,.15)" } }
+  } }
+};
+</script>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+</head>
+<body class="bg-ink text-slate-200 font-sans min-h-screen selection:bg-brand/40">
+
+<div class="flex min-h-screen">
+
+  <!-- ===== 左侧固定导航 (PC) / 抽屉 (手机) ===== -->
+  <!-- 手机遮罩 -->
+  <div id="scrim" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden"></div>
+
+  <aside id="sidebar"
+    class="fixed md:sticky top-0 left-0 z-50 md:z-30 h-full w-[272px] shrink-0 -translate-x-full md:translate-x-0 transition-transform duration-300
+           bg-ink2 border-r border-white/10 flex flex-col">
+    <!-- 品牌 -->
+    <div class="flex items-center gap-3 px-5 h-16 border-b border-white/10 shrink-0">
+      <div class="w-10 h-10 rounded-xl bg-brand/15 border border-brand/40 grid place-items-center text-xl shadow-glow">⚖️</div>
+      <div class="leading-tight">
+        <div class="font-black text-white tracking-wide">LexAI</div>
+        <div class="text-[11px] text-slate-500 font-semibold">智能法务与 AI 合规工作台</div>
+      </div>
+      <button id="closeSide" class="ml-auto md:hidden w-11 h-11 -mr-2 grid place-items-center rounded-lg text-slate-400 hover:text-white hover:bg-white/10" aria-label="关闭菜单">✕</button>
+    </div>
+
+    <!-- 模式切换 -->
+    <div class="px-4 pt-5 pb-2">
+      <div class="text-[11px] font-bold tracking-widest text-slate-500 px-1 mb-2">工作模式</div>
+      <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-ink3 border border-white/10">
+        <button data-mode="contract" class="mode-btn h-11 rounded-lg text-sm font-bold bg-brand text-white shadow-glow">合同审查</button>
+        <button data-mode="ai" class="mode-btn h-11 rounded-lg text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5">AI 治理</button>
+      </div>
+    </div>
+
+    <!-- 导航 -->
+    <nav class="flex-1 overflow-y-auto px-3 py-3 space-y-1" id="navList">
+      <div class="text-[11px] font-bold tracking-widest text-slate-500 px-2 pt-2 pb-1">功能目录</div>
+      <button class="nav-item active" data-nav="doc">📄 文档与条款</button>
+      <button class="nav-item" data-nav="risk">🛡️ 风险面板</button>
+      <button class="nav-item" data-nav="redline">✏️ Redline 对比</button>
+      <button class="nav-item" data-nav="aia">📊 AIA 仪表盘</button>
+      <div class="text-[11px] font-bold tracking-widest text-slate-500 px-2 pt-4 pb-1">合规速查</div>
+      <div class="flex flex-wrap gap-2 px-2 pb-2">
+        <span class="tag">EU AI Act</span><span class="tag">GDPR</span>
+        <span class="tag">生成式AI办法</span><span class="tag">个保法</span>
+      </div>
+    </nav>
+
+    <div class="px-5 py-4 border-t border-white/10 text-[11px] text-slate-600 leading-relaxed">
+      深色模式 · 触控区 ≥44px · 演示数据<br>© 2026 LexAI
+    </div>
+  </aside>
+
+  <!-- ===== 主内容 ===== -->
+  <div class="flex-1 min-w-0 flex flex-col pb-[76px] md:pb-0">
+
+    <!-- 顶栏 -->
+    <header class="sticky top-0 z-30 h-16 shrink-0 bg-ink/90 backdrop-blur border-b border-white/10 flex items-center gap-3 px-4 md:px-6">
+      <button id="openSide" class="md:hidden w-11 h-11 -ml-2 grid place-items-center rounded-lg text-slate-300 hover:bg-white/10" aria-label="打开菜单">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <h1 id="pageTitle" class="font-black text-white text-lg md:text-xl truncate">合同审查 · 双栏对照</h1>
+      <span id="riskPill" class="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-black bg-risk/15 text-risk border border-risk/40">🔴 高风险 · 3 项</span>
+      <div class="ml-auto flex items-center gap-2">
+        <button id="demoBtn" class="h-11 px-4 rounded-xl text-sm font-bold bg-brand text-white hover:brightness-110 active:scale-95 transition">运行示例审查</button>
+        <div class="hidden md:flex items-center gap-2 h-11 px-3 rounded-xl bg-ink3 border border-white/10 text-xs text-slate-400 font-semibold">🖥️ PC 双栏 · 📱 手机 Tabs</div>
+      </div>
+    </header>
+
+    <!-- ===== 合同审查模式 ===== -->
+    <main id="mode-contract" class="flex-1 p-4 md:p-6">
+      <!-- 移动端 Tabs -->
+      <div class="lg:hidden flex gap-2 p-1 mb-4 rounded-xl bg-ink2 border border-white/10" role="tablist">
+        <button id="tabDoc" class="pane-tab active flex-1 h-11 rounded-lg text-sm font-bold">① 文本查看</button>
+        <button id="tabRisk" class="pane-tab flex-1 h-11 rounded-lg text-sm font-bold">② 风险面板</button>
+      </div>
+
+      <!-- 双栏对照 Split-View -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+        <!-- 左：文件查看 -->
+        <section id="paneDoc" class="pane rounded-2xl bg-ink2 border border-white/10 overflow-hidden flex flex-col">
+          <div class="flex items-center gap-2 h-12 px-4 border-b border-white/10 shrink-0">
+            <span class="w-2.5 h-2.5 rounded-full bg-risk/80"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-warn/80"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-ok/80"></span>
+            <span class="ml-2 text-xs font-bold text-slate-400 truncate">供应商采购合同_v3.docx</span>
+            <span class="ml-auto text-[11px] font-black text-brand bg-brand/15 px-2 py-1 rounded-md">12,480 字</span>
+          </div>
+          <div class="p-4 md:p-5 text-[13.5px] leading-8 font-mono text-slate-400 overflow-auto max-h-[46vh] lg:max-h-[calc(100vh-340px)]">
+            <p class="text-slate-500">第一条　合同标的</p>
+            <p>乙方向甲方供应智能模组 <span class="hl-red" data-risk="r1">共计壹万件，乙方对因本合同产生的任何损失承担无限赔偿责任</span>。</p>
+            <p class="text-slate-500 mt-3">第六条　保密</p>
+            <p><span class="hl-red" data-risk="r2">双方保密义务永久有效，不因合同终止而解除</span>。</p>
+            <p class="text-slate-500 mt-3">第九条　验收</p>
+            <p><span class="hl-amber" data-risk="r3">验收标准由甲方另行认定</span>，乙方应无条件配合。</p>
+            <p class="text-slate-500 mt-3">第十一条　争议解决</p>
+            <p>因本合同发生争议，提交<span class="hl-amber" data-risk="r4">甲方所在地人民法院</span>诉讼解决。</p>
+            <p class="text-slate-500 mt-3">第十三条　付款</p>
+            <p>甲方应于验收合格并收到发票后 <span class="hl-amber" data-risk="r5">90 日</span>内支付全部货款。</p>
+            <p class="text-slate-600 mt-6 text-xs">…（演示片段，点击高亮条文跳转右侧风险卡）…</p>
+          </div>
+        </section>
+
+        <!-- 右：风控面板 -->
+        <section id="paneRisk" class="pane hidden lg:flex rounded-2xl bg-ink2 border border-white/10 overflow-hidden flex-col">
+          <div class="flex items-center h-12 px-4 border-b border-white/10 shrink-0 text-sm font-black text-white">🛡️ 风控面板</div>
+          <div class="p-4 space-y-3 overflow-auto max-h-[64vh] lg:max-h-[calc(100vh-300px)]">
+
+            <!-- 综合评级卡 -->
+            <div class="rounded-2xl p-4 bg-gradient-to-br from-risk/18 to-transparent border border-risk/40">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="h-8 px-3 rounded-full bg-risk text-white text-sm font-black">🔴 高风险</span>
+                <span class="text-xs font-bold text-slate-400">综合评级 · 规则库命中 5 项</span>
+              </div>
+              <p class="mt-2.5 text-sm text-slate-300 leading-relaxed"><b class="text-white">一句话结论：</b>存在无上限赔偿与永久保密两项必争条款，<span class="text-risk font-bold">不建议按原文签署</span>；3 项中风险 Redline 后可推进。</p>
+            </div>
+
+            <!-- Redline 对比卡（PC 左右 / 手机上下） -->
+            <div class="rounded-2xl border border-white/10 overflow-hidden">
+              <div class="flex items-center justify-between h-11 px-4 bg-ink3 border-b border-white/10">
+                <span class="text-sm font-black text-white">✏️ Redline 修改对比</span>
+                <span class="text-[11px] font-bold text-slate-500">PC 左右 · 手机上下</span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2">
+                <div class="p-4 bg-risk/12 border-b md:border-b-0 md:border-r border-risk/30">
+                  <div class="text-[11px] font-black text-risk mb-2 tracking-wider">✕ 原条款（高风险）</div>
+                  <p class="text-[13px] leading-7 text-slate-300">乙方对因本合同产生的<span class="line-through decoration-risk/80">任何损失承担无限赔偿责任</span>，不设上限。</p>
+                </div>
+                <div class="p-4 bg-ok/12">
+                  <div class="text-[11px] font-black text-ok mb-2 tracking-wider">✓ 建议修改后文本</div>
+                  <p class="text-[13px] leading-7 text-slate-200">任一方累计赔偿责任以<span class="underline decoration-ok decoration-2 underline-offset-2 font-bold">合同总金额 100%</span> 为限；间接损失、利润损失不予赔偿，故意或重大过失除外。</p>
+                </div>
+              </div>
+              <div class="border-t border-white/10">
+                <div class="grid grid-cols-1 md:grid-cols-2">
+                  <div class="p-4 bg-risk/10 border-b md:border-b-0 md:border-r border-risk/25">
+                    <div class="text-[11px] font-black text-risk mb-2">✕ 原条款（保密永久）</div>
+                    <p class="text-[13px] leading-7 text-slate-300">双方保密义务<span class="line-through">永久有效</span>。</p>
+                  </div>
+                  <div class="p-4 bg-ok/10">
+                    <div class="text-[11px] font-black text-ok mb-2">✓ 建议：3 年 + 商业秘密除外</div>
+                    <p class="text-[13px] leading-7 text-slate-200">保密期限自终止之日起 <b class="text-ok">3 年</b>；构成商业秘密的持续至不再构成商业秘密之日止。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 风险清单 -->
+            <div class="rounded-2xl border border-white/10 divide-y divide-white/8">
+              <div class="h-11 px-4 flex items-center text-sm font-black text-white bg-ink3">风险清单</div>
+              <button class="risk-row" data-target="r1"><span class="lvl lvl-red">🔴</span><span class="flex-1 text-left text-[13px]">单方无上限赔偿责任</span><span class="lvl-tag lvl-t-red">高</span></button>
+              <button class="risk-row" data-target="r2"><span class="lvl lvl-red">🔴</span><span class="flex-1 text-left text-[13px]">无限期保密义务</span><span class="lvl-tag lvl-t-red">高</span></button>
+              <button class="risk-row" data-target="r3"><span class="lvl lvl-amber">🟡</span><span class="flex-1 text-left text-[13px]">验收标准模糊（单方认定）</span><span class="lvl-tag lvl-t-amber">中</span></button>
+              <button class="risk-row" data-target="r4"><span class="lvl lvl-amber">🟡</span><span class="flex-1 text-left text-[13px]">管辖地单方倾向</span><span class="lvl-tag lvl-t-amber">中</span></button>
+              <button class="risk-row" data-target="r5"><span class="lvl lvl-amber">🟡</span><span class="flex-1 text-left text-[13px]">账期 90 天过长</span><span class="lvl-tag lvl-t-amber">中</span></button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- ===== AI 治理模式 ===== -->
+    <main id="mode-ai" class="hidden flex-1 p-4 md:p-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+
+        <!-- AIA 仪表盘 -->
+        <section class="rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
+          <div class="h-12 px-4 flex items-center border-b border-white/10 text-sm font-black text-white">📊 AI 合规影响评估 (AIA) 仪表盘</div>
+          <div class="p-4 md:p-5 space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+              <div class="rounded-xl bg-ink3 border border-white/10 p-3">
+                <div class="text-[11px] text-slate-500 font-bold mb-1">企业角色</div>
+                <div class="font-black text-brand text-sm">Deployer 部署者</div>
+              </div>
+              <div class="rounded-xl bg-ink3 border border-white/10 p-3">
+                <div class="text-[11px] text-slate-500 font-bold mb-1">AI Act 定级</div>
+                <div class="font-black text-warn text-sm">🟠 透明度风险 · Art.50</div>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <div class="aia" data-pct="60"><div class="aia-head"><span>数据合法性 Lawfulness</span><b class="text-warn">6.0</b></div><div class="aia-bar"><i style="width:60%;background:#F59E0B"></i></div></div>
+              <div class="aia" data-pct="45"><div class="aia-head"><span>偏见与歧视 Bias</span><b class="text-ok">4.5</b></div><div class="aia-bar"><i style="width:45%;background:#10B981"></i></div></div>
+              <div class="aia" data-pct="75"><div class="aia-head"><span>隐私与数据泄露 Privacy</span><b class="text-risk">7.5</b></div><div class="aia-bar"><i style="width:75%;background:#EF4444"></i></div></div>
+              <div class="aia" data-pct="50"><div class="aia-head"><span>人机协同 Human-in-loop</span><b class="text-warn">5.0</b></div><div class="aia-bar"><i style="width:50%;background:#F59E0B"></i></div></div>
+              <div class="aia" data-pct="80"><div class="aia-head"><span>透明度 Transparency</span><b class="text-risk">8.0</b></div><div class="aia-bar"><i style="width:80%;background:#EF4444"></i></div></div>
+            </div>
+            <div class="rounded-xl p-3 bg-brand/10 border border-brand/35 text-[13px] leading-6 text-slate-300">
+              <b class="text-white">依据：</b>交互须告知用户正在与 AI 交互（<i class="text-brand font-bold">EU AI Act Art.50(2)</i>）；生成内容须机器可读标识（<i class="text-brand font-bold">Art.50(4)</i>）；国内对应《生成式AI办法》第 12 条显著标识义务。
+            </div>
+          </div>
+        </section>
+
+        <!-- 角色义务 + 行动 -->
+        <section class="rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
+          <div class="h-12 px-4 flex items-center border-b border-white/10 text-sm font-black text-white">🧭 角色义务与建议行动</div>
+          <div class="p-4 space-y-3">
+            <div class="rounded-xl border border-risk/35 bg-risk/10 p-3.5">
+              <div class="flex items-center gap-2 mb-1.5"><span class="text-risk font-black text-sm">🔴 综合评级：中高风险</span><span class="text-[11px] text-slate-500">AIA 均分 6.2/10</span></div>
+              <p class="text-[13px] leading-6 text-slate-300">罚则：违反透明度义务最高 <b class="text-white">1500 万欧元或全球营业额 3%</b>（Art.99）。</p>
+            </div>
+            <div class="rounded-xl border border-white/10 divide-y divide-white/8">
+              <div class="h-11 px-4 flex items-center text-[13px] font-black text-white bg-ink3">优先行动（P0）</div>
+              <div class="act-row"><span class="pill-t">P0</span><span class="flex-1 text-[13px]">交互界面明示「您正在与 AI 交互」</span><span class="text-[11px] text-slate-500 font-mono">Art.50(2)</span></div>
+              <div class="act-row"><span class="pill-t">P0</span><span class="flex-1 text-[13px]">生成内容加机器可读标识与水印</span><span class="text-[11px] text-slate-500 font-mono">Art.50(4)</span></div>
+              <div class="act-row"><span class="pill-t">P1</span><span class="flex-1 text-[13px]">完成算法/大模型备案与安全评估</span><span class="text-[11px] text-slate-500 font-mono">办法17条</span></div>
+              <div class="act-row"><span class="pill-t">P1</span><span class="flex-1 text-[13px]">全员 AI 素养培训并留痕</span><span class="text-[11px] text-slate-500 font-mono">Art.4</span></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- 底部吸底操作栏（跨端，移动端优化） -->
+<div class="fixed bottom-0 left-0 right-0 z-40 h-[72px] bg-ink2/95 backdrop-blur border-t border-white/10 flex items-center gap-3 px-4 md:px-6 md:hidden" style="padding-bottom:env(safe-area-inset-bottom)">
+  <button class="flex-1 h-11 rounded-xl font-black text-sm bg-ink3 border border-white/15 text-slate-300 active:scale-95 transition" id="barTabA">① 文本</button>
+  <button class="flex-1 h-11 rounded-xl font-black text-sm bg-ink3 border border-white/15 text-slate-300 active:scale-95 transition" id="barTabB">② 风险</button>
+  <button class="h-11 px-5 rounded-xl font-black text-sm bg-brand text-white shadow-glow active:scale-95 transition" id="barGo">生成意见</button>
+</div>
+
+<div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-8 z-[60] px-5 h-11 inline-flex items-center rounded-full bg-brand text-white text-sm font-black shadow-glow opacity-0 translate-y-4 transition-all pointer-events-none"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
