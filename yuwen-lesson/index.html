@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初三部编版语文教案生成器 · 备课组长智能体</title>
+<meta name="description" content="部编版九年级语文教案生成：固定11板块结构、新课标四素养目标、中考导向当堂小练与分层作业，一键生成可复制Word。">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">📚 初三语文教案生成器 <span class="sub">部编版九年级 · 对标中考 · 备课组长智能体</span></div>
+  <div class="top-r">
+    <button class="btn ghost" id="btn-history">🕘 历史教案</button>
+    <button class="btn ghost" id="btn-help">❓ 使用说明</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- 左：输入表单 -->
+  <section class="panel form-panel">
+    <h2>备课需求</h2>
+    <div class="f-row">
+      <label>课型</label>
+      <div class="seg" id="seg-type">
+        <button class="active" data-t="新授课">新授课</button>
+        <button data-t="中考专题复习课">中考专题复习课</button>
+        <button data-t="试卷讲评课">试卷讲评课</button>
+      </div>
+    </div>
+    <div class="f-row">
+      <label>学期</label>
+      <div class="seg" id="seg-book">
+        <button class="active" data-b="上册">九年级上册</button>
+        <button data-b="下册">九年级下册</button>
+        <button data-b="__topic__">中考专题</button>
+      </div>
+    </div>
+    <div class="f-row" id="row-text">
+      <label>课文 / 专题 <span class="req">（从库中选，避免编造）</span></label>
+      <select id="sel-target"></select>
+      <div class="meta-line" id="target-meta"></div>
+    </div>
+    <div class="f-row">
+      <label>总课时 / 本课时</label>
+      <div class="two">
+        <input type="number" id="in-total" value="2" min="1" max="10" />
+        <input type="number" id="in-cur" value="1" min="1" max="10" />
+      </div>
+    </div>
+    <div class="f-row">
+      <label>附件与侧重（勾选）</label>
+      <div class="checks">
+        <label><input type="checkbox" id="ck-chain" checked> 课堂提问链</label>
+        <label><input type="checkbox" id="ck-exam" checked> 中考对接考点</label>
+        <label><input type="checkbox" id="ck-drill" checked> 当堂小练（含答案解析）</label>
+        <label><input type="checkbox" id="ck-layer" checked> 分层作业三层</label>
+        <label><input type="checkbox" id="ck-fy" checked> 文言：实虚词清单+翻译</label>
+        <label><input type="checkbox" id="ck-xd" checked> 现代文：答题范式</label>
+        <label><input type="checkbox" id="ck-zw" checked> 作文：审题+范文片段+修改任务</label>
+      </div>
+    </div>
+    <div class="f-row">
+      <label>班情补充（选填）</label>
+      <textarea id="in-note" placeholder="如：文言基础薄弱、答题不规范、优等生需拔高等"></textarea>
+    </div>
+    <button class="btn primary big" id="btn-gen">⚡ 生成完整教案</button>
+  </section>
+
+  <!-- 右：教案输出 -->
+  <section class="panel out-panel">
+    <div class="out-bar">
+      <h2 id="out-title">教案预览</h2>
+      <div class="out-acts">
+        <button class="btn" id="btn-copy">📋 复制到 Word</button>
+        <button class="btn" id="btn-md">⬇ 导出 Markdown</button>
+        <button class="btn" id="btn-print">🖨 打印</button>
+      </div>
+    </div>
+    <div class="lesson" id="lesson">
+      <div class="empty">👈 填写左侧需求，点击「生成完整教案」。<br>生成的教案包含课题/课时/课型/四素养目标/重难点/学情/准备/七环节教学过程/板书/反思预设/配套附件，可直接进 Word 备课。</div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">部编版九年级语文 · 新课标四核心素养 · 中考导向 · 教案可直接复制进 Word</footer>
+
+<div class="mask" id="mask" style="display:none"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast" style="display:none"></div>
+
+<script src="js/data.js"></script>
+<script src="js/generator.js"></script>
+<script src="js/app.js"></script>
