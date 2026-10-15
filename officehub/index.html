@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OfficeHub 云办公 · 企业协同管理平台</title>
+<meta name="description" content="类钉钉企业管理平台：组织通讯录、即时沟通、审批流程、考勤打卡、任务看板、企业公告，打开即用。">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="shell">
+  <!-- 左侧主导航 -->
+  <aside class="rail">
+    <div class="logo">O<span>H</span></div>
+    <nav class="rail-nav">
+      <button class="active" data-view="work" title="工作台">🏠<i>工作台</i></button>
+      <button data-view="chat" title="消息">💬<i>消息</i><em class="badge" id="chat-badge" style="display:none">0</em></button>
+      <button data-view="contacts" title="通讯录">👥<i>通讯录</i></button>
+      <button data-view="approval" title="审批">📋<i>审批</i></button>
+      <button data-view="attendance" title="考勤">🕑<i>考勤</i></button>
+      <button data-view="tasks" title="任务">✅<i>任务</i></button>
+      <button data-view="announce" title="公告">📢<i>公告</i></button>
+    </nav>
+    <div class="rail-foot">
+      <button data-view="settings" title="设置">⚙️</button>
+    </div>
+  </aside>
+
+  <!-- 中间内容区 -->
+  <main class="content">
+    <!-- 工作台 -->
+    <section class="view active" id="view-work">
+      <header class="topbar">
+        <h1>工作台</h1>
+        <div class="top-right">
+          <span id="clock" class="clock"></span>
+          <div class="me"><span class="av av-me">我</span><span class="me-name">林晓峰</span></div>
+        </div>
+      </header>
+      <div class="banner">👋 早上好，林晓峰。今天有 <b id="wd-pending">0</b> 项待办审批，<b id="wd-tasks">0</b> 个进行中任务。</div>
+      <div class="grid4">
+        <div class="mini-card" data-go="attendance"><div class="ic">🕑</div><div><b id="wd-clockin">未打卡</b><span>今日考勤</span></div></div>
+        <div class="mini-card" data-go="approval"><div class="ic">📋</div><div><b id="wd-appr">0</b><span>待办审批</span></div></div>
+        <div class="mini-card" data-go="tasks"><div class="ic">✅</div><div><b id="wd-taskn">0</b><span>进行中任务</span></div></div>
+        <div class="mini-card" data-go="chat"><div class="ic">💬</div><div><b id="wd-chat">3</b><span>会话</span></div></div>
+      </div>
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-h">📆 今日日程 <span class="sub">Day Schedule</span></div>
+          <div id="wd-schedule"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-h">📢 最新公告</div>
+          <div id="wd-announce"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-h">🚀 常用应用</div>
+        <div class="apps">
+          <button data-go="chat"><span>💬</span>即时沟通</button>
+          <button data-go="approval"><span>📋</span>发起审批</button>
+          <button data-go="attendance"><span>🕑</span>打卡考勤</button>
+          <button data-go="tasks"><span>✅</span>任务看板</button>
+          <button data-go="contacts"><span>👥</span>组织架构</button>
+          <button data-go="announce"><span>📢</span>企业公告</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 消息 -->
+    <section class="view" id="view-chat">
+      <header class="topbar"><h1>消息</h1></header>
+      <div class="chat-wrap">
+        <div class="chat-list" id="chat-list"></div>
+        <div class="chat-main">
+          <div class="chat-head" id="chat-head">选择一个会话开始沟通</div>
+          <div class="chat-msgs" id="chat-msgs"><div class="empty">👈 从左侧选择联系人或群组</div></div>
+          <div class="chat-input" id="chat-input" style="display:none">
+            <input id="chat-text" type="text" placeholder="输入消息，回车发送…" />
+            <button class="btn primary" id="chat-send">发送</button>
+          </div>
+        </div>
+      </div>
+      <div class="quick-people" id="quick-people"></div>
+    </section>
+
+    <!-- 通讯录 -->
+    <section class="view" id="view-contacts">
+      <header class="topbar"><h1>通讯录</h1>
+        <input type="text" id="contact-search" class="search" placeholder="搜索姓名 / 职位 / 部门…" />
+      </header>
+      <div id="contact-tree"></div>
+    </section>
+
+    <!-- 审批 -->
+    <section class="view" id="view-approval">
+      <header class="topbar"><h1>审批中心</h1><button class="btn primary" id="appr-new">＋ 发起审批</button></header>
+      <div class="tabs" id="appr-tabs">
+        <button class="active" data-tab="mine">我发起的</button>
+        <button data-tab="todo">待我审批</button>
+        <button data-tab="done">已完成</button>
+      </div>
+      <div id="appr-list"></div>
+    </section>
+
+    <!-- 考勤 -->
+    <section class="view" id="view-attendance">
+      <header class="topbar"><h1>考勤打卡</h1><span class="clock" id="att-clock"></span></header>
+      <div class="att-card">
+        <div class="att-date" id="att-date"></div>
+        <div class="att-btns">
+          <button class="btn big" id="att-in">上班打卡</button>
+          <button class="btn big" id="att-out">下班打卡</button>
+        </div>
+        <div class="att-state" id="att-state"></div>
+      </div>
+      <div class="panel"><div class="panel-h">本月打卡记录</div><div id="att-records"></div></div>
+    </section>
+
+    <!-- 任务 -->
+    <section class="view" id="view-tasks">
+      <header class="topbar"><h1>任务看板</h1><button class="btn primary" id="task-new">＋ 新建任务</button></header>
+      <div class="board">
+        <div class="col" data-status="todo"><div class="col-h">📋 待办 <em id="cnt-todo"></em></div><div class="col-body" id="col-todo"></div></div>
+        <div class="col" data-status="doing"><div class="col-h">🔨 进行中 <em id="cnt-doing"></em></div><div class="col-body" id="col-doing"></div></div>
+        <div class="col" data-status="done"><div class="col-h">🎉 已完成 <em id="cnt-done"></em></div><div class="col-body" id="col-done"></div></div>
+      </div>
+    </section>
+
+    <!-- 公告 -->
+    <section class="view" id="view-announce">
+      <header class="topbar"><h1>企业公告</h1></header>
+      <div id="announce-list"></div>
+    </section>
+
+    <!-- 设置 -->
+    <section class="view" id="view-settings">
+      <header class="topbar"><h1>设置</h1></header>
+      <div class="panel">
+        <div class="panel-h">账号信息</div>
+        <div class="set-row"><span>姓名</span><b>林晓峰</b></div>
+        <div class="set-row"><span>工号</span><b>OH-2021-0417</b></div>
+        <div class="set-row"><span>部门</span><b>产品部 · 高级产品经理</b></div>
+        <div class="set-row"><span>企业</span><b>OfficeHub 示例科技有限公司</b></div>
+      </div>
+      <div class="panel">
+        <div class="panel-h">数据</div>
+        <button class="btn danger" id="reset-data">清空本机数据并恢复默认</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- 弹层 -->
+<div class="modal-mask" id="modal-mask" style="display:none">
+  <div class="modal" id="modal"></div>
+</div>
+<div class="toast" id="toast" style="display:none"></div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/chat.js"></script>
+<script src="js/approval.js"></script>
+<script src="js/tasks.js"></script>
+</body>
+</html>
