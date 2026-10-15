@@ -1,0 +1,53 @@
+:root{
+  --navy:#12233d; --navy2:#1b3557; --gold:#c9a44c; --gold-l:#f7f1e0;
+  --ink:#17202e; --gray:#5d6b7e; --line:#dde3ec; --bg:#f4f6fa;
+  --red:#c62828; --red-l:#fdeaea; --amber:#b06a00; --amber-l:#fdf3e2;
+  --green:#0e7a55; --blue:#2254a8; --blue-l:#eaf0fb;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.75}
+button,input,select,textarea{font-family:inherit;font-size:inherit}
+button{cursor:pointer;border:none;background:none;color:inherit}
+.top{background:linear-gradient(120deg,var(--navy) 0%,var(--navy2) 70%,#26466e 100%);color:#fff;border-bottom:4px solid var(--gold)}
+.top-in{max-width:1100px;margin:0 auto;padding:20px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{font-size:21px;font-weight:900;display:flex;align-items:center;gap:8px}
+.brand em{font-style:normal;font-size:12.5px;opacity:.7;font-weight:700;margin-left:6px}
+.brand .logo{font-size:24px}
+.top-note{font-size:13.5px;opacity:.9;font-weight:700;background:rgba(201,164,76,.22);border:1px solid rgba(201,164,76,.5);padding:6px 14px;border-radius:999px;color:#f2e6c8}
+.tabs{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line);display:flex;gap:4px;overflow-x:auto;padding:10px 14px;max-width:1100px;margin:0 auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:10px 18px;border-radius:10px;font-size:14.5px;font-weight:800;color:var(--gray);white-space:nowrap}
+.tab:hover{background:var(--bg)}
+.tab.active{background:var(--navy);color:var(--gold);box-shadow:0 6px 16px rgba(18,35,61,.35)}
+.main{max-width:1100px;margin:0 auto;padding:22px 16px 40px}
+.panel{display:none;background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px 26px 30px;box-shadow:0 8px 26px rgba(18,35,61,.07)}
+.panel.open{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:.3;transform:translateY(8px)}to{opacity:1;transform:none}}
+.panel h2{font-size:22px;color:var(--navy);display:flex;align-items:center;gap:8px}
+.sub{color:var(--gray);font-size:14px;margin:6px 0 18px;background:var(--gold-l);border-left:4px solid var(--gold);padding:10px 14px;border-radius:0 10px 10px 0}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
+.form label{display:flex;flex-direction:column;gap:6px;font-size:13.5px;font-weight:800;color:var(--navy)}
+.form label.full{grid-column:1/-1}
+.form input,.form select,.form textarea{border:1.5px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14.5px;font-weight:500;color:var(--ink);background:#fff;outline:none;transition:.15s}
+.form input:focus,.form select:focus,.form textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(34,84,168,.15)}
+.form textarea{resize:vertical;min-height:90px}
+.ops{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.btn{background:var(--navy);color:var(--gold);font-weight:900;padding:13px 34px;border-radius:10px;font-size:15.5px;box-shadow:0 4px 12px rgba(18,35,61,.3);transition:.15s;border:1.5px solid var(--gold)}
+.btn:hover{background:#1a2f52;transform:translateY(-1px)}
+.btn.small{padding:9px 18px;font-size:13.5px;box-shadow:none}
+.btn.ghost{background:#fff;color:var(--navy);border:1.5px solid var(--navy);box-shadow:none}
+.btn.ghost:hover{background:var(--blue-l)}
+.out{margin-top:18px;border-top:1.5px dashed var(--line);padding-top:4px}
+.out .ops{margin-top:12px}
+.out pre{background:#0e1626;color:#dce6f5;padding:18px 20px;border-radius:12px;font-size:13.5px;line-height:1.9;white-space:pre-wrap;word-break:break-word;margin-top:12px;font-family:"Cascadia Code",Consolas,"Noto Sans Mono CJK SC",monospace;max-height:560px;overflow:auto;border-left:4px solid var(--gold)}
+.foot{text-align:center;color:var(--gray);font-size:13px;padding:26px 16px 40px;font-weight:600;max-width:900px;margin:0 auto}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(70px);background:var(--navy);color:var(--gold);font-weight:800;padding:12px 26px;border-radius:999px;z-index:99;transition:.3s;opacity:0;pointer-events:none;font-size:14.5px;border:1.5px solid var(--gold)}
+.toast.show{transform:translateX(-50%);opacity:1}
+@media (max-width:760px){
+  .form{grid-template-columns:1fr}
+  .panel{padding:20px 16px 24px;border-radius:14px}
+  .brand{font-size:18px}
+  .brand em{display:none}
+  .top-note{display:none}
+  .tab{font-size:13.5px;padding:9px 12px}
+}
