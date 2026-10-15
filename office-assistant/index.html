@@ -21,6 +21,7 @@
   <button class="tab" data-tab="polish">✏️ 润色纠错</button>
   <button class="tab" data-tab="brief">📌 长文提炼</button>
   <button class="tab" data-tab="minutes">🗓️ 会议纪要</button>
+  <button class="tab" data-tab="rec">🎙️ 录音摘要</button>
   <button class="tab" data-tab="excel">📊 Excel 公式</button>
   <button class="tab" data-tab="table">🧾 数据转表格</button>
   <button class="tab" data-tab="event">🎉 活动策划</button>
@@ -109,6 +110,38 @@
     <div class="ops"><button class="btn" id="mnGo">生成纪要</button></div>
     <div class="out" id="mnOut" hidden>
       <div class="ops"><button class="btn small" data-copy="mnOut">📋 复制结果</button><button class="btn ghost small" data-md="mnOut">⬇ 下载 .md</button></div>
+      <pre></pre>
+    </div>
+  </section>
+
+  <!-- 会议录音摘要 -->
+  <section class="panel" id="panel-rec">
+    <h2>会议录音 · 自动摘要</h2>
+    <p class="sub">浏览器内录音（麦克风），停止后自动转写（支持 Web Speech API 实时转文字，或直接粘贴转写稿），一键生成结构化摘要并可续接「会议纪要」输出。全程本地处理，不上传音频。</p>
+    <div class="form">
+      <label>会议主题 <input id="recTopic" placeholder="例：周例会 / 项目评审会"></label>
+      <label>时间 <input id="recTime" placeholder="[2026年X月X日]"></label>
+      <label class="full">转写方式
+        <select id="recMode">
+          <option value="live">麦克风实时转写（Chrome/Edge，需允许麦克风）</option>
+          <option value="paste">仅录音/或已有转写稿：手动粘贴</option>
+        </select>
+      </label>
+    </div>
+    <div class="rec-bar">
+      <button class="btn" id="recStart">● 开始录音</button>
+      <button class="btn ghost" id="recStop" disabled>■ 停止并摘要</button>
+      <span class="rec-time" id="recTime2">00:00</span>
+      <span class="rec-state" id="recState">未开始</span>
+    </div>
+    <div class="form" style="margin-top:14px">
+      <label class="full">转写文本（实时转写会自动填入，也可直接粘贴已有转写稿）
+        <textarea id="recText" rows="7" placeholder="例：张三：本周重点是上线验收。&#10;李四：前端已提测，下周五前完成回归，我负责跟进。&#10;关于预算，一致同意追加 5 万"></textarea>
+      </label>
+    </div>
+    <div class="ops"><button class="btn" id="recGo">生成摘要</button></div>
+    <div class="out" id="recOut" hidden>
+      <div class="ops"><button class="btn small" data-copy="recOut">📋 复制摘要</button><button class="btn ghost small" data-md="recOut">⬇ 下载 .md</button><button class="btn ghost small" id="recToMin">➡ 送入会议纪要</button></div>
       <pre></pre>
     </div>
   </section>

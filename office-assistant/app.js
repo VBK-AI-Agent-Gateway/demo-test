@@ -339,4 +339,159 @@
     showOut("evOut", s);
     toast("策划案已生成");
   });
+
+  /* ---------- 8. 会议录音 · 自动摘要 ---------- */
+  var rec = { mr: null, sr: null, chunks: [], sec: 0, timer: null, stream: null, live: false, blobUrl: null };
+  function recState(text, cls) {
+    var el = $("#recState"); el.textContent = text;
+    el.classList.remove("live", "done"); if (cls) el.classList.add(cls);
+  }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function tick() {
+    rec.sec++;
+    $("#recTime2").textContent = pad2(Math.floor(rec.sec / 60)) + ":" + pad2(rec.sec % 60);
+  }
+  function recSupported() { return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder); }
+  function liveSupported() { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
+
+  $("#recStart").addEventListener("click", function () {
+    if (!recSupported()) { toast("当前浏览器不支持录音，可切换到「粘贴转写稿」模式"); recState("不支持录音", "live"); return; }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      rec.stream = stream;
+      rec.chunks = []; rec.sec = 0; $("#recTime2").textContent = "00:00";
+      try { rec.mr = new MediaRecorder(stream); } catch (e) { rec.mr = null; }
+      if (rec.mr) {
+        rec.mr.ondataavailable = function (e) { if (e.data && e.data.size) rec.chunks.push(e.data); };
+        rec.mr.start();
+      }
+      // 实时转写
+      var wantLive = $("#recMode").value === "live";
+      if (wantLive) {
+        var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SR) {
+          try {
+            rec.sr = new SR();
+            rec.sr.lang = "zh-CN"; rec.sr.continuous = true; rec.sr.interimResults = false;
+            rec.sr.onresult = function (ev) {
+              var txt = "";
+              for (var i = ev.resultIndex; i < ev.results.length; i++) txt += ev.results[i][0].transcript;
+              var ta = $("#recText");
+              ta.value = (ta.value ? ta.value + "\n" : "") + txt.trim();
+            };
+            rec.sr.onerror = function () {};
+            rec.sr.start(); rec.live = true;
+          } catch (e) { rec.live = false; }
+        }
+      }
+      rec.timer = setInterval(tick, 1000);
+      $("#recStart").disabled = true; $("#recStop").disabled = false;
+      recState(rec.live ? "录音中 · 实时转写" : "录音中", "live");
+      toast(rec.live ? "已开始录音，讲话内容将实时转写" : "已开始录音");
+    }).catch(function () {
+      toast("未获得麦克风权限，请在浏览器地址栏允许后重试");
+      recState("麦克风被拒绝", "live");
+    });
+  });
+
+  $("#recStop").addEventListener("click", function () {
+    if (rec.timer) { clearInterval(rec.timer); rec.timer = null; }
+    if (rec.sr) { try { rec.sr.stop(); } catch (e) {} rec.sr = null; }
+    if (rec.mr && rec.mr.state !== "inactive") {
+      rec.mr.onstop = function () {
+        if (rec.chunks.length) {
+          if (rec.blobUrl) URL.revokeObjectURL(rec.blobUrl);
+          rec.blobUrl = URL.createObjectURL(new Blob(rec.chunks, { type: rec.chunks[0].type || "audio/webm" }));
+        }
+        if (rec.stream) rec.stream.getTracks().forEach(function (t) { t.stop(); });
+      };
+      try { rec.mr.stop(); } catch (e) {}
+    } else if (rec.stream) {
+      rec.stream.getTracks().forEach(function (t) { t.stop(); });
+    }
+    $("#recStart").disabled = false; $("#recStop").disabled = true;
+    recState("已停止 · 时长 " + $("#recTime2").textContent, "done");
+    toast("录音已停止，点击「生成摘要」自动整理");
+    // 停止即自动生成摘要
+    setTimeout(function () { $("#recGo").click(); }, 400);
+  });
+
+  $("#recGo").addEventListener("click", function () {
+    var raw = val("#recText");
+    if (!raw) { toast("暂无可转写文本：请允许麦克风实时转写，或粘贴已有转写稿"); return; }
+    var topic = ph(val("#recTopic"), "[会议主题]");
+    var time = ph(val("#recTime"), "[2026年X月X日]");
+    var dur = $("#recTime2").textContent;
+    var segs = [];
+    raw.split(/\n+|(?<=[。；!？])/).forEach(function (l) {
+      l.split("|").forEach(function (x) { if (x.trim()) segs.push(x.trim()); });
+    }).map(function (x) { return x; });
+    // split 后再拍平
+    segs = [];
+    raw.replace(/\n/g, "。").split(/。|；|!|？|\|/).forEach(function (x) {
+      x = x.trim(); if (x) segs.push(x);
+    });
+    if (!segs.length) segs = [raw.trim()];
+
+    var keyDecisions = [], todos = [], others = [];
+    segs.forEach(function (s) {
+      if (/一致同意|决定|通过|确认|敲定|定了|批准/.test(s)) keyDecisions.push(s);
+      else if (/负责|跟进|前完成|之前完成|截止|落实|下周|本周|本月|\d+日/.test(s)) todos.push(s);
+      else others.push(s);
+    });
+    if (!keyDecisions.length) keyDecisions = ["（未识别到明确决议，可在转写稿中补充“同意/决定”等表述）"];
+    if (!todos.length) todos = ["（未识别到待办，可在转写稿中补充“谁负责/何时完成”）"];
+
+    var w = Math.max(40, Math.round(raw.length / Math.max(1, dur.split(":")[0] === "00" ? 1 : (parseInt(dur.split(":")[0]) * 60 + parseInt(dur.split(":")[1])) / 60) ) || 60);
+
+    var s = "# 会议录音摘要\n\n";
+    s += "## 一、基本信息\n\n| 项目 | 内容 |\n|---|---|\n";
+    s += "| 会议主题 | " + topic + " |\n| 时间 | " + time + " |\n";
+    s += "| 录音时长 | " + dur + " |\n| 转写字数 | 约 " + raw.length + " 字 |\n";
+    s += "| 处理方式 | 浏览器本地转写，音频未上传 |\n\n";
+    s += "## 二、一句话摘要\n\n> 本次" + (topic.indexOf("[") === 0 ? "会议" : topic) + "围绕 " +
+      (others[0] || keyDecisions[0] || segs[0]).slice(0, 40) + " 展开，形成 " + keyDecisions.length + " 项决议与 " + todos.length + " 项待办。\n\n";
+    s += "## 三、核心决议\n";
+    keyDecisions.forEach(function (d, i) { s += (i + 1) + ". " + d + "\n"; });
+    s += "\n## 四、待办事项\n\n| 待办任务 | 责任人 | 完成节点 |\n|---|---|---|\n";
+    todos.forEach(function (t) {
+      var owner = "待定", node = "待定";
+      var om = t.match(/([一-龥]{2,4})(?:负责|牵头|跟进)/); if (om) owner = om[1];
+      else { var sm = t.match(/^([一-龥]{2,4})[：:]/); if (sm) owner = sm[1]; }
+      var dm = t.match(/(\d+\s*月\s*\d+\s*日|下周[一二三四五六日]?|本周[一二三四五六日]?|本月\d+日|\d+个?工作日前?)/);
+      if (dm) node = dm[1].replace(/\s/g, "");
+      s += "| " + t.slice(0, 55) + " | " + owner + " | " + node + " |\n";
+    });
+    if (others.length) {
+      s += "\n## 五、其他要点\n";
+      others.slice(0, 6).forEach(function (o) { s += "- " + o + "\n"; });
+    }
+    s += "\n---\n_由 Office EA 本地生成 · 摘要基于规则提炼，重要决议请人工复核_";
+    showOut("recOut", s);
+    toast("摘要已生成");
+    if (rec.blobUrl) {
+      var a = document.createElement("a");
+      a.href = rec.blobUrl; a.download = "meeting-recording.webm";
+      var b = document.createElement("button");
+      b.className = "btn ghost small"; b.textContent = "⬇ 下载录音";
+      b.onclick = function () { a.click(); };
+      $("#recOut .ops").appendChild(b);
+    }
+    window.__recSegs = segs;
+  });
+
+  $("#recToMin").addEventListener("click", function () {
+    var topic = val("#recTopic"), time = val("#recTime");
+    if (topic) $("#mnTopic").value = topic;
+    if (time) $("#mnTime").value = time;
+    $("#mnText").value = val("#recText");
+    // 切到纪要面板
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (x) {
+      x.classList.toggle("active", x.getAttribute("data-tab") === "minutes");
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".panel"), function (p) {
+      p.classList.toggle("open", p.id === "panel-minutes");
+    });
+    toast("已送入会议纪要，点「生成纪要」即可");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
 })();

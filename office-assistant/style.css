@@ -48,6 +48,14 @@ button{cursor:pointer;border:none;background:none;color:inherit}
 #tbTable td{border:1px solid var(--line);padding:8px 12px}
 #tbTable tr:nth-child(even) td{background:#f8fafd}
 .foot{text-align:center;color:var(--gray);font-size:13px;padding:26px 16px 40px;font-weight:600}
+/* 录音条 */
+.rec-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--blue-l);border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:6px}
+.rec-bar .btn{padding:11px 24px;font-size:14.5px}
+.rec-bar .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.rec-time{font-family:Consolas,monospace;font-weight:900;font-size:19px;color:var(--navy);min-width:64px}
+.rec-state{font-size:13.5px;font-weight:800;color:var(--gray);background:#fff;border-radius:999px;padding:5px 14px;border:1.5px solid var(--line)}
+.rec-state.live{background:#e0342f22;border-color:#e0342f;color:#c0261f}
+.rec-state.done{background:#12805c22;border-color:var(--green);color:var(--green)}
 .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(70px);background:var(--navy);color:#fff;font-weight:800;padding:12px 26px;border-radius:999px;z-index:99;transition:.3s;opacity:0;pointer-events:none;font-size:14.5px}
 .toast.show{transform:translateX(-50%);opacity:1}
 @media (max-width:760px){
