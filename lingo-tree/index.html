@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LingoTree · 日语 & 英语学习</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">Lingo<span>Tree</span> 🦉</div>
+  <div class="spacer"></div>
+  <div class="stat xp">⚡ <span id="xpN">0</span> XP</div>
+  <div class="stat hearts">❤️ <span id="heartN">5</span></div>
+</header>
+<div class="tabs" id="tabs">
+  <button class="tab active" data-course="ja">🇯🇵 日本語</button>
+  <button class="tab" data-course="en">🇬🇧 English</button>
+</div>
+<main>
+  <div id="pathBox"></div>
+</main>
+<div class="overlay" id="overlay">
+  <div class="q-top">
+    <button class="close-x" id="closeBtn">✕</button>
+    <div class="q-progress"><i id="qBar" style="width:0%"></i></div>
+    <div class="hearts-bar">❤️ <span id="qHearts">5</span></div>
+  </div>
+  <div class="q-body" id="qBody"></div>
+  <div class="result" id="resultBox">
+    <div class="big">🎉</div>
+    <h1>课程完成！</h1>
+    <div class="gain" id="resGain"></div>
+    <button class="next-btn" id="resBtn">继续</button>
+  </div>
+  <div class="q-foot" id="qFoot" style="display:none">
+    <div class="fb-title" id="fbTitle"></div>
+    <div class="fb-tip" id="fbTip"></div>
+    <button class="next-btn" id="checkBtn">继续</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
