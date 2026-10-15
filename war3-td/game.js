@@ -105,7 +105,28 @@ var TOWERS = [
    special:"curse"},
   {id:"hero", name:"英雄塔·大法师", icon:"🧙", race:"人族", cost:420, dmg:60, interval:1.1, range:190,
    dmgType:"magic", aoe:80, bounces:2, ultimate:"blizzard", desc:"终极: 每 8s 暴风雪全屏 AOE",
-   special:"hero"}
+   special:"hero"},
+  /* ===== v2 新增: 魔法哨塔 ===== */
+  {id:"magisentry", name:"魔法哨塔", icon:"🔮", race:"人族", cost:170, dmg:34, interval:1.4, range:170,
+   dmgType:"magic", manaBurn:25, desc:"抽魔 25/击(降低怪物强度) + 高额单体魔法",
+   special:"manaburn"},
+  /* ===== v2 新增: 圣骑士英雄塔 ===== */
+  {id:"paladin", name:"英雄塔·圣骑士", icon:"🛡️", race:"人族", cost:460, dmg:52, interval:1.3, range:175,
+   dmgType:"magic", aura:{type:"heal", val:0.5, r:180}, ultimate:"holystorm", summonWater:true,
+   desc:"光环治疗周围塔; 终极: 神圣风暴 + 召唤水元素",
+   special:"paladin"},
+  /* ===== v2 新增: 恶魔猎手英雄塔 ===== */
+  {id:"demonhunter", name:"英雄塔·恶魔猎手", icon:"😈", race:"暗夜", cost:440, dmg:38, interval:0.38, range:145,
+   dmgType:"normal", crit:0.35, ultimate:"metamorph", desc:"高频单体切割 35% 暴击; 终极: 变身+刀扇",
+   special:"demonhunter"},
+  /* ===== v2 新增: 剑圣英雄塔 ===== */
+  {id:"blademaster", name:"英雄塔·剑圣", icon:"👺", race:"兽族", cost:470, dmg:70, interval:1.0, range:160,
+   dmgType:"normal", crit:0.3, critMult:4, ultimate:"bladestorm", desc:"30% 概率 4 倍绝命一击; 终极: 剑刃风暴",
+   special:"blademaster"},
+  /* ===== v2 新增: 巫妖英雄塔 ===== */
+  {id:"lich", name:"英雄塔·巫妖", icon:"☠️", race:"不死", cost:480, dmg:55, interval:1.5, range:185,
+   dmgType:"magic", aoe:85, ultimate:"deathdecay", desc:"霜冻新星 AOE+冻结; 终极: 死亡凋零 全屏按%扣血",
+   special:"lich"}
 ];
 var TMAP={}; TOWERS.forEach(function(t){TMAP[t.id]=t;});
 
@@ -167,7 +188,8 @@ function itemDef(it){return typeof it==="string"?IMAP[it]:it;}
 
 /* ================= 游戏状态 ================= */
 var G = {
-  gold:250, wood:40, hp:20, wave:0, maxWave:15, lvl:1, exp:0,
+  gold:250, wood:40, hp:20, maxHp:20, wave:0, maxWave:15, lvl:1, exp:0,
+  techAtk:1, techAs:1, techGold:1, baseHpBonus:0, luck:0,
   towers:[], enemies:[], bullets:[], effects:[], summons:[],
   pathT:0, running:false, paused:false, speed:1, over:false,
   sel:null, build:null, spawnQ:[], waveActive:false,
@@ -230,7 +252,7 @@ function dealDamage(e, raw, tower, isCrit){
   var m = mult(dt, e.armor);
   var dmg = raw * m;
   if(e.curseT>0) dmg *= (1+e.curseVal);
-  if(isCrit) dmg *= 2;
+  if(isCrit) dmg *= (tower && tower.tDef.critMult>=4) ? 4 : 2;
   dmg = Math.max(1, dmg);
   e.hp -= dmg;
   if(e.hp<=0){ killEnemy(e, tower); }
@@ -239,9 +261,9 @@ function dealDamage(e, raw, tower, isCrit){
 function killEnemy(e, tower){
   if(e.dead) return;
   e.dead=true; e.killed=true;
-  var g = e.gold + Math.floor(e.maxHp/50);
+  var g = Math.floor((e.gold + Math.max(0, Math.floor(e.maxHp/50))) * (G.techGold||1));
   G.gold += g;
-  if(e.boss){ G.wood += 25; dropItem(); addLog("🏆 击杀 BOSS! +"+g+"💰 +25🪵 掉落装备!","gold"); }
+  if(e.boss){ G.wood += 25; dropItem(); if(Math.random()<(G.luck||0)) dropItem(); addLog("🏆 击杀 BOSS! +"+g+"💰 +25🪵 掉落装备!","gold"); }
   else if(e.type==="tank"||e.type==="fly"&&e.maxHp>500){ G.wood += 2; }
   gainExp(tower?2:1);
   // 通灵塔召唤骷髅
@@ -285,8 +307,8 @@ function buildTower(id, gx, gy){
 function recalcTower(t){
   var d=t.tDef;
   var lv=t.level;
-  var atk=d.dmg*(1+(lv-1)*0.35);
-  var as=d.interval/(1+(lv-1)*0.12);
+  var atk=d.dmg*(1+(lv-1)*0.35)*(G.techAtk||1);
+  var as=d.interval/(1+(lv-1)*0.12)*(G.techAs||1);
   var range=d.range+(lv-1)*8;
   var items=t.items||[];
   var auraAs=0, chaosBonus=0, dmgPct=0, bonusAtk=0, bonusRange=0, slowBonus=0, crit=0, shred=0, chain=0;
@@ -316,7 +338,7 @@ function towerFire(t, e){
   // 月亮井不攻击
   if(d.dmg===0) return;
   var raw=s.atk;
-  var isCrit = s.crit>0 && Math.random()<s.crit;
+  var isCrit = (s.crit>0 && Math.random()<s.crit) || (d.special==="blademaster" && Math.random()<0.3);
   var dmgMult = mult(s.dmgType, e.armor);
   // 诅咒塔 chaos 附加
   if(s.chaosChaos>0){ /* 混沌附加已在装备光环 */ }
@@ -325,8 +347,14 @@ function towerFire(t, e){
   // 破甲临时
   var effArmor=e.armor;
   dealDamage(e, raw, t, isCrit);
-  if(isCrit) fxPop(e.x,e.y,"暴击!","#ffd166");
+  if(isCrit) fxPop(e.x,e.y, d.critMult>=4?"4×绝命一击!":"暴击!","#ffd166");
   fxHit(e.x,e.y, multLabel(dmgMult));
+  // 抽魔 (魔法哨塔): 抽蓝减速
+  if(d.special==="manaburn"){
+    e.slowT=Math.max(e.slowT,1.2); e.slowPct=Math.min(0.5,e.slowPct+0.06);
+    fxPop(e.x,e.y-10,"抽魔!","#b388ff");
+  }
+  // 淡魔剑刃风暴: 剑圣 30% 双倍输出已在 isCrit 处理
   // 减速装备/塔
   var slowPct=(d.slow?d.slow.pct:0)+s.slowBonus;
   if(slowPct>0){ e.slowT=Math.max(e.slowT,(d.slow?d.slow.dur:2)); e.slowPct=Math.min(0.8,slowPct); }
@@ -369,6 +397,7 @@ function auraTick(t, dt){
 var pendingWave=null;
 function startWave(){
   if(G.waveActive||G.over) return;
+  G.hp = G.maxHp = 20 + (G.baseHpBonus||0);
   G.wave++;
   var w = WAVES[Math.min(G.wave-1, WAVES.length-1)];
   G.waveActive=true;
@@ -416,6 +445,72 @@ function fxHit(x,y,txt){G.effects.push({kind:"hit",x:x,y:y,txt:txt,t:0,dur:0.7})
 function fxBolt(x1,y1,x2,y2){G.effects.push({kind:"bolt",x:x1,y:y1,x2:x2,y2:y2,t:0,dur:0.22});}
 function fxRing(x,y,r,color){G.effects.push({kind:"ring",x:x,y:y,r:r,color:color,t:0,dur:0.5});}
 
+/* ================= v2: 局外养成科技树 (木材永久升级, localStorage) ================= */
+var TECHS = [
+  {id:"tech_atk",  name:"⚔️ 武器专精", desc:"全体塔 +4% 伤害/级", max:5, base:30, key:"tk1"},
+  {id:"tech_as",   name:"⚡ 攻速强化", desc:"全体塔 +3% 攻速/级", max:5, base:30, key:"tk2"},
+  {id:"tech_gold", name:"💰 贪婪光环", desc:"击杀金币 +6%/级", max:5, base:40, key:"tk3"},
+  {id:"tech_base", name:"🏰 基地加固", desc:"基地生命 +3/级", max:3, base:60, key:"tk4"},
+  {id:"tech_luck", name:"🍀 幸运女神", desc:"Boss 掉装率提升/级", max:3, base:50, key:"tk5"}
+];
+var TECH_STATE = {};
+function loadMeta(){
+  try{
+    var raw = localStorage.getItem("war3td-meta");
+    var m = raw?JSON.parse(raw):{};
+    TECHS.forEach(function(t){TECH_STATE[t.id]=Math.min(t.max, m[t.key]||0);});
+  }catch(e){ TECHS.forEach(function(t){TECH_STATE[t.id]=0;}); }
+}
+function saveMeta(){
+  try{
+    var m={}; TECHS.forEach(function(t){m[t.key]=TECH_STATE[t.id]||0;});
+    localStorage.setItem("war3td-meta", JSON.stringify(m));
+  }catch(e){}
+}
+function techCost(t){ return t.base + (TECH_STATE[t.id]||0)*t.base; }
+function buyTech(id){
+  var t=TECHS.filter(function(x){return x.id===id;})[0]; if(!t) return false;
+  if((TECH_STATE[id]||0)>=t.max){ toast("已满级"); return false; }
+  var c=techCost(t);
+  if(G.wood<c){ toast("🪵 木材不足 ("+c+")"); return false; }
+  G.wood-=c; TECH_STATE[id]=(TECH_STATE[id]||0)+1; saveMeta();
+  applyTech(); addLog("🔬 科技升级: "+t.name+" Lv."+TECH_STATE[id],"good");
+  G.towers.forEach(recalcTower);
+  toast("🔬 "+t.name+" Lv."+TECH_STATE[id]);
+  return true;
+}
+function applyTech(){
+  G.techAtk = 1 + (TECH_STATE.tech_atk||0)*0.04;
+  G.techAs  = 1 + (TECH_STATE.tech_as||0)*0.03;
+  G.techGold= 1 + (TECH_STATE.tech_gold||0)*0.06;
+  G.baseHpBonus = (TECH_STATE.tech_base||0)*3;
+  G.luck     = (TECH_STATE.tech_luck||0)*0.15;
+  G.maxHp = 20 + G.baseHpBonus;
+}
+loadMeta(); applyTech();
+
+/* ================= v2: 装备商店 (金币/木材购买基础材料) ================= */
+var SHOP_ITEMS = [
+  {id:"claw",   cost:60,  wood:0,  desc:"基础材料 +8 攻击"},
+  {id:"glove",  cost:55,  wood:0,  desc:"基础材料 +10% 攻速"},
+  {id:"frostb", cost:70,  wood:0,  desc:"基础材料 攻击减速"},
+  {id:"rune",   cost:75,  wood:10, desc:"基础材料 攻速光环"},
+  {id:"boot",   cost:65,  wood:0,  desc:"基础材料 +25 射程"},
+  {id:"tome",   cost:70,  wood:0,  desc:"基础材料 +12% 伤害"}
+];
+function buyItem(idx){
+  var s=SHOP_ITEMS[idx]; if(!s) return false;
+  if(G.gold<s.cost||G.wood<s.wood){ toast("资源不足: 需 "+s.cost+"💰 "+s.wood+"🪵"); return false; }
+  G.inv=G.inv||[];
+  if(G.inv.length>=6){ toast("背包已满, 请先装备或出售"); return false; }
+  G.gold-=s.cost; G.wood-=s.wood;
+  G.inv.push(makeItem(s.id));
+  synthInv(G.inv);
+  addLog("🛒 购入 "+IMAP[s.id].icon+" "+IMAP[s.id].name,"gold");
+  toast("🛒 已购入 "+IMAP[s.id].name);
+  return true;
+}
+
 /* ================= 与渲染/UI 模块交互 (ui.js 注入) ================= */
 window.WAR3 = {G:G, TOWERS:TOWERS, TMAP:TMAP, ITEMS:ITEMS, IMAP:IMAP, WAVES:WAVES,
   CHART:CHART, DMG:DMG, ARM:ARM, mult:mult, multLabel:multLabel, MAP:MAP, COLS:COLS, ROWS:ROWS,
@@ -424,5 +519,7 @@ window.WAR3 = {G:G, TOWERS:TOWERS, TMAP:TMAP, ITEMS:ITEMS, IMAP:IMAP, WAVES:WAVE
   startWave:startWave, checkWaveEnd:checkWaveEnd, checkOver:checkOver, synthInv:synthInv,
   makeItem:makeItem, itemDef:itemDef, addLog:addLog, toast:toast, fxPop:fxPop, fxHit:fxHit,
   fxBolt:fxBolt, fxRing:fxRing, gainExp:gainExp, dropItem:dropItem, clamp:clamp, dist:dist,
-  victory:victory, defeat:defeat, $:$, $$:$$};
+  victory:victory, defeat:defeat, $:$, $$:$$,
+  TECHS:TECHS, TECH_STATE:TECH_STATE, buyTech:buyTech, techCost:techCost, applyTech:applyTech,
+  SHOP_ITEMS:SHOP_ITEMS, buyItem:buyItem};
 })();

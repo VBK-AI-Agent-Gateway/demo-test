@@ -91,6 +91,28 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .chart .eq{color:var(--dim)}
 .chart .note{color:var(--dim);font-size:11px;margin-top:6px;line-height:1.6}
 
+/* ===== 科技树 / 装备商店 (v2) ===== */
+.sub-t{font-size:10.5px;color:var(--dim);font-weight:700;margin-left:auto;letter-spacing:0}
+.tech-list{display:flex;flex-direction:column;gap:8px}
+.tech-row{display:flex;align-items:center;gap:9px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.tech-row .tn2{font-size:12.5px;font-weight:900;flex:1;min-width:0}
+.tech-row .td2{font-size:10.5px;color:var(--dim);display:block;font-weight:600}
+.tech-row .lv{font-size:11px;color:var(--gold2);font-weight:900;white-space:nowrap}
+.tech-row .buy{min-height:34px;padding:6px 12px;font-size:12px;border-radius:8px;background:linear-gradient(180deg,#2f7d4f,#1f5c39);border:1.5px solid #4caf7d;color:#eafff3;font-weight:900;white-space:nowrap}
+.tech-row .buy:hover{filter:brightness(1.15)}
+.tech-row .buy:disabled{opacity:.4;filter:grayscale(.7);cursor:not-allowed}
+.tech-row.maxed .buy{background:#333;border-color:#555;color:#999}
+.item-shop{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.is-item{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1.5px solid var(--line);border-radius:11px;padding:8px 10px;min-height:52px;transition:.13s;text-align:left}
+.is-item:hover{border-color:var(--gold);transform:translateY(-2px)}
+.is-item:active{transform:scale(.96)}
+.is-item .ii{font-size:20px}
+.is-item .ib{min-width:0}
+.is-item .in{font-size:12.5px;font-weight:900;display:block}
+.is-item .ic{font-size:11px;color:var(--gold2);font-weight:800;display:block}
+.is-item .ic .wd{color:#7fd4a2}
+.is-item.poor{opacity:.45;filter:grayscale(.7)}
+
 /* 弹窗 */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:grid;place-items:center;z-index:60;padding:16px;backdrop-filter:blur(3px)}
 .m-card{background:var(--panel);border:2px solid var(--gold);border-radius:18px;padding:22px;max-width:560px;width:100%;max-height:86vh;overflow-y:auto;box-shadow:0 24px 70px rgba(0,0,0,.7)}

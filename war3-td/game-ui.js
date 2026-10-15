@@ -220,24 +220,58 @@ function update(dt){
     }
   });
   // 英雄塔终极技能
-  var hero=G.towers.filter(function(t){return t.tDef.special==="hero";})[0];
-  if(hero){
-    ultimateCd-=dt;
-    if(ultimateCd<=0&&G.enemies.length){
-      ultimateCd=8;
+  var heroTowers=G.towers.filter(function(t){return t.tDef.ultimate;});
+  heroTowers.forEach(function(hero){
+    var d=hero.tDef;
+    hero.ultCd=(hero.ultCd||0)-dt;
+    if(hero.ultCd>0||!G.enemies.length) return;
+    if(d.ultimate==="blizzard"){
+      hero.ultCd=8;
       W.fxRing(hero.x,hero.y,260,"#8ecbff");
       G.enemies.forEach(function(e){ if(W.dist(hero,e)<=260) W.dealDamage(e,80,hero,false); });
       W.addLog("🌩️ 大法师·暴风雪 肆虐全场!","good");
+    } else if(d.ultimate==="holystorm"){
+      hero.ultCd=10;
+      W.fxRing(hero.x,hero.y,300,"#fff59d");
+      G.enemies.forEach(function(e){ if(W.dist(hero,e)<=300) W.dealDamage(e,110,hero,false); });
+      G.hp=Math.min(G.maxHp,G.hp+3);
+      if(d.summonWater && G.summons.length<7)
+        G.summons.push({x:hero.x+14,y:hero.y+14,seg:0,t:0,hp:90,atk:16,cd:0,water:true});
+      W.addLog("🛡️ 圣骑士·神圣风暴 + 水元素!","good");
+    } else if(d.ultimate==="metamorph"){
+      hero.ultCd=12;
+      var dur=6; hero.metaT=dur;
+      W.fxRing(hero.x,hero.y,140,"#ce93d8");
+      G.enemies.forEach(function(e){ if(W.dist(hero,e)<=140) W.dealDamage(e,90,hero,true); });
+      W.addLog("😈 恶魔猎手·变身刀扇!","good");
+    } else if(d.ultimate==="bladestorm"){
+      hero.ultCd=14;
+      W.fxRing(hero.x,hero.y,220,"#ff8a65");
+      G.enemies.forEach(function(e){ if(W.dist(hero,e)<=220){ W.dealDamage(e,150,hero,true); } });
+      W.addLog("👺 剑圣·剑刃风暴!","warn");
+    } else if(d.ultimate==="deathdecay"){
+      hero.ultCd=16;
+      W.fxRing(hero.x,hero.y,999,"#b388ff");
+      G.enemies.forEach(function(e){ if(!e.dead) W.dealDamage(e,e.maxHp*0.12,hero,false); });
+      W.addLog("☠️ 巫妖·死亡凋零 全场 -12% HP!","warn");
     }
-  }
-  // 诅咒光环
+    if(hero.metaT>0) hero.metaT-=dt;
+  });
+  // 诅咒光环 (含 Miss 概率: 诅咒塔范围怪物 15% 攻击落空, 简化为缓速)
   G.towers.forEach(function(t){
     if(t.tDef.special!=="curse") return;
     G.enemies.forEach(function(e){
       if(!e.dead&&W.dist(t,e)<=t.stats.range){
         e.curseT=3; e.curseVal=Math.max(e.curseVal,0.25);
+        e.curseMiss=(e.curseMiss||0.15);
       }
     });
+  });
+  // 兽族狂暴: 残血怪物受塔打击更快? —— 换成: 兽族塔对残血+伤害(已在 execute); 狂暴=牛头人/巨魔相邻叠攻速
+  G.towers.forEach(function(t){
+    if(t.raceOrc!==true && t.tDef.race!=="兽族") return;
+    var near=G.towers.filter(function(o){return o!==t&&o.tDef.race==="兽族"&&W.dist(o,t)<150;}).length;
+    t.stats.auraAs=Math.min(0.6,(t.stats.auraAs||0)+near*0.05);
   });
   // 毁灭之角光环: 周围塔附带混沌(视觉)
   // 子弹/特效
@@ -273,6 +307,21 @@ function syncUI(){
     var id=c.getAttribute("data-t");
     c.classList.toggle("poor",G.gold<W.TMAP[id].cost);
     c.classList.toggle("on",G.build===id);
+  });
+  // 科技树/装备商店成本置灰
+  $$("[data-tech]").forEach(function(b){
+    var t=W.TECHS.filter(function(x){return x.id===b.getAttribute("data-tech");})[0];
+    if(!t) return;
+    var full=(W.TECH_STATE[t.id]||0)>=t.max, cost=W.techCost(t);
+    b.disabled=full||G.wood<cost;
+    if(!full) b.textContent=cost+"🪵";
+    b.parentElement.classList.toggle("maxed",full);
+    if(full) b.textContent="满级";
+  });
+  $$("[data-buy]").forEach(function(b){
+    var s=W.SHOP_ITEMS[+b.getAttribute("data-buy")];
+    if(!s) return;
+    b.classList.toggle("poor",G.gold<s.cost||G.wood<s.wood||(G.inv||[]).length>=6);
   });
   // 选中塔信息
   if(G.sel){
@@ -503,9 +552,47 @@ $("#btnStart").addEventListener("click",function(){
   openWaveModal();
 });
 
+/* ================= v2: 科技树 / 装备商店 UI ================= */
+function renderTech(){
+  if(!W.TECHS) return;
+  var h="";
+  W.TECHS.forEach(function(t){
+    var lv=W.TECH_STATE[t.id]||0, cost=W.techCost(t), full=lv>=t.max;
+    h+='<div class="tech-row'+(full?" maxed":"")+'">'+
+      '<div class="tn2">'+t.name+'<span class="td2">'+t.desc+'</span></div>'+
+      '<span class="lv">Lv.'+lv+'/'+t.max+'</span>'+
+      '<button class="buy" data-tech="'+t.id+'"'+((full||G.wood<cost)?" disabled":"")+'>'+(full?"满级":cost+"🪵")+'</button>'+
+      '</div>';
+  });
+  $("#techList").innerHTML=h;
+}
+function renderItemShop(){
+  if(!W.SHOP_ITEMS) return;
+  var h="";
+  W.SHOP_ITEMS.forEach(function(s,i){
+    var it=W.IMAP[s.id];
+    var poor=G.gold<s.cost||G.wood<s.wood||(G.inv||[]).length>=6;
+    h+='<button class="is-item'+(poor?" poor":"")+'" data-buy="'+i+'">'+
+      '<span class="ii">'+it.icon+'</span>'+
+      '<span class="ib"><span class="in">'+it.name+'</span>'+
+      '<span class="ic">'+s.cost+'💰'+(s.wood?' <span class="wd">'+s.wood+'🪵</span>':'')+' · 合成材料</span></span>'+
+      '</button>';
+  });
+  $("#itemShop").innerHTML=h;
+}
+$("#techList").addEventListener("click",function(e){
+  var b=e.target.closest("[data-tech]"); if(!b) return;
+  W.buyTech(b.getAttribute("data-tech"));
+  renderTech(); syncUI();
+});
+$("#itemShop").addEventListener("click",function(e){
+  var b=e.target.closest("[data-buy]"); if(!b) return;
+  if(W.buyItem(+b.getAttribute("data-buy"))){ renderItemShop(); syncUI(); }
+});
+
 /* ================= 启动 ================= */
 G.inv=[];
-renderShop();
+renderShop(); renderTech(); renderItemShop();
 fitCanvas();
 requestAnimationFrame(function(ts){last=ts;requestAnimationFrame(loop);});
 W.addLog("🏰 War3 TD 已载入 · 克制链生效中","good");
