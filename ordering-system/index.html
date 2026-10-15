@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>鲜味小馆 · 点餐系统</title>
+<style>
+  :root{
+    --bg:#f6f4ef;--card:#ffffff;--ink:#2b2620;--muted:#8a8175;
+    --brand:#e8590c;--brand2:#ff8a3d;--green:#2f9e44;--red:#e03131;
+    --line:#e9e4da;--gold:#f59f00;
+    --shadow:0 6px 24px rgba(60,45,20,.08);
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  button{font-family:inherit}
+  a{color:inherit;text-decoration:none}
+  .hidden{display:none !important}
+
+  /* ===== top bar ===== */
+  header{
+    position:sticky;top:0;z-index:50;background:linear-gradient(90deg,#e8590c,#ff8a3d);
+    color:#fff;box-shadow:0 4px 16px rgba(232,89,12,.3);
+  }
+  .nav{
+    max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:14px;
+    padding:12px 16px;flex-wrap:wrap;
+  }
+  .brand{font-size:19px;font-weight:800;letter-spacing:.5px;display:flex;gap:8px;align-items:center}
+  .brand .logo{font-size:22px}
+  .nav .links{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .nav .links a{
+    padding:7px 13px;border-radius:999px;font-size:14px;font-weight:600;
+    background:rgba(255,255,255,.15);
+  }
+  .nav .links a.active,.nav .links a:hover{background:#fff;color:var(--brand)}
+  .cart-badge{position:relative}
+  .cart-badge .dot{
+    position:absolute;top:-4px;right:-6px;background:#fff;color:var(--brand);
+    border-radius:999px;font-size:11px;font-weight:800;min-width:18px;height:18px;
+    display:flex;align-items:center;justify-content:center;padding:0 4px;
+  }
+
+  main{max-width:1080px;margin:0 auto;padding:18px 16px 90px}
+
+  /* ===== generic ===== */
+  .page-title{font-size:22px;font-weight:800;margin:6px 0 14px;display:flex;align-items:center;gap:8px}
+  .muted{color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    background:var(--brand);color:#fff;border:0;border-radius:12px;
+    padding:11px 18px;font-size:15px;font-weight:700;cursor:pointer;
+    box-shadow:0 4px 0 #c2410c;transition:transform .05s;
+  }
+  .btn:active{transform:translateY(2px);box-shadow:0 2px 0 #c2410c}
+  .btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+  .btn.ghost{background:#fff;color:var(--brand);border:2px solid var(--brand);box-shadow:none}
+  .btn.green{background:var(--green);box-shadow:0 4px 0 #237a36}
+  .btn.block{width:100%}
+  .btn.sm{padding:7px 12px;font-size:13.5px;border-radius:10px}
+  .input,.select,.textarea{
+    width:100%;background:#fff;border:2px solid var(--line);border-radius:12px;
+    padding:11px 13px;font-size:15px;color:var(--ink);
+  }
+  .input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--brand)}
+  .label{display:block;font-size:13.5px;font-weight:700;color:#6b6255;margin:12px 0 6px}
+  .err{color:var(--red);font-size:13px;margin-top:5px;display:none}
+  .err.show{display:block}
+  .pill{display:inline-block;background:#fff4e6;color:var(--brand);border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:700}
+  .tag{font-size:11.5px;background:#f1f3f5;color:#6b7280;border-radius:6px;padding:1px 6px;margin-right:4px}
+  .tag.hot{background:#ffe3e3;color:var(--red)}
+  .tag.new{background:#d3f9d8;color:var(--green)}
+
+  /* ===== menu ===== */
+  .cats{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;position:sticky;top:58px;background:var(--bg);z-index:20}
+  .cat{
+    padding:8px 16px;border-radius:999px;background:#fff;border:2px solid var(--line);
+    font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;
+  }
+  .cat.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+  .dish{overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:transform .12s}
+  .dish:hover{transform:translateY(-3px)}
+  .dish .thumb{
+    height:140px;display:flex;align-items:center;justify-content:center;font-size:60px;
+    background:linear-gradient(135deg,#fff4e6,#ffe8cc);
+  }
+  .dish .body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
+  .dish .name{font-weight:800;font-size:16px}
+  .dish .desc{font-size:13px;color:var(--muted);min-height:38px}
+  .dish .row{display:flex;align-items:center;justify-content:space-between;margin-top:auto}
+  .price{color:var(--brand);font-weight:800;font-size:18px}
+  .price small{font-weight:600;font-size:12px}
+
+  /* ===== cart bar ===== */
+  #cartBar{
+    position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;
+    border-top:2px solid var(--line);box-shadow:0 -6px 24px rgba(0,0,0,.08);
+  }
+  .cartBar-inner{
+    max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:10px 16px;
+  }
+  .cartBar .sum{font-size:14px}
+  .cartBar .sum b{color:var(--brand);font-size:20px}
+  .cartBar .go{margin-left:auto}
+
+  /* ===== cart list ===== */
+  .line-item{display:flex;gap:12px;align-items:center;padding:14px;border-bottom:1px solid var(--line)}
+  .line-item:last-child{border-bottom:0}
+  .line-item .thumb{width:56px;height:56px;border-radius:12px;background:#fff4e6;display:flex;align-items:center;justify-content:center;font-size:30px;flex:0 0 auto}
+  .line-item .info{flex:1;min-width:0}
+  .line-item .nm{font-weight:700}
+  .qty{display:flex;align-items:center;gap:8px}
+  .qty button{width:30px;height:30px;border-radius:8px;border:2px solid var(--line);background:#fff;font-size:16px;font-weight:800;cursor:pointer;color:var(--brand)}
+  .qty span{min-width:22px;text-align:center;font-weight:700}
+  .summary{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+  .summary .row{display:flex;justify-content:space-between;font-size:14.5px}
+  .summary .row.total{font-size:18px;font-weight:800;border-top:1px dashed var(--line);padding-top:10px}
+  .summary .row.total .v{color:var(--brand)}
+  .coupon-row{display:flex;gap:8px}
+  .empty{text-align:center;padding:50px 20px;color:var(--muted)}
+  .empty .big{font-size:56px;margin-bottom:8px}
+
+  /* ===== steps ===== */
+  .steps{display:flex;gap:6px;margin:4px 0 16px;flex-wrap:wrap}
+  .step{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);font-weight:700}
+  .step .n{width:24px;height:24px;border-radius:999px;background:#ece7dd;color:#8a8175;display:flex;align-items:center;justify-content:center;font-size:13px}
+  .step.active{color:var(--brand)}
+  .step.active .n{background:var(--brand);color:#fff}
+  .step.done .n{background:var(--green);color:#fff}
+  .step .arrow{color:#cfc7ba}
+
+  /* ===== checkout form ===== */
+  .form-card{padding:6px 18px 18px;margin-bottom:16px}
+  .seg{display:flex;gap:8px;flex-wrap:wrap}
+  .seg .opt{
+    flex:1;min-width:110px;text-align:center;padding:12px;border-radius:12px;cursor:pointer;
+    border:2px solid var(--line);background:#fff;font-weight:700;font-size:14px;
+  }
+  .seg .opt small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+  .seg .opt.active{border-color:var(--brand);background:#fff4e6;color:var(--brand)}
+
+  /* ===== payment ===== */
+  .pay-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .pay-opt{
+    display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;
+    border:2px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;font-weight:700;font-size:14px;
+  }
+  .pay-opt .ico{font-size:26px}
+  .pay-opt small{color:var(--muted);font-weight:500;font-size:11.5px}
+  .pay-opt.active{border-color:var(--brand);background:#fff4e6;box-shadow:0 4px 14px rgba(232,89,12,.15)}
+  .card-fields{margin-top:14px;padding:14px;background:#fbf9f5;border:1px dashed var(--line);border-radius:12px}
+  .field-2{display:flex;gap:10px}
+  .field-2 > div{flex:1}
+  .secure{display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--green);margin-top:10px}
+  .demo-hint{background:#fff9db;border:1px solid #ffe066;border-radius:10px;padding:9px 12px;font-size:13px;color:#8a6d00;margin-top:12px}
+
+  /* ===== paying ===== */
+  .paying{display:flex;flex-direction:column;align-items:center;gap:16px;padding:50px 20px}
+  .spinner{width:64px;height:64px;border-radius:999px;border:7px solid #ffe3e3;border-top-color:var(--brand);animation:spin 0.9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ===== success ===== */
+  .ticket{max-width:440px;margin:0 auto;overflow:hidden;text-align:center}
+  .ticket .top{background:linear-gradient(90deg,#2f9e44,#69db7c);color:#fff;padding:26px 20px}
+  .ticket .top .ok{font-size:52px}
+  .ticket .top h2{margin:6px 0 2px;font-size:22px}
+  .ticket .code{
+    margin:14px auto;background:#fff;border:3px dashed var(--brand);border-radius:14px;
+    padding:16px;font-size:40px;font-weight:900;letter-spacing:6px;color:var(--brand);
+  }
+  .ticket .body{padding:6px 20px 22px}
+  .kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14.5px}
+  .kv:last-child{border-bottom:0}
+  .kv .k{color:var(--muted)}
+  .kv .v{font-weight:700;text-align:right}
+
+  /* ===== orders / timeline ===== */
+  .order-card{padding:14px 16px;margin-bottom:14px}
+  .order-card .head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  .status{font-size:12.5px;font-weight:800;border-radius:999px;padding:3px 11px}
+  .status.paid{background:#fff4e6;color:var(--brand)}
+  .status.making{background:#e7f5ff;color:#1c7ed6}
+  .status.ready{background:#d3f9d8;color:var(--green)}
+  .status.done{background:#f1f3f5;color:#6b7280}
+  .timeline{margin-top:14px;padding-left:6px}
+  .tl-item{position:relative;padding:0 0 16px 26px;border-left:3px solid #e9e4da;margin-left:6px}
+  .tl-item:last-child{border-left-color:transparent;padding-bottom:0}
+  .tl-item::before{
+    content:"";position:absolute;left:-9px;top:2px;width:15px;height:15px;border-radius:999px;
+    background:#fff;border:3px solid #cfc7ba;
+  }
+  .tl-item.done::before{background:var(--brand);border-color:var(--brand)}
+  .tl-item.done{border-left-color:var(--brand)}
+  .tl-item .t{font-size:13.5px;font-weight:700}
+  .tl-item .time{font-size:12px;color:var(--muted)}
+  .tl-item .d{font-size:13px;color:var(--muted)}
+  .items-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{background:#f8f6f1;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12.5px}
+
+  /* ===== modal ===== */
+  .overlay{position:fixed;inset:0;background:rgba(30,25,15,.55);display:none;align-items:flex-end;justify-content:center;z-index:100}
+  .overlay.open{display:flex}
+  .modal{
+    background:#fff;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;
+    border-radius:22px 22px 0 0;animation:up .18s ease-out;
+  }
+  @keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:translateY(0);opacity:1}}
+  .modal .m-thumb{height:170px;background:linear-gradient(135deg,#fff4e6,#ffe8cc);display:flex;align-items:center;justify-content:center;font-size:80px;position:relative}
+  .modal .m-close{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:999px;background:rgba(255,255,255,.9);border:0;font-size:18px;cursor:pointer}
+  .modal .m-body{padding:16px 18px 22px}
+  .modal h3{margin:0 0 4px;font-size:21px}
+  .opt-group{margin-top:12px}
+  .opt-group .ttl{font-weight:800;font-size:14px;margin-bottom:8px}
+  .opt-chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip-opt{padding:8px 14px;border-radius:999px;border:2px solid var(--line);background:#fff;cursor:pointer;font-size:13.5px;font-weight:600}
+  .chip-opt.active{border-color:var(--brand);background:#fff4e6;color:var(--brand)}
+
+  /* toast */
+  #toast{
+    position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:200;
+    background:#2b2620;color:#fff;padding:11px 20px;border-radius:999px;font-size:14px;
+    opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;max-width:90vw;
+  }
+  #toast.show{opacity:.96}
+
+  footer{max-width:1080px;margin:0 auto;padding:10px 16px 24px;color:var(--muted);font-size:12.5px;text-align:center}
+
+  /* ===== responsive 3 breakpoints ===== */
+  @media (max-width:900px){
+    .grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+    .cats{top:56px}
+  }
+  @media (max-width:640px){
+    main{padding:14px 12px 100px}
+    .grid{grid-template-columns:repeat(2,1fr);gap:10px}
+    .dish .thumb{height:110px;font-size:48px}
+    .dish .desc{min-height:0}
+    .page-title{font-size:19px}
+    .nav{padding:10px 12px;gap:8px}
+    .brand{font-size:17px}
+    .nav .links a{padding:6px 10px;font-size:13px}
+    .code{font-size:34px !important}
+    .field-2{flex-direction:column;gap:0}
+  }
+  @media (max-width:420px){
+    .grid{grid-template-columns:1fr 1fr;gap:8px}
+    .dish .name{font-size:14.5px}
+    .price{font-size:16px}
+    .btn{padding:10px 14px;font-size:14px}
+    .ticket .code{font-size:30px !important;letter-spacing:4px}
+    .seg .opt{min-width:90px;padding:10px 6px;font-size:13px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <div class="brand"><span class="logo">🍜</span> 鲜味小馆</div>
+    <nav class="links" id="navLinks">
+      <a href="#/menu" data-route="menu">🍽 点餐</a>
+      <a href="#/cart" data-route="cart" class="cart-badge">🛒 购物车<span class="dot hidden" id="navCartDot">0</span></a>
+      <a href="#/orders" data-route="orders">📦 订单</a>
+    </nav>
+  </div>
+</header>
+
+<main id="app"><!-- views render here --></main>
+
+<div id="cartBar">
+  <div class="cartBar-inner">
+    <div style="font-size:30px">🛒</div>
+    <div class="sum">
+      <div>合计 <b id="barTotal">¥0.00</b></div>
+      <div class="muted" style="font-size:12.5px" id="barCount">还没点菜哦</div>
+    </div>
+    <a class="btn go" href="#/checkout" id="barGo">去下单 →</a>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<div id="toast"></div>
+
+<footer>鲜味小馆点餐系统 · 全流程演示（菜单 → 购物车 → 下单 → 支付 → 取餐码 → 订单）· 支付为前端模拟，不产生真实扣款</footer>
+
+<script>
+"use strict";
+/* ============================================================
+   全流程点餐系统 (SPA, hash routing, localStorage)
+   menu -> cart -> checkout -> pay -> paying -> success -> orders
+============================================================ */
+
+/* ---------------- data ---------------- */
+const MENU = [
+  // 招牌面
+  { id:"m1", cat:"招牌面", name:"红烧牛肉面", emoji:"🍜", price:32, desc:"慢炖牛腩、手工拉面、浓郁汤底", tags:["招牌","可加面"], spicy:1 },
+  { id:"m2", cat:"招牌面", name:"酸菜鱼片面", emoji:"🐟", price:34, desc:"鲜鱼片配老坛酸菜，酸辣开胃", tags:["新品"], spicy:2 },
+  { id:"m3", cat:"招牌面", name:"葱油拌面", emoji:"🍝", price:18, desc:"熬制葱油、劲道细面，经典本帮味", tags:["素食"], spicy:0 },
+  { id:"m4", cat:"招牌面", name:"番茄鸡蛋面", emoji:"🍅", price:20, desc:"沙瓤番茄+嫩滑蛋花，孩子最爱", tags:["不辣"], spicy:0 },
+  // 盖饭
+  { id:"r1", cat:"盖饭", name:"照烧鸡排饭", emoji:"🍱", price:26, desc:"现煎鸡排刷照烧汁，配溏心蛋", tags:["热销"], spicy:0 },
+  { id:"r2", cat:"盖饭", name:"鱼香肉丝饭", emoji:"🍚", price:24, desc:"咸甜酸辣、下饭神器", tags:["微辣"], spicy:1 },
+  { id:"r3", cat:"盖饭", name:"黑椒牛柳饭", emoji:"🥩", price:36, desc:"嫩肩牛柳+彩椒，黑椒浓香", tags:["加量"], spicy:1 },
+  // 小吃
+  { id:"s1", cat:"小吃", name:"黄金炸鸡翅(3只)", emoji:"🍗", price:19, desc:"外酥里嫩，秘制腌料", tags:["人气"], spicy:1 },
+  { id:"s2", cat:"小吃", name:"香酥小馄饨", emoji:"🥟", price:14, desc:"皮薄馅足，一口一个", tags:[], spicy:0 },
+  { id:"s3", cat:"小吃", name:"凉拌木耳", emoji:"🥗", price:12, desc:"爽脆开胃，蒜香足", tags:["素食"], spicy:1 },
+  { id:"s4", cat:"小吃", name:"炸薯条(大)", emoji:"🍟", price:13, desc:"现炸粗切，配番茄酱", tags:[], spicy:0 },
+  // 饮品
+  { id:"d1", cat:"饮品", name:"鲜榨橙汁", emoji:"🍊", price:15, desc:"当日现榨，无添加", tags:["鲜果"], spicy:0 },
+  { id:"d2", cat:"饮品", name:"柠檬气泡水", emoji:"🍋", price:12, desc:"冰爽气泡，解腻必备", tags:["冰"], spicy:0 },
+  { id:"d3", cat:"饮品", name:"珍珠奶茶", emoji:"🧋", price:16, desc:"Q弹珍珠，醇香奶盖", tags:["热销"], spicy:0 },
+  { id:"d4", cat:"饮品", name:"冰镇酸梅汤", emoji:"🍹", price:10, desc:"乌梅山楂熬煮，古法配方", tags:["解辣"], spicy:0 },
+  // 甜品
+  { id:"c1", cat:"甜品", name:"杨枝甘露", emoji:"🥭", price:18, desc:"芒果+西柚+西米，港式经典", tags:["招牌"], spicy:0 },
+  { id:"c2", cat:"甜品", name:"双皮奶", emoji:"🍮", price:14, desc:"顺德做法，奶皮厚香", tags:[], spicy:0 },
+];
+
+const CATS = ["招牌面","盖饭","小吃","饮品","甜品"];
+const SPICE = ["不辣","微辣","中辣","变态辣"];
+const TEMP  = ["常温","少冰","多冰"];
+const PORTION = [{n:"标准",p:0},{n:"加面",p:3},{n:"加量",p:5}];
+
+/* ---------------- state ---------------- */
+const LS_CART = "ods_cart_v1", LS_ORDERS = "ods_orders_v1";
+let cart = load(LS_CART, []);
+let orders = load(LS_ORDERS, []);
+let activeCat = "招牌面";
+let checkout = { mode:"dine", table:"", addr:"", name:"", phone:"", note:"" };
+let payMethod = "wechat";
+let coupon = { code:"", applied:0 };
+
+function load(k, dflt) { try { return JSON.parse(localStorage.getItem(k)) ?? dflt; } catch(e){ return dflt; } }
+function save() { localStorage.setItem(LS_CART, JSON.stringify(cart)); localStorage.setItem(LS_ORDERS, JSON.stringify(orders)); }
+function yuan(n) { return "¥" + n.toFixed(2); }
+function nowStr() { const d=new Date(); const p=x=>String(x).padStart(2,"0"); return p(d.getHours())+":"+p(d.getMinutes())+":"+(p(d.getSeconds())); }
+
+/* ---------------- cart math ---------------- */
+function cartCount() { return cart.reduce((s,i)=>s+i.qty,0); }
+function subtotal() { return cart.reduce((s,i)=>s+i.unitPrice*i.qty,0); }
+function packFee() { return checkout.mode==="take" && cart.length>0 ? 1.0 : 0; }
+function shipFee() { return checkout.mode==="delivery" && subtotal()>0 ? (subtotal()>=50?0:5) : 0; }
+function discount() { // 满100减15，满60减8，叠加输入的券
+  let d = 0, sub = subtotal();
+  if (sub>=100) d=15; else if (sub>=60) d=8;
+  return d + coupon.applied;
+}
+function total() { return Math.max(0, subtotal()+packFee()+shipFee()-discount()); }
+
+function addToCart(dish, opts) {
+  const optsKey = JSON.stringify(opts||{});
+  const unitPrice = dish.price + (opts.extra||0);
+  const found = cart.find(i=>i.dishId===dish.id && JSON.stringify(i.opts)===optsKey);
+  if (found) found.qty += opts.qty||1;
+  else cart.push({
+    uid:"u"+Date.now()+Math.random().toString(36).slice(2,6),
+    dishId:dish.id, name:dish.name, emoji:dish.emoji,
+    unitPrice, qty:opts.qty||1, opts:opts||{}
+  });
+  save(); updateBar(); toast("已加入购物车 🛒");
+}
+
+/* ---------------- routing ---------------- */
+function route() {
+  const hash = location.hash || "#/menu";
+  const parts = hash.replace("#/","").split("/"); // e.g. ["orders"] or ["dish","m1"]
+  const r = parts[0] || "menu";
+  document.querySelectorAll("#navLinks a").forEach(a=>a.classList.toggle("active", a.dataset.route===r));
+  if (r==="menu") renderMenu();
+  else if (r==="cart") renderCart();
+  else if (r==="checkout") renderCheckout();
+  else if (r==="pay") renderPay();
+  else if (r==="paying") renderPaying();
+  else if (r==="success") renderSuccess(parts[1]);
+  else if (r==="orders") renderOrders();
+  else renderMenu();
+  window.scrollTo(0,0);
+  updateBar();
+}
+window.addEventListener("hashchange", route);
+
+/* ---------------- views ---------------- */
+function steps(cur) {
+  const all = ["菜单","购物车","下单","支付","完成"];
+  const idx = all.indexOf(cur);
+  return `<div class="steps">` + all.map((s,i)=>{
+    const cls = i<idx?"done":i===idx?"active":"";
+    return `<div class="step ${cls}"><span class="n">${i<idx?"✓":i+1}</span>${s}</div>` + (i<all.length-1?`<span class="step arrow">›</span>`:"");
+  }).join("") + `</div>`;
+}
+
+/* ---- menu ---- */
+function renderMenu() {
+  const list = MENU.filter(d=>d.cat===activeCat);
+  const app = document.getElementById("app");
+  app.innerHTML = `
+    <div class="page-title">🍽 今天吃点什么？<span class="pill">满100减15 · 满60减8</span></div>
+    <div class="cats" id="cats">
+      ${CATS.map(c=>`<div class="cat ${c===activeCat?"active":""}" data-c="${c}">${c}</div>`).join("")}
+    </div>
+    <div class="grid">
+      ${list.map(d=>`
+        <div class="card dish" data-id="${d.id}">
+          <div class="thumb">${d.emoji}</div>
+          <div class="body">
+            <div class="name">${d.name} ${d.tags.map((t,i)=>`<span class="tag ${t==="招牌"||t==="热销"?"hot":t==="新品"?"new":""}">${t}</span>`).join("")}</div>
+            <div class="desc">${d.desc}</div>
+            <div class="row">
+              <div class="price">¥${d.price}<small> 起</small></div>
+              <button class="btn sm" data-add="${d.id}">＋ 加入</button>
+            </div>
+          </div>
+        </div>`).join("")}
+    </div>`;
+  app.querySelectorAll(".cat").forEach(el=>el.onclick=()=>{ activeCat=el.dataset.c; renderMenu(); });
+  app.querySelectorAll(".dish").forEach(el=>{
+    el.onclick=(e)=>{ if(e.target.dataset.add) return; openDish(el.dataset.id); };
+  });
+  app.querySelectorAll("[data-add]").forEach(el=>{
+    el.onclick=(e)=>{ e.stopPropagation(); openDish(el.dataset.add); };
+  });
+}
+
+/* ---- dish modal ---- */
+function openDish(id) {
+  const d = MENU.find(x=>x.id===id); if(!d) return;
+  const modal = document.getElementById("modal");
+  modal.innerHTML = `
+    <div class="m-thumb">${d.emoji}<button class="m-close" id="mClose">✕</button></div>
+    <div class="m-body">
+      <h3>${d.name} <span class="price">¥${d.price}</span></h3>
+      <div class="muted" style="font-size:13.5px">${d.desc}</div>
+      <div class="opt-group"><div class="ttl">份量</div><div class="opt-chips" id="portion">
+        ${PORTION.map((p,i)=>`<div class="chip-opt ${i===0?"active":""}" data-p="${p.p}" data-n="${p.n}">${p.n}${p.p?` +¥${p.p}`:""}</div>`).join("")}
+      </div></div>
+      <div class="opt-group"><div class="ttl">辣度</div><div class="opt-chips" id="spice">
+        ${SPICE.map((s,i)=>`<div class="chip-opt ${i===1?"active":""}" data-s="${s}">${s}</div>`).join("")}
+      </div></div>
+      <div class="opt-group"><div class="ttl">温度（饮品/冰品）</div><div class="opt-chips" id="temp">
+        ${TEMP.map((t,i)=>`<div class="chip-opt ${i===0?"active":""}" data-t="${t}">${t}</div>`).join("")}
+      </div></div>
+      <div class="opt-group"><div class="ttl">备注</div>
+        <input class="input" id="mNote" placeholder="如：不要香菜、面软一点…"></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:16px">
+        <div class="qty"><button id="mMinus">−</button><span id="mQty">1</span><button id="mPlus">＋</button></div>
+        <button class="btn block" id="mAdd" style="flex:1">加入购物车</button>
+      </div>
+    </div>`;
+  document.getElementById("overlay").classList.add("open");
+  let qty=1, extra=0, portion=PORTION[0].n, spice=SPICE[1], temp=TEMP[0];
+  const pick=(boxId, cb)=>{
+    modal.querySelectorAll("#"+boxId+" .chip-opt").forEach(c=>c.onclick=()=>{
+      modal.querySelectorAll("#"+boxId+" .chip-opt").forEach(x=>x.classList.remove("active"));
+      c.classList.add("active"); cb(c);
+    });
+  };
+  pick("portion", c=>{ extra=+c.dataset.p; portion=c.dataset.n; });
+  pick("spice", c=>{ spice=c.dataset.s; });
+  pick("temp", c=>{ temp=c.dataset.t; });
+  modal.querySelector("#mMinus").onclick=()=>{ qty=Math.max(1,qty-1); modal.querySelector("#mQty").textContent=qty; };
+  modal.querySelector("#mPlus").onclick=()=>{ qty=Math.min(99,qty+1); modal.querySelector("#mQty").textContent=qty; };
+  modal.querySelector("#mClose").onclick=closeModal;
+  modal.querySelector("#mAdd").onclick=()=>{
+    const note = modal.querySelector("#mNote").value.trim();
+    addToCart(d, { qty, portion, spice, temp, note, extra });
+    closeModal();
+  };
+}
+function closeModal(){ document.getElementById("overlay").classList.remove("open"); }
+document.getElementById("overlay").onclick=(e)=>{ if(e.target.id==="overlay") closeModal(); };
+
+/* ---- cart ---- */
+function renderCart() {
+  const app = document.getElementById("app");
+  if (cart.length===0) {
+    app.innerHTML = `${steps("购物车")}
+      <div class="card empty"><div class="big">🛒</div>购物车空空如也<br><br>
+      <a class="btn" href="#/menu">去点餐 →</a></div>`;
+    return;
+  }
+  app.innerHTML = `
+    ${steps("购物车")}
+    <div class="card" style="margin-bottom:16px">
+      ${cart.map(i=>`
+        <div class="line-item">
+          <div class="thumb">${i.emoji}</div>
+          <div class="info">
+            <div class="nm">${i.name}</div>
+            <div class="muted" style="font-size:12.5px">${optsText(i.opts)}</div>
+            <div class="price" style="font-size:15px">${yuan(i.unitPrice)}</div>
+          </div>
+          <div class="qty">
+            <button data-dec="${i.uid}">−</button><span>${i.qty}</span><button data-inc="${i.uid}">＋</button>
+          </div>
+          <button class="btn sm ghost" data-del="${i.uid}" title="删除" style="padding:6px 9px">🗑</button>
+        </div>`).join("")}
+    </div>
+    <div class="card summary">
+      <div class="row"><span>菜品小计</span><span>${yuan(subtotal())}</span></div>
+      <div class="row"><span>优惠（满减）</span><span style="color:var(--red)">−${yuan(discount())}</span></div>
+      <div class="row"><span>优惠码</span>
+        <span style="display:flex;gap:8px;align-items:center">
+          <input class="input" id="coupon" placeholder="如 NEW10" style="width:110px;padding:6px 10px" value="${coupon.code}">
+          <button class="btn sm" id="applyCoupon">使用</button>
+        </span></div>
+      <div class="row total"><span>合计（不含餐盒/配送费）</span><span class="v">${yuan(Math.max(0,subtotal()-discount()))}</span></div>
+      <a class="btn block" href="#/checkout">去下单 →</a>
+    </div>`;
+  app.querySelectorAll("[data-inc]").forEach(b=>b.onclick=()=>changeQty(b.dataset.inc,1));
+  app.querySelectorAll("[data-dec]").forEach(b=>b.onclick=()=>changeQty(b.dataset.dec,-1));
+  app.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
+    cart = cart.filter(i=>i.uid!==b.dataset.del); save(); renderCart(); toast("已删除");
+  });
+  app.querySelector("#applyCoupon").onclick=()=>{
+    const code = app.querySelector("#coupon").value.trim().toUpperCase();
+    if (code==="NEW10"){ coupon={code,applied:10}; toast("优惠码生效 −¥10"); }
+    else if (code==="VIP20" && subtotal()>=100){ coupon={code,applied:20}; toast("VIP 券生效 −¥20"); }
+    else { coupon={code:"",applied:0}; toast("优惠码无效（试试 NEW10）"); }
+    renderCart();
+  };
+}
+function optsText(o){
+  if(!o) return "";
+  const parts=[];
+  if(o.portion && o.portion!=="标准") parts.push(o.portion);
+  if(o.spice && o.spice!=="微辣") parts.push(o.spice);
+  if(o.temp && o.temp!=="常温") parts.push(o.temp);
+  if(o.note) parts.push("备注:"+o.note);
+  return parts.join(" · ") || "标准";
+}
+function changeQty(uid, d){
+  const it = cart.find(i=>i.uid===uid); if(!it) return;
+  it.qty += d;
+  if (it.qty<=0) cart = cart.filter(i=>i.uid!==uid);
+  save(); renderCart();
+}
+
+/* ---- checkout ---- */
+function renderCheckout(){
+  const app = document.getElementById("app");
+  if (cart.length===0){ location.hash="#/cart"; return; }
+  app.innerHTML = `
+    ${steps("下单")}
+    <div class="card form-card">
+      <div class="label">取餐方式</div>
+      <div class="seg" id="modeSeg">
+        <div class="opt ${checkout.mode==="dine"?"active":""}" data-m="dine">🍽 堂食<small>到桌用餐</small></div>
+        <div class="opt ${checkout.mode==="take"?"active":""}" data-m="take">🥡 外带<small>到店自取 +餐盒费¥1</small></div>
+        <div class="opt ${checkout.mode==="delivery"?"active":""}" data-m="delivery">🛵 外送<small>满50免配送费</small></div>
+      </div>
+
+      <div id="dineField" class="${checkout.mode==="dine"?"":"hidden"}">
+        <label class="label" for="fTable">桌号 *</label>
+        <select class="select" id="fTable">${["","A1","A2","A3","B1","B2","B3","C1","C2"].map(t=>`<option value="${t}" ${checkout.table===t?"selected":""}>${t||"请选择桌号"}</option>`).join("")}</select>
+        <div class="err" id="eTable">请选择桌号</div>
+      </div>
+
+      <div id="addrField" class="${checkout.mode==="delivery"?"":"hidden"}">
+        <label class="label" for="fAddr">外送地址 *</label>
+        <input class="input" id="fAddr" placeholder="如：科技园3号楼 1201" value="${checkout.addr}">
+        <div class="err" id="eAddr">请填写外送地址（至少4个字）</div>
+      </div>
+
+      <label class="label" for="fName">联系人 *</label>
+      <input class="input" id="fName" placeholder="您的称呼" value="${checkout.name}">
+      <div class="err" id="eName">请填写联系人（2-20字符）</div>
+
+      <label class="label" for="fPhone">手机号 *</label>
+      <input class="input" id="fPhone" inputmode="numeric" maxlength="11" placeholder="11位手机号" value="${checkout.phone}">
+      <div class="err" id="ePhone">请输入有效的11位手机号</div>
+
+      <label class="label" for="fNote">订单备注</label>
+      <textarea class="textarea" id="fNote" rows="2" placeholder="如：放门口、少放辣…">${checkout.note}</textarea>
+    </div>
+
+    <div class="card summary" style="margin-bottom:16px">
+      <div class="row"><span>菜品 ${cartCount()} 件</span><span>${yuan(subtotal())}</span></div>
+      <div class="row"><span>优惠</span><span style="color:var(--red)">−${yuan(discount())}</span></div>
+      <div class="row"><span>餐盒费</span><span>${yuan(packFee())}</span></div>
+      <div class="row"><span>配送费</span><span>${yuan(shipFee())}</span></div>
+      <div class="row total"><span>应付</span><span class="v">${yuan(total())}</span></div>
+    </div>
+
+    <button class="btn green block" id="toPay" style="font-size:17px">💰 确认下单 · 去支付 ${yuan(total())}</button>`;
+
+  const modeSeg = app.querySelector("#modeSeg");
+  modeSeg.querySelectorAll(".opt").forEach(o=>o.onclick=()=>{
+    checkout.mode=o.dataset.m; renderCheckout();
+  });
+  ["fTable","fAddr","fName","fPhone","fNote"].forEach(id=>{
+    const el=app.querySelector("#"+id); if(!el) return;
+    el.oninput=()=>{
+      if(id==="fTable") checkout.table=el.value;
+      if(id==="fAddr") checkout.addr=el.value;
+      if(id==="fName") checkout.name=el.value;
+      if(id==="fPhone") checkout.phone=el.value.replace(/\D/g,""); el.value=checkout.phone;
+      if(id==="fNote") checkout.note=el.value;
+    };
+    el.onchange=()=>{ if(id==="fTable") checkout.table=el.value; };
+  });
+  app.querySelector("#toPay").onclick=()=>{
+    if (validateCheckout()){ pendingOrder = buildOrder(); location.hash="#/pay"; }
+  };
+}
+function showErr(id,on){ const e=document.getElementById(id); if(e) e.classList.toggle("show",on); }
+function validateCheckout(){
+  let ok=true;
+  const tableOK = checkout.mode!=="dine" || !!checkout.table;
+  const addrOK  = checkout.mode!=="delivery" || checkout.addr.trim().length>=4;
+  const nameOK  = checkout.name.trim().length>=2;
+  const phoneOK = /^1\d{10}$/.test(checkout.phone);
+  showErr("eTable", !tableOK); if(!tableOK) ok=false;
+  showErr("eAddr", !addrOK);  if(!addrOK) ok=false;
+  showErr("eName", !nameOK);  if(!nameOK) ok=false;
+  showErr("ePhone",!phoneOK); if(!phoneOK) ok=false;
+  if(!ok) toast("请完善订单信息 ✋");
+  return ok;
+}
+
+/* ---- order building ---- */
+let pendingOrder=null;
+function modeText(m){ return m==="dine"?"堂食":m==="take"?"外带自取":"外送"; }
+function buildOrder(){
+  const d=new Date();
+  const ymd=d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0");
+  const seq=String(orders.length+1).padStart(4,"0");
+  return {
+    id:"OD"+ymd+seq,
+    code:String(100+Math.floor(Math.random()*899)), // 取餐号
+    at:d.toLocaleString("zh-CN",{hour12:false}),
+    ts:d.getTime(),
+    status:"paying",
+    mode:checkout.mode,
+    table:checkout.table, addr:checkout.addr,
+    name:checkout.name.trim(), phone:checkout.phone,
+    note:checkout.note.trim(),
+    items:cart.map(i=>({name:i.name,emoji:i.emoji,qty:i.qty,unit:i.unitPrice,opts:i.opts})),
+    amounts:{ sub:subtotal(), disc:discount(), pack:packFee(), ship:shipFee(), pay:total() },
+    method:payMethod,
+    timeline:[{t:"已下单",time:nowStr(),d:`${modeText(checkout.mode)} · ${checkout.name}`}]
+  };
+}
+
+/* ---- pay (收银台) ---- */
+const METHODS=[
+  {k:"wechat",ico:"💚",n:"微信支付",d:"推荐 · 免密支付"},
+  {k:"alipay",ico:"💙",n:"支付宝",d:"花呗可分期"},
+  {k:"card",   icc:"",ico:"💳",n:"银行卡",d:"储蓄/信用卡"},
+  {k:"balance",ico:"🟡",n:"账户余额",d:"余额 ¥268.50"},
+];
+function renderPay(){
+  if(!pendingOrder){ location.hash="#/menu"; return; }
+  const app=document.getElementById("app");
+  const o=pendingOrder;
+  app.innerHTML=`
+    ${steps("支付")}
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div class="card summary" style="flex:1;min-width:260px;margin-bottom:16px">
+        <div class="row"><span>订单号</span><span>${o.id}</span></div>
+        <div class="row"><span>取餐方式</span><span>${modeText(o.mode)}${o.mode==="dine"?" · "+o.table:""}</span></div>
+        <div class="row"><span>菜品 ${o.items.reduce((s,i)=>s+i.qty,0)} 件</span><span>${yuan(o.amounts.sub)}</span></div>
+        <div class="row"><span>优惠</span><span style="color:var(--red)">−${yuan(o.amounts.disc)}</span></div>
+        <div class="row"><span>餐盒/配送</span><span>${yuan(o.amounts.pack+o.amounts.ship)}</span></div>
+        <div class="row total"><span>应付</span><span class="v">${yuan(o.amounts.pay)}</span></div>
+      </div>
+      <div class="card form-card" style="flex:1.4;min-width:300px;margin-bottom:16px">
+        <div class="label" style="margin-top:8px">选择支付方式</div>
+        <div class="pay-grid" id="payGrid">
+          ${METHODS.map(m=>`
+            <div class="pay-opt ${m.k===payMethod?"active":""}" data-m="${m.k}">
+              <span class="ico">${m.ico}</span>${m.n}<small>${m.d}</small>
+            </div>`).join("")}
+        </div>
+        <div id="cardFields" class="card-fields ${payMethod==="card"?"":"hidden"}">
+          <label class="label" style="margin-top:0">卡号</label>
+          <input class="input" id="cNo" inputmode="numeric" placeholder="4242 4242 4242 4242" maxlength="19">
+          <div class="field-2" style="margin-top:10px">
+            <div><label class="label" style="margin-top:0">有效期</label><input class="input" id="cExp" placeholder="MM/YY" maxlength="5"></div>
+            <div><label class="label" style="margin-top:0">CVV</label><input class="input" id="cCvv" inputmode="numeric" placeholder="123" maxlength="4"></div>
+          </div>
+          <div class="err" id="eCard">请填写完整卡号 / 有效期 / CVV（卡号16位）</div>
+        </div>
+        <div class="secure">🔒 支付信息已加密 · 本演示不产生真实扣款</div>
+        <div class="demo-hint">💡 演示提示：卡号输 <b>4000 0000 0000 0002</b> 可触发支付失败体验；其他卡/其他方式支付成功。</div>
+        <button class="btn block" id="doPay" style="margin-top:14px;font-size:17px">确认支付 ${yuan(o.amounts.pay)}</button>
+        <button class="btn ghost block sm" id="backCheckout" style="margin-top:10px">← 返回修改订单</button>
+      </div>
+    </div>`;
+  app.querySelectorAll("#payGrid .pay-opt").forEach(el=>el.onclick=()=>{
+    payMethod=el.dataset.m;
+    app.querySelectorAll("#payGrid .pay-opt").forEach(x=>x.classList.toggle("active",x.dataset.m===payMethod));
+    app.querySelector("#cardFields").classList.toggle("hidden", payMethod!=="card");
+  });
+  const cno=app.querySelector("#cNo");
+  cno.oninput=()=>{ cno.value=cno.value.replace(/\D/g,"").slice(0,16).replace(/(.{4})/g,"$1 ").trim(); };
+  app.querySelector("#cExp").oninput=(e)=>{ let v=e.target.value.replace(/\D/g,"").slice(0,4); if(v.length>2)v=v.slice(0,2)+"/"+v.slice(2); e.target.value=v; };
+  app.querySelector("#backCheckout").onclick=()=>{ location.hash="#/checkout"; };
+  app.querySelector("#doPay").onclick=()=>{
+    if(payMethod==="card"){
+      const no=app.querySelector("#cNo").value.replace(/\s/g,"");
+      const exp=app.querySelector("#cExp").value;
+      const cvv=app.querySelector("#cCvv").value;
+      const ok=/^\d{16}$/.test(no) && /^\d{2}\/\d{2}$/.test(exp) && /^\d{3,4}$/.test(cvv);
+      app.querySelector("#eCard").classList.toggle("show",!ok);
+      if(!ok){ toast("银行卡信息不完整 ✋"); return; }
+      pendingOrder.failCard = no==="4000000000000002";
+    } else pendingOrder.failCard=false;
+    location.hash="#/paying";
+  };
+}
+
+/* ---- paying (处理动画 + 落单) ---- */
+function renderPaying(){
+  if(!pendingOrder){ location.hash="#/menu"; return; }
+  const app=document.getElementById("app");
+  app.innerHTML=`${steps("支付")}
+    <div class="card paying">
+      <div class="spinner"></div>
+      <div style="font-weight:800;font-size:17px">正在与支付通道通信…</div>
+      <div class="muted">订单 ${pendingOrder.id} · ${yuan(pendingOrder.amounts.pay)}</div>
+    </div>`;
+  setTimeout(()=>{
+    const o=pendingOrder;
+    o.timeline.push({t:"支付处理",time:nowStr(),d:`${({wechat:"微信支付",alipay:"支付宝",card:"银行卡",balance:"账户余额"})[o.method]}`});
+    if(o.failCard){
+      o.status="payfail";
+      o.timeline.push({t:"支付失败",time:nowStr(),d:"银行拒绝交易（演示）"});
+      orders.unshift(o); save(); pendingOrder=null;
+      location.hash="#/pay";
+      toast("支付失败，请更换方式重试 ❌");
+      // show fail state on pay page
+      setTimeout(()=>showPayFail(o),50);
+    } else {
+      o.status="paid";
+      o.timeline.push({t:"支付成功",time:nowStr(),d:yuan(o.amounts.pay)});
+      o.timeline.push({t:"后厨接单",time:nowStr(),d:"开始制作 🍳"});
+      setTimeout(()=>o.timeline.push({t:"制作中",time:nowStr(),d:"预计 12 分钟完成"}),0);
+      orders.unshift(o); save();
+      location.hash="#/success/"+o.id;
+    }
+  }, 1600);
+}
+function showPayFail(o){
+  const app=document.getElementById("app");
+  const box=document.createElement("div");
+  box.className="card";
+  box.style.cssText="max-width:440px;margin:0 auto 16px;padding:18px;text-align:center;border-color:#ffc9c9;background:#fff5f5";
+  box.innerHTML=`<div style="font-size:40px">❌</div><b style="color:var(--red)">支付未完成</b>
+    <div class="muted" style="font-size:13.5px;margin-top:6px">订单 ${o.id} 未支付，可重新选择支付方式。演示卡号 4000 0000 0000 0002 固定失败。</div>`;
+  app.prepend(box);
+}
+
+/* ---- success ---- */
+function findOrder(id){ return orders.find(o=>o.id===id); }
+function renderSuccess(id){
+  const o=findOrder(id)||orders[0];
+  if(!o){ location.hash="#/menu"; return; }
+  const app=document.getElementById("app");
+  app.innerHTML=`
+    ${steps("完成")}
+    <div class="card ticket">
+      <div class="top">
+        <div class="ok">✅</div>
+        <h2>支付成功！</h2>
+        <div style="font-size:13.5px;opacity:.95">${modeText(o.mode)}${o.mode==="dine"?" · 桌号 "+o.table:o.mode==="delivery"?" · "+o.addr:" · 到店自取"}</div>
+      </div>
+      <div style="padding:0 20px"><div class="code">${o.code}</div>
+        <div class="muted" style="font-size:13px;margin-top:-6px">取餐号 · 出示给店员即可</div></div>
+      <div class="body" style="text-align:left">
+        <div class="kv"><span class="k">订单号</span><span class="v">${o.id}</span></div>
+        <div class="kv"><span class="k">下单时间</span><span class="v">${o.at}</span></div>
+        <div class="kv"><span class="k">支付方式</span><span class="v">${({wechat:"微信支付",alipay:"支付宝",card:"银行卡",balance:"账户余额"})[o.method]}</span></div>
+        <div class="kv"><span class="k">实付</span><span class="v" style="color:var(--brand)">${yuan(o.amounts.pay)}</span></div>
+        <div class="kv"><span class="k">状态</span><span class="v">🍳 制作中 · 预计 12 分钟</span></div>
+        <div class="items-chips">${o.items.map(i=>`<span class="chip">${i.emoji} ${i.name} ×${i.qty}</span>`).join("")}</div>
+        <div style="display:flex;gap:10px;margin-top:18px">
+          <a class="btn ghost" href="#/orders" style="flex:1">查看订单</a>
+          <a class="btn" href="#/menu" style="flex:1">再点一单</a>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ---- orders ---- */
+function statusInfo(o){
+  if(o.status==="payfail") return {cls:"paid",label:"⚠️ 支付失败",icon:"❌"};
+  if(o.status!=="paid") return {cls:"paid",label:"待支付",icon:"⏳"};
+  // simulate progress by time since order
+  const mins=(Date.now()-o.ts)/60000;
+  if(mins>15) return {cls:"done",label:"已完成",icon:"✅"};
+  if(mins>10) return {cls:"ready",label:"可取餐",icon:"🔔"};
+  if(mins>1)  return {cls:"making",label:"制作中",icon:"🍳"};
+  return {cls:"paid",label:"已接单",icon:"🧑‍🍳"};
+}
+function renderOrders(){
+  const app=document.getElementById("app");
+  if(orders.length===0){
+    app.innerHTML=`<div class="page-title">📦 我的订单</div>
+      <div class="card empty"><div class="big">📦</div>还没有订单<br><br><a class="btn" href="#/menu">去点餐 →</a></div>`;
+    return;
+  }
+  app.innerHTML=`<div class="page-title">📦 我的订单 <span class="pill">${orders.length} 单</span></div>` +
+    orders.map(o=>{
+      const st=statusInfo(o);
+      return `<div class="card order-card">
+        <div class="head">
+          <div><b>${o.id}</b> <span class="muted" style="font-size:13px">${o.at}</span></div>
+          <span class="status ${st.cls}">${st.label}</span>
+        </div>
+        <div class="muted" style="font-size:13.5px;margin-top:6px">
+          ${modeText(o.mode)}${o.mode==="dine"?" · 桌号 "+o.table:o.mode==="delivery"?" · "+o.addr:""}
+          ${o.status==="paid"?` · 取餐号 <b style="color:var(--brand);font-size:16px">${o.code}</b>`:""}
+        </div>
+        <div class="items-chips">${o.items.map(i=>`<span class="chip">${i.emoji} ${i.name} ×${i.qty}</span>`).join("")}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+          <span class="muted" style="font-size:13.5px">${o.note?`备注：${o.note}`:""}</span>
+          <b style="color:var(--brand);font-size:17px">${yuan(o.amounts.pay)}</b>
+        </div>
+        <div class="timeline">
+          ${o.timeline.map((t,i)=>`<div class="tl-item ${i<=o.timeline.length-1?"done":""}">
+            <div class="t">${t.t}</div><div class="time">${t.time}</div><div class="d">${t.d}</div>
+          </div>`).join("")}
+        </div>
+        ${o.status==="payfail"?`<button class="btn sm" data-retry="${o.id}" style="margin-top:10px">去支付</button>`:""}
+      </div>`;
+    }).join("");
+  app.querySelectorAll("[data-retry]").forEach(b=>b.onclick=()=>{
+    const o=findOrder(b.dataset.retry);
+    if(o){ orders=orders.filter(x=>x.id!==o.id); save(); pendingOrder=o; pendingOrder.status="paying"; location.hash="#/pay"; }
+  });
+}
+
+/* ---- bottom bar / toast / boot ---- */
+function updateBar(){
+  const n=cartCount();
+  document.getElementById("barTotal").textContent=yuan(Math.max(0,subtotal()-discount()));
+  document.getElementById("barCount").textContent=n?`已选 ${n} 件 · 结算时计餐盒/配送费`:"还没点菜哦";
+  const dot=document.getElementById("navCartDot");
+  dot.classList.toggle("hidden",n===0); dot.textContent=n;
+  const hideOn=["checkout","pay","paying","success"];
+  const r=(location.hash||"").replace("#/","").split("/")[0];
+  document.getElementById("cartBar").classList.toggle("hidden", hideOn.includes(r));
+}
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"),1900);
+}
+
+route();
+</script>
+</body>
+</html>
