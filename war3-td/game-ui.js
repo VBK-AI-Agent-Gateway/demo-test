@@ -544,7 +544,9 @@ function showOverlayHTML(title,sub,tip){
   ov.querySelector(".btn").textContent="↺ 再来一局";
   ov.querySelector(".btn").onclick=function(){location.reload();};
 }
-W.showOverlay=showOverlayHTML;
+W.closeWaveModal = closeWaveModal;
+W.openWaveModal = openWaveModal;
+W.showOverlay = showOverlayHTML;
 $("#btnStart").addEventListener("click",function(){
   $("#overlay").classList.add("hide");
   G.paused=false;

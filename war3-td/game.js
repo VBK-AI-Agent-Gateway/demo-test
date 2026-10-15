@@ -404,7 +404,7 @@ function startWave(){
   var cnt = w.cnt + Math.floor(G.wave/5);
   for(var i=0;i<cnt;i++) spawnEnemy(w,i);
   addLog("🌊 第 "+G.wave+" 波: "+(w.boss?"☠️ ":"")+w.name+" x"+cnt+" ["+ARM[w.armor]+"]","warn");
-  closeWaveModal();
+  if(window.WAR3 && window.WAR3.closeWaveModal) window.WAR3.closeWaveModal();
 }
 function checkWaveEnd(){
   if(!G.waveActive) return;
@@ -415,7 +415,7 @@ function checkWaveEnd(){
     addLog("✅ 第 "+G.wave+" 波守住! +"+bonus+"💰 +5🪵","good");
     if(G.wave>=G.maxWave){ victory(); return; }
     // 下一波选择弹窗
-    setTimeout(openWaveModal, 700);
+    setTimeout(function(){ if(window.WAR3 && window.WAR3.openWaveModal) window.WAR3.openWaveModal(); }, 700);
   }
 }
 function checkOver(){
@@ -519,7 +519,8 @@ window.WAR3 = {G:G, TOWERS:TOWERS, TMAP:TMAP, ITEMS:ITEMS, IMAP:IMAP, WAVES:WAVE
   startWave:startWave, checkWaveEnd:checkWaveEnd, checkOver:checkOver, synthInv:synthInv,
   makeItem:makeItem, itemDef:itemDef, addLog:addLog, toast:toast, fxPop:fxPop, fxHit:fxHit,
   fxBolt:fxBolt, fxRing:fxRing, gainExp:gainExp, dropItem:dropItem, clamp:clamp, dist:dist,
+  killEnemy:killEnemy, mult:mult,
   victory:victory, defeat:defeat, $:$, $$:$$,
   TECHS:TECHS, TECH_STATE:TECH_STATE, buyTech:buyTech, techCost:techCost, applyTech:applyTech,
-  SHOP_ITEMS:SHOP_ITEMS, buyItem:buyItem};
+  SHOP_ITEMS:SHOP_ITEMS, buyItem:buyItem, closeWaveModal:undefined};
 })();
