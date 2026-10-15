@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全能行政文员助手 Office EA</title>
+<meta name="description" content="行政文员办公助手：公文写作、润色纠错、长文提炼、会议纪要、Excel 公式、数据转表格、活动策划一键生成。">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><span class="logo">📋</span> 全能行政文员助手 <em>Office EA</em></div>
+    <div class="top-note">公文 · 纪要 · 数据 · 策划 一站式生成</div>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-tab="doc">📄 公文写作</button>
+  <button class="tab" data-tab="polish">✏️ 润色纠错</button>
+  <button class="tab" data-tab="brief">📌 长文提炼</button>
+  <button class="tab" data-tab="minutes">🗓️ 会议纪要</button>
+  <button class="tab" data-tab="excel">📊 Excel 公式</button>
+  <button class="tab" data-tab="table">🧾 数据转表格</button>
+  <button class="tab" data-tab="event">🎉 活动策划</button>
+</nav>
+
+<main class="main">
+
+  <!-- 公文写作 -->
+  <section class="panel open" id="panel-doc">
+    <h2>规范公文生成</h2>
+    <p class="sub">填写要素，自动生成标准公文格式（标题/主送/正文/落款），缺失要素以占位符提示替换。</p>
+    <div class="form">
+      <label>公文类型
+        <select id="docType">
+          <option>通知</option><option>请示</option><option>报告</option>
+          <option>函</option><option>会议纪要</option><option>决定</option><option>批复</option>
+        </select>
+      </label>
+      <label>发文单位 <input id="docOrg" placeholder="例：[XX 公司综合办公室]"></label>
+      <label>标题 <input id="docTitle" placeholder="例：关于加强考勤管理的通知"></label>
+      <label>主送单位 <input id="docTo" placeholder="例：[各部门]"></label>
+      <label class="full">正文要点（每行一条，自动分段编号）
+        <textarea id="docBody" rows="5" placeholder="严格执行打卡制度&#10;请假须提前一天报备"></textarea>
+      </label>
+      <label>成文日期 <input id="docDate" placeholder="[2026年X月X日]"></label>
+      <label>抄送 <input id="docCopy" placeholder="[总经理办公室]（可空）"></label>
+    </div>
+    <div class="ops"><button class="btn" id="docGo">生成公文</button></div>
+    <div class="out" id="docOut" hidden>
+      <div class="ops"><button class="btn small" data-copy="docOut">📋 复制结果</button><button class="btn ghost small" data-md="docOut">⬇ 下载 .md</button></div>
+      <pre></pre>
+    </div>
+  </section>
+
+  <!-- 润色纠错 -->
+  <section class="panel" id="panel-polish">
+    <h2>润色与纠错</h2>
+    <p class="sub">粘贴口语化或有语病的文本，按对象谦抑度改写为得体公文/商务用语，并列出识别到的问题。</p>
+    <div class="form">
+      <label>沟通对象
+        <select id="polAud"><option value="leader">对领导（谦抑严谨）</option><option value="peer">对平级（规范客气）</option><option value="client">对外客户（礼貌周到）</option></select>
+      </label>
+      <label>文体
+        <select id="polGenre"><option>公文用语</option><option>商务邮件</option><option>微信通知</option></select>
+      </label>
+      <label class="full">原文
+        <textarea id="polText" rows="6" placeholder="例：领导，那个预算表我整好了，你看下行不行，行的话咱就报上去，不然财务那边催了好几次了"></textarea>
+      </label>
+    </div>
+    <div class="ops"><button class="btn" id="polGo">一键润色</button></div>
+    <div class="out" id="polOut" hidden>
+      <div class="ops"><button class="btn small" data-copy="polOut">📋 复制结果</button></div>
+      <pre></pre>
+    </div>
+  </section>
+
+  <!-- 长文提炼 -->
+  <section class="panel" id="panel-brief">
+    <h2>长文要点提炼</h2>
+    <p class="sub">粘贴合同/报告长文，自动切分句子，提取核心要点并按「权责 / 期限 / 金额 / 风险」标注。</p>
+    <div class="form">
+      <label class="full">原文
+        <textarea id="brText" rows="7" placeholder="例：乙方应于2026年3月31日前交付全部货物，逾期每日按合同金额0.5%支付违约金；甲方须在验收合格后15个工作日内付款，否则乙方有权中止供货……"></textarea>
+      </label>
+    </div>
+    <div class="ops"><button class="btn" id="brGo">提炼要点</button></div>
+    <div class="out" id="brOut" hidden>
+      <div class="ops"><button class="btn small" data-copy="brOut">📋 复制结果</button></div>
+      <pre></pre>
+    </div>
+  </section>
+
+  <!-- 会议纪要 -->
+  <section class="panel" id="panel-minutes">
+    <h2>会议纪要结构化</h2>
+    <p class="sub">把乱序转写文本整理为标准纪要：会议主题与时间地点 / 核心议题与决议 / 待办清单（任务·责任人·节点）。</p>
+    <div class="form">
+      <label>会议主题 <input id="mnTopic" placeholder="例：一季度经营分析会"></label>
+      <label>时间 <input id="mnTime" placeholder="[2026年X月X日 14:00]"></label>
+      <label>地点 <input id="mnPlace" placeholder="[第 3 会议室]"></label>
+      <label>主持人 / 记录人 <input id="mnHost" placeholder="张三 / 李四"></label>
+      <label class="full">乱序转写（句/行以句号、换行或“|”分隔，可带“某某：”前缀；待办行含“负责/跟进/前完成”会被抓进待办表）
+        <textarea id="mnText" rows="7" placeholder="王五：新版本下周五前必须上线，我负责后端联调&#10;关于预算追加，大家一致同意按20万执行&#10;李四跟进客户回访，本月30日前完成"></textarea>
+      </label>
+    </div>
+    <div class="ops"><button class="btn" id="mnGo">生成纪要</button></div>
+    <div class="out" id="mnOut" hidden>
+      <div class="ops"><button class="btn small" data-copy="mnOut">📋 复制结果</button><button class="btn ghost small" data-md="mnOut">⬇ 下载 .md</button></div>
+      <pre></pre>
+    </div>
+  </section>
+
+  <!-- Excel 公式 -->
+  <section class="panel" id="panel-excel">
+    <h2>Excel 公式生成</h2>
+    <p class="sub">自然语言描述需求，直接给出精确函数与用法说明。</p>
+    <div class="form">
+      <label>常见场景（点选自动填入）
+        <div class="chips" id="exChips">
+          <button class="chip">按工号从另一张表查找姓名</button>
+          <button class="chip">两个条件匹配求和</button>
+          <button class="chip">提取单元格中间文本</button>
+          <button class="chip">统计非空且不重复的数量</button>
+          <button class="chip">今天所在月份的最后一天</button>
+          <button class="chip">按等级返回提成比例</button>
+        </div>
+      </label>
+      <label class="full">你的描述
+        <textarea id="exText" rows="3" placeholder="例：A 列是工号，要在 Sheet2 的 A:B 两列里找到对应工号并返回 B 列姓名"></textarea>
+      </label>
+    </div>
+    <div class="ops"><button class="btn" id="exGo">生成公式</button></div>
+    <div class="out" id="exOut" hidden>
+      <div class="ops"><button class="btn small" data-copy="exOut">📋 复制公式</button></div>
+      <pre></pre>
+    </div>
+  </section>
+
+  <!-- 数据转表格 -->
+  <section class="panel" id="panel-table">
+    <h2>数据清洗转表格</h2>
+    <p class="sub">把乱糟糟的非结构化文本规范成 Markdown 表格 / CSV，可直接粘进 Excel 或文档。</p>
+    <div class="form">
+      <label>分隔识别
+        <select id="tbMode"><option value="auto">自动（逗号/制表符/竖线/多空格）</option><option value="csv">按逗号 CSV</option><option value="pipe">按竖线 |</option></select>
+      </label>
+      <label>表头（逗号分隔，留空则自动取第一行）
+        <input id="tbHead" placeholder="姓名,部门,月份,销售额">
+      </label>
+      <label class="full">数据（每行一条记录）
+        <textarea id="tbText" rows="6" placeholder="张三,销售部,一月,12000&#10;李四,市场部,一月,9800&#10;王五,销售部,一月,15300"></textarea>
+      </label>
+      <label class="full">输出格式
+        <div class="chips" id="tbFmt">
+          <button class="chip on" data-fmt="md">Markdown 表格</button>
+          <button class="chip" data-fmt="csv">CSV</button>
+          <button class="chip" data-fmt="tsv">TSV（可直接粘 Excel）</button>
+        </div>
+      </label>
+    </div>
+    <div class="ops"><button class="btn" id="tbGo">生成表格</button></div>
+    <div class="out" id="tbOut" hidden>
+      <div class="ops"><button class="btn small" data-copy="tbOut">📋 复制结果</button></div>
+      <div id="tbTable"></div>
+      <pre></pre>
+    </div>
+  </section>
+
+  <!-- 活动策划 -->
+  <section class="panel" id="panel-event">
+    <h2>活动与接待策划</h2>
+    <p class="sub">一键输出完整策划案：活动流程表、预算分配表、人员分工表、备用防范方案（缺失要素以占位符提示替换）。</p>
+    <div class="form">
+      <label>活动名称 <input id="evName" placeholder="例：[2026 年度客户答谢会]"></label>
+      <label>活动类型
+        <select id="evType"><option>会议论坛</option><option>客户答谢/接待</option><option>团建年会</option><option>展会/发布会</option></select>
+      </label>
+      <label>时间 <input id="evTime" placeholder="[2026年X月X日]"></label>
+      <label>地点 <input id="evPlace" placeholder="[XX 酒店宴会厅]"></label>
+      <label>总预算（元） <input id="evBudget" type="number" placeholder="30000"></label>
+      <label>规模（人数） <input id="evCount" type="number" placeholder="50"></label>
+      <label class="full">特殊要求 <input id="evNote" placeholder="例：需安排接送与合影墙（可空）"></label>
+    </div>
+    <div class="ops"><button class="btn" id="evGo">生成策划案</button></div>
+    <div class="out" id="evOut" hidden>
+      <div class="ops"><button class="btn small" data-copy="evOut">📋 复制结果</button><button class="btn ghost small" data-md="evOut">⬇ 下载 .md</button></div>
+      <pre></pre>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">© 2026 办公助手 Office EA · 纯前端生成，内容仅在本机处理，不上传服务器 · 演示站点</footer>
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
