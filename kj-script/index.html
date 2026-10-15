@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初三语文课件脚本生成器 · 部编版PPT逐页脚本</title>
+<meta name="description" content="部编版九年级语文PPT逐页脚本生成器：每页含页面文案/配图建议/动画提示/备注，按课型自动调整结构，可选课堂短视频脚本、课堂小游戏、小组任务单。">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">🎬 初三语文课件脚本生成器 <span class="sub">部编版九年级 · PPT逐页脚本 · 课件设计师智能体</span></div>
+  <div class="top-r">
+    <button class="btn ghost" id="btn-history">🕘 历史</button>
+    <button class="btn ghost" id="btn-help">❓ 说明</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- 左：输入 -->
+  <section class="panel form-panel">
+    <h2>课件需求</h2>
+    <div class="f-row">
+      <label>课型</label>
+      <div class="seg" id="seg-type">
+        <button class="active" data-t="新授课">新授课</button>
+        <button data-t="中考专题复习课">复习课</button>
+        <button data-t="试卷讲评课">试卷讲评</button>
+      </div>
+    </div>
+    <div class="f-row">
+      <label>学期</label>
+      <div class="seg" id="seg-book">
+        <button class="active" data-b="上册">九上</button>
+        <button data-b="下册">九下</button>
+        <button data-b="__topic__">中考专题</button>
+      </div>
+    </div>
+    <div class="f-row" id="row-target">
+      <label id="lb-target">课文 <span class="req">（从库中选，避免编造）</span></label>
+      <select id="sel-target"></select>
+      <div class="meta-line" id="target-meta"></div>
+    </div>
+    <div class="f-row">
+      <label>课时（总 / 本课时）</label>
+      <div class="two">
+        <input type="number" id="in-total" value="2" min="1" max="10">
+        <input type="number" id="in-cur" value="1" min="1" max="10">
+      </div>
+    </div>
+    <div class="f-row">
+      <label>附加模块（按需勾选，不选则只出PPT脚本）</label>
+      <div class="checks">
+        <label><input type="checkbox" id="ck-video"> 🎥 课堂短视频脚本（1–3分钟）</label>
+        <label><input type="checkbox" id="ck-game"> 🎮 课堂小游戏（≤5分钟）</label>
+        <label><input type="checkbox" id="ck-task"> 📄 小组任务单（可打印）</label>
+      </div>
+    </div>
+    <div class="f-row">
+      <label>补充说明（选填）</label>
+      <textarea id="in-note" placeholder="如：已有教案需严格对齐 / 重点练某一考点 / 班情偏弱需放慢"></textarea>
+    </div>
+    <button class="btn primary big" id="btn-gen">⚡ 生成课件脚本</button>
+    <p class="hint">结构自动生成：通用十段框架，复习课＋考情分析/方法总结，文言文＋字词积累。</p>
+  </section>
+
+  <!-- 右：输出 -->
+  <section class="panel out-panel">
+    <div class="out-bar">
+      <h2 id="out-title">脚本预览</h2>
+      <div class="out-acts">
+        <button class="btn" id="btn-copy">📋 复制到 Word</button>
+        <button class="btn" id="btn-md">⬇ 导出 Markdown</button>
+        <button class="btn" id="btn-print">🖨 打印</button>
+      </div>
+    </div>
+    <div class="idea-line" id="idea-line" style="display:none"></div>
+    <div class="script" id="script">
+      <div class="empty">👈 填写左侧需求，点击「生成课件脚本」。<br>每页固定输出：【页码｜页面主题】【页面文案】【配图建议】【动画提示】【备注】；可追加短视频脚本 / 课堂小游戏 / 小组任务单。</div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">部编版九年级语文 · 新课标四核心素养 · 中考导向 · 课件不超纲 · 务实落地</footer>
+
+<div class="mask" id="mask" style="display:none"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast" style="display:none"></div>
+
+<script src="js/data.js"></script>
+<script src="js/generator.js"></script>
+<script src="js/app.js"></script>
