@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初三物理学习系统 · 知识点 / 刷题 / 模拟卷</title>
+<meta name="description" content="面向初三学生的物理学习系统：知识点梳理、公式速查、章节练习、模拟试卷、实验探究、学习进度统计。">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">⚡ 初三物理学习系统</div>
+  <nav class="nav" id="nav">
+    <button data-view="home" class="active">首页</button>
+    <button data-view="knowledge">知识点</button>
+    <button data-view="formula">公式速查</button>
+    <button data-view="quiz">章节练习</button>
+    <button data-view="paper">模拟试卷</button>
+    <button data-view="lab">实验探究</button>
+    <button data-view="progress">学习进度</button>
+  </nav>
+</header>
+
+<main id="main">
+  <!-- 首页 -->
+  <section class="view active" id="view-home">
+    <div class="hero">
+      <h1>初三物理 · 一起把电学和热学吃透</h1>
+      <p>覆盖人教版九年级全一册核心章节：知识点梳理 → 公式速查 → 章节刷题 → 模拟考试 → 错题回顾，学习数据自动保存在本机。</p>
+      <div class="hero-actions">
+        <button class="btn primary" data-go="quiz">开始刷题</button>
+        <button class="btn" data-go="paper">模拟考试</button>
+        <button class="btn" data-go="knowledge">看知识点</button>
+      </div>
+    </div>
+    <div class="cards" id="home-stats"></div>
+    <h2 class="sec-title">功能模块</h2>
+    <div class="cards">
+      <div class="card" data-go="knowledge"><h3>📚 知识点梳理</h3><p>9 大章节核心概念，逐条讲解，配合易错提醒。</p></div>
+      <div class="card" data-go="formula"><h3>🧮 公式速查</h3><p>力学、热学、电学公式与常量一页汇总，考前急救。</p></div>
+      <div class="card" data-go="quiz"><h3>✏️ 章节练习</h3><p>选择 / 填空 / 计算三种题型，即时判分并展示解析。</p></div>
+      <div class="card" data-go="paper"><h3>📝 模拟试卷</h3><p>全卷限时作答，到点自动交卷，按步给分。</p></div>
+      <div class="card" data-go="lab"><h3>🔬 实验探究</h3><p>五大必考实验：器材步骤、结论、易错点。</p></div>
+      <div class="card" data-go="progress"><h3>📈 学习进度</h3><p>正确率、错题本、章节掌握度一目了然。</p></div>
+    </div>
+  </section>
+
+  <!-- 知识点 -->
+  <section class="view" id="view-knowledge">
+    <h2 class="sec-title">知识点梳理</h2>
+    <div class="chips" id="ch-chips"></div>
+    <div id="ch-detail"></div>
+  </section>
+
+  <!-- 公式 -->
+  <section class="view" id="view-formula">
+    <h2 class="sec-title">公式速查</h2>
+    <div class="cards" id="formula-cards"></div>
+  </section>
+
+  <!-- 章节练习 -->
+  <section class="view" id="view-quiz">
+    <h2 class="sec-title">章节练习</h2>
+    <div class="toolbar">
+      <label>章节
+        <select id="q-chapter"><option value="all">全部章节</option></select>
+      </label>
+      <label>题型
+        <select id="q-type">
+          <option value="all">全部题型</option>
+          <option value="choice">选择题</option>
+          <option value="fill">填空题</option>
+          <option value="calc">计算题</option>
+        </select>
+      </label>
+      <button class="btn primary" id="q-start">开始练习</button>
+      <button class="btn" id="q-mistakes">只练错题</button>
+    </div>
+    <div id="quiz-area"></div>
+  </section>
+
+  <!-- 模拟试卷 -->
+  <section class="view" id="view-paper">
+    <h2 class="sec-title">模拟试卷</h2>
+    <div id="paper-list"></div>
+    <div id="paper-area"></div>
+  </section>
+
+  <!-- 实验 -->
+  <section class="view" id="view-lab">
+    <h2 class="sec-title">实验探究</h2>
+    <div id="lab-list"></div>
+  </section>
+
+  <!-- 进度 -->
+  <section class="view" id="view-progress">
+    <h2 class="sec-title">学习进度</h2>
+    <div class="cards" id="prog-stats"></div>
+    <h3 class="sec-title">章节掌握度</h3>
+    <div id="prog-chapters"></div>
+    <div class="row-between"><h3 class="sec-title">错题本</h3><button class="btn small" id="clear-mistakes">清空错题本</button></div>
+    <div id="mistake-list"></div>
+  </section>
+</main>
+
+<footer class="footer">初三物理学习系统 · 数据保存在浏览器本机 · 祝你中考物理拿满分 🎓</footer>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/quiz.js"></script>
+<script src="js/paper.js"></script>
+<script src="js/progress.js"></script>
+</body>
+</html>
