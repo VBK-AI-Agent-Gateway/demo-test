@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初三中考数学培优系统 · 对标学而思培优</title>
+<meta name="description" content="初三中考数学 AI 培优：苏格拉底启发式训练、压轴题、分类讨论、答题踩分规范、错题本与学情报告。">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+  <!-- 顶栏 -->
+  <header class="top">
+    <div class="brand">📐 初三数学培优系统 <span class="sub">对标学而思培优 · 目标 140+/145+</span></div>
+    <div class="top-r">
+      <div class="mode-sw" id="mode-sw">
+        <button class="active" data-mode="sync">新课同步培优</button>
+        <button data-mode="sprint">压轴专项冲刺</button>
+      </div>
+      <span class="stu" id="stu-badge">新初三 · 130–145</span>
+    </div>
+  </header>
+
+  <div class="body">
+    <!-- 左侧模块导航 -->
+    <aside class="rail">
+      <div class="rail-t">训练模块</div>
+      <nav id="mod-nav"></nav>
+      <div class="rail-cta">
+        <button class="btn primary w" id="btn-wrongbook">📕 错题本 <em id="wb-count">0</em></button>
+        <button class="btn w" id="btn-report">📊 学情报告</button>
+      </div>
+    </aside>
+
+    <!-- 中间：对话训练区 -->
+    <main class="main">
+      <div class="tutor-head">
+        <div class="th-l"><span class="dot on"></span><b id="cur-mod">一元二次方程</b><span class="tag" id="cur-layer">中档培优</span><span class="tag" id="cur-type">填空压轴</span></div>
+        <div class="th-r" id="session-info">本轮进度 0/5</div>
+      </div>
+
+      <div class="chat" id="chat"></div>
+
+      <div class="composer">
+        <textarea id="answer-input" placeholder="在这里作答（可写关键步骤/分类过程）… 回车 Ctrl+Enter 提交"></textarea>
+        <div class="comp-acts">
+          <button class="btn" id="btn-hint">💡 要提示</button>
+          <button class="btn" id="btn-skip">跳过本题</button>
+          <button class="btn primary" id="btn-submit">提交作答</button>
+        </div>
+      </div>
+
+      <!-- 一轮结束的 4 选项 -->
+      <div class="four-opts" id="four-opts" style="display:none">
+        <button data-opt="continue">【继续本专题训练】</button>
+        <button data-opt="next">【切换下一个专题】</button>
+        <button data-opt="wrong">【复盘错题】</button>
+        <button data-opt="quiz">【进行培优小测】</button>
+      </div>
+    </main>
+
+    <!-- 右侧：学情看板 -->
+    <aside class="side">
+      <div class="card">
+        <div class="card-h">🎯 学情看板</div>
+        <div class="kpis">
+          <div class="kpi"><b id="k-total">0</b><span>累计做题</span></div>
+          <div class="kpi"><b id="k-acc">--%</b><span>正确率</span></div>
+          <div class="kpi"><b id="k-ax">0</b><span>压轴完成</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">🔥 失分类型 Top</div>
+        <div id="err-bars" class="bars"><div class="empty">暂无数据</div></div>
+      </div>
+      <div class="card">
+        <div class="card-h">🔁 待复习错题</div>
+        <div id="due-list" class="due"><div class="empty">暂无到期错题</div></div>
+      </div>
+      <div class="card">
+        <div class="card-h">📚 模块掌握</div>
+        <div id="mod-bars" class="bars"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- 弹层 -->
+<div class="mask" id="mask" style="display:none"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast" style="display:none"></div>
+
+<script src="js/data.js"></script>
+<script src="js/wrongbook.js"></script>
+<script src="js/tutor.js"></script>
+<script src="js/stats.js"></script>
