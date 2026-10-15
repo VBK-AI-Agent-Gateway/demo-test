@@ -5,11 +5,15 @@
   var val = function (s) { return ($(s).value || "").trim(); };
 
   /* ---------- 通用 ---------- */
-  $("#tabs").addEventListener("click", function (e) {
-    var t = e.target.closest(".tab"); if (!t) return;
+  var TAB_TITLE = { contract: "合同审查与风险防控", ai: "AI 系统治理与合规评估", aiproc: "AI 采购/合作合同专项审查" };
+  $("#menu").addEventListener("click", function (e) {
+    var t = e.target.closest(".m-item"); if (!t) return;
     var id = t.getAttribute("data-tab");
-    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (x) { x.classList.toggle("active", x === t); });
+    Array.prototype.forEach.call(document.querySelectorAll(".m-item"), function (x) { x.classList.toggle("active", x === t); });
     Array.prototype.forEach.call(document.querySelectorAll(".panel"), function (p) { p.classList.toggle("open", p.id === "panel-" + id); });
+    var h = $("#tbTitle");
+    if (h && TAB_TITLE[id]) h.textContent = TAB_TITLE[id];
+    if (window.innerWidth <= 980) document.querySelector(".content").scrollIntoView({ behavior: "smooth" });
   });
   function toast(msg) {
     var el = $("#toast"); el.textContent = msg; el.classList.add("show");
