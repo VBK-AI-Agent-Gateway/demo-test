@@ -56,6 +56,9 @@ button{cursor:pointer;border:none;background:none;color:inherit}
 .rec-state{font-size:13.5px;font-weight:800;color:var(--gray);background:#fff;border-radius:999px;padding:5px 14px;border:1.5px solid var(--line)}
 .rec-state.live{background:#e0342f22;border-color:#e0342f;color:#c0261f}
 .rec-state.done{background:#12805c22;border-color:var(--green);color:var(--green)}
+.rec-preview{margin-top:14px;background:#0f172a;border-radius:14px;padding:14px;text-align:center}
+.rec-preview video{width:100%;max-width:640px;border-radius:10px;background:#000;max-height:360px}
+.rec-preview .pv-tip{color:#93a4bd;font-size:13px;font-weight:600;margin-top:8px}
 .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(70px);background:var(--navy);color:#fff;font-weight:800;padding:12px 26px;border-radius:999px;z-index:99;transition:.3s;opacity:0;pointer-events:none;font-size:14.5px}
 .toast.show{transform:translateX(-50%);opacity:1}
 @media (max-width:760px){

@@ -121,18 +121,24 @@
     <div class="form">
       <label>会议主题 <input id="recTopic" placeholder="例：周例会 / 项目评审会"></label>
       <label>时间 <input id="recTime" placeholder="[2026年X月X日]"></label>
-      <label class="full">转写方式
+      <label class="full">录制方式
         <select id="recMode">
-          <option value="live">麦克风实时转写（Chrome/Edge，需允许麦克风）</option>
-          <option value="paste">仅录音/或已有转写稿：手动粘贴</option>
+          <option value="audio-live">🎙️ 麦克风录音 + 实时转写（Chrome/Edge）</option>
+          <option value="video">📹 摄像头录像（视频+声音，可回放下载）</option>
+          <option value="audio-only">🎧 仅录音（不出转写，稍后粘贴转写稿）</option>
+          <option value="paste">📄 不录制：粘贴已有转写稿直接生成摘要</option>
         </select>
       </label>
     </div>
     <div class="rec-bar">
-      <button class="btn" id="recStart">● 开始录音</button>
+      <button class="btn" id="recStart">● 开始录制</button>
       <button class="btn ghost" id="recStop" disabled>■ 停止并摘要</button>
       <span class="rec-time" id="recTime2">00:00</span>
       <span class="rec-state" id="recState">未开始</span>
+    </div>
+    <div class="rec-preview" id="recPreview" hidden>
+      <video id="recVideo" playsinline controls></video>
+      <p class="pv-tip">录制完成的视频可在此回放，或点下方「⬇ 下载录像」保存到本机。</p>
     </div>
     <div class="form" style="margin-top:14px">
       <label class="full">转写文本（实时转写会自动填入，也可直接粘贴已有转写稿）

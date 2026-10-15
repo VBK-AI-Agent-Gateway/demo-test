@@ -355,17 +355,32 @@
   function liveSupported() { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
 
   $("#recStart").addEventListener("click", function () {
-    if (!recSupported()) { toast("当前浏览器不支持录音，可切换到「粘贴转写稿」模式"); recState("不支持录音", "live"); return; }
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+    var mode = $("#recMode").value;
+    if (mode === "paste") { toast("已选「粘贴转写稿」模式，直接在下方粘贴文本后点「生成摘要」"); recState("粘贴模式", "done"); return; }
+    if (!recSupported()) { toast("当前浏览器不支持录制，可切换到「粘贴转写稿」模式"); recState("不支持录制", "live"); return; }
+    var wantVideo = (mode === "video");
+    var wantLive = (mode === "audio-live");
+    var req = wantVideo
+      ? { audio: true, video: { width: { ideal: 1280 }, height: { ideal: 720 } } }
+      : { audio: true };
+    navigator.mediaDevices.getUserMedia(req).then(function (stream) {
       rec.stream = stream;
       rec.chunks = []; rec.sec = 0; $("#recTime2").textContent = "00:00";
-      try { rec.mr = new MediaRecorder(stream); } catch (e) { rec.mr = null; }
+      // 视频预览
+      if (wantVideo) {
+        var v = $("#recVideo");
+        v.srcObject = stream; v.muted = true; v.play().catch(function () {});
+        $("#recPreview").hidden = false;
+      }
+      var mime = "";
+      if (wantVideo && window.MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")) mime = "video/webm;codecs=vp9,opus";
+      else if (wantVideo && window.MediaRecorder.isTypeSupported("video/webm")) mime = "video/webm";
+      try { rec.mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); } catch (e) { rec.mr = null; }
       if (rec.mr) {
         rec.mr.ondataavailable = function (e) { if (e.data && e.data.size) rec.chunks.push(e.data); };
         rec.mr.start();
       }
-      // 实时转写
-      var wantLive = $("#recMode").value === "live";
+      // 实时转写（仅音频+live 模式）
       if (wantLive) {
         var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SR) {
@@ -385,32 +400,40 @@
       }
       rec.timer = setInterval(tick, 1000);
       $("#recStart").disabled = true; $("#recStop").disabled = false;
-      recState(rec.live ? "录音中 · 实时转写" : "录音中", "live");
-      toast(rec.live ? "已开始录音，讲话内容将实时转写" : "已开始录音");
+      recState(wantVideo ? "录像中" : (rec.live ? "录音中 · 实时转写" : "录音中"), "live");
+      toast(wantVideo ? "已开始录像（摄像头+麦克风）" : (rec.live ? "已开始录音，讲话内容将实时转写" : "已开始录音"));
     }).catch(function () {
-      toast("未获得麦克风权限，请在浏览器地址栏允许后重试");
-      recState("麦克风被拒绝", "live");
+      toast("未获得" + (wantVideo ? "摄像头/麦克风" : "麦克风") + "权限，请在浏览器地址栏允许后重试");
+      recState("权限被拒绝", "live");
     });
   });
 
   $("#recStop").addEventListener("click", function () {
+    var wasVideo = $("#recMode").value === "video";
     if (rec.timer) { clearInterval(rec.timer); rec.timer = null; }
     if (rec.sr) { try { rec.sr.stop(); } catch (e) {} rec.sr = null; }
     if (rec.mr && rec.mr.state !== "inactive") {
       rec.mr.onstop = function () {
         if (rec.chunks.length) {
           if (rec.blobUrl) URL.revokeObjectURL(rec.blobUrl);
-          rec.blobUrl = URL.createObjectURL(new Blob(rec.chunks, { type: rec.chunks[0].type || "audio/webm" }));
+          rec.blobUrl = URL.createObjectURL(new Blob(rec.chunks, { type: rec.chunks[0].type || (wasVideo ? "video/webm" : "audio/webm") }));
+          if (wasVideo) {
+            var v = $("#recVideo");
+            v.srcObject = null; v.muted = false;
+            v.src = rec.blobUrl; v.load();
+          }
         }
         if (rec.stream) rec.stream.getTracks().forEach(function (t) { t.stop(); });
+        rec.stream = null;
       };
       try { rec.mr.stop(); } catch (e) {}
     } else if (rec.stream) {
       rec.stream.getTracks().forEach(function (t) { t.stop(); });
+      rec.stream = null;
     }
     $("#recStart").disabled = false; $("#recStop").disabled = true;
-    recState("已停止 · 时长 " + $("#recTime2").textContent, "done");
-    toast("录音已停止，点击「生成摘要」自动整理");
+    recState((wasVideo ? "录像" : "录音") + "已停止 · " + $("#recTime2").textContent, "done");
+    toast((wasVideo ? "录像" : "录音") + "已停止，点击「生成摘要」自动整理");
     // 停止即自动生成摘要
     setTimeout(function () { $("#recGo").click(); }, 400);
   });
@@ -469,10 +492,11 @@
     showOut("recOut", s);
     toast("摘要已生成");
     if (rec.blobUrl) {
+      var isVideo = ($("#recMode").value === "video");
       var a = document.createElement("a");
-      a.href = rec.blobUrl; a.download = "meeting-recording.webm";
+      a.href = rec.blobUrl; a.download = isVideo ? "meeting-recording.webm" : "meeting-audio.webm";
       var b = document.createElement("button");
-      b.className = "btn ghost small"; b.textContent = "⬇ 下载录音";
+      b.className = "btn ghost small"; b.textContent = isVideo ? "⬇ 下载录像" : "⬇ 下载录音";
       b.onclick = function () { a.click(); };
       $("#recOut .ops").appendChild(b);
     }
