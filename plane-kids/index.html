@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>小小飞机总动员 · 儿童拼图科普</title>
+<meta name="description" content="6-12岁儿童拼图科普小游戏：拼装飞机零件+飞行模拟，卡通明亮，边玩边学。">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">✈️ 小小飞机总动员</div>
+  <div class="spacer"></div>
+  <button class="sound-btn" id="soundBtn" aria-label="音效开关">🔊 音效</button>
+</header>
+
+<!-- ============ 阶段一：拼装 ============ -->
+<main id="buildStage">
+  <div class="stage-tip" id="stageTip">把左边的零件拖到飞机身上，拼好就能飞啦！</div>
+  <div class="build-wrap">
+    <aside class="parts-bar" id="partsBar">
+      <div class="bar-title">🧰 零件栏</div>
+      <div class="parts" id="parts"></div>
+      <div class="progress">
+        <span id="progLabel">进度 0/6</span>
+        <div class="pbar"><i id="progFill" style="width:0%"></i></div>
+      </div>
+    </aside>
+
+    <section class="board" id="board">
+      <!-- 中央拼装轮廓（卡槽由 JS 按 SVG 坐标生成） -->
+      <svg class="plane-svg" id="planeSvg" viewBox="0 0 640 420" aria-label="飞机拼装轮廓">
+        <defs>
+          <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#dff1ff"/><stop offset="1" stop-color="#f4fbff"/>
+          </linearGradient>
+        </defs>
+        <rect x="0" y="0" width="640" height="420" rx="28" fill="url(#skyG)"/>
+        <ellipse cx="90" cy="70" rx="46" ry="22" fill="#ffffff" opacity=".9"/>
+        <ellipse cx="130" cy="62" rx="32" ry="18" fill="#ffffff" opacity=".9"/>
+        <ellipse cx="540" cy="100" rx="52" ry="24" fill="#ffffff" opacity=".85"/>
+        <!-- 轮廓底图（浅色虚线提示） -->
+        <g id="outline" opacity="0.55" fill="none" stroke="#9fc6e8" stroke-width="4" stroke-dasharray="10 8">
+          <rect x="170" y="175" width="300" height="70" rx="35"/>
+          <path d="M300 175 L340 95 L400 95 L390 175 Z"/>
+          <path d="M170 195 L60 235 L60 260 L170 245 Z"/>
+          <rect x="470" y="190" width="70" height="40" rx="16"/>
+          <path d="M470 210 L560 175 L585 175 L560 215 Z"/>
+          <path d="M470 210 L560 245 L585 245 L560 205 Z"/>
+        </g>
+        <!-- 卡槽（JS 填充） -->
+        <g id="slots"></g>
+        <!-- 已装零件（JS 填充） -->
+        <g id="fitted"></g>
+      </svg>
+    </section>
+  </div>
+</main>
+
+<!-- ============ 阶段二：飞行模拟 ============ -->
+<main id="flyStage" style="display:none">
+  <div class="cockpit" id="cockpit">
+    <div class="sky" id="sky">
+      <div class="sun"></div>
+      <div class="clouds" id="clouds"></div>
+      <div class="hills"></div>
+    </div>
+    <!-- 远处飞机（随摇杆倾斜） -->
+    <div class="plane-fly" id="planeFly">
+      <svg viewBox="0 0 300 140" width="300" aria-label="飞行中的飞机">
+        <g id="flyBody">
+          <ellipse cx="150" cy="78" rx="92" ry="30" fill="#8fd3ff"/>
+          <ellipse cx="150" cy="70" rx="92" ry="28" fill="#b7e6ff"/>
+          <path d="M120 45 L150 8 L195 8 L188 50 Z" fill="#9ad9ff"/>
+          <path d="M60 70 L10 40 L10 60 L60 85 Z" fill="#7fc6f5"/>
+          <path d="M60 78 L14 108 L14 88 L60 70 Z" fill="#7fc6f5"/>
+          <rect x="34" y="58" width="34" height="34" rx="12" fill="#ffd66b"/>
+          <ellipse cx="150" cy="74" rx="92" ry="30" fill="none" stroke="#5aa9dd" stroke-width="4"/>
+          <circle cx="196" cy="62" r="9" fill="#ffffff"/><circle cx="198" cy="64" r="4" fill="#3c6f95"/>
+        </g>
+        <g id="prop" style="transform-origin:50px 75px"><ellipse cx="50" cy="75" rx="6" ry="30" fill="#ffffff" opacity=".85"/></g>
+      </svg>
+    </div>
+    <!-- HUD -->
+    <div class="hud">
+      <span id="altShow">高度 ✈ 200 m</span>
+      <span id="spdShow">速度 🚀 60 km/h</span>
+    </div>
+    <!-- 虚拟摇杆 -->
+    <div class="joystick" id="joy" aria-label="虚拟摇杆">
+      <div class="joy-ring"></div>
+      <div class="joy-knob" id="joyKnob"></div>
+      <div class="joy-label">⬆⬇ 抬头低头 · ⬅➡ 转弯</div>
+    </div>
+    <button class="reset-btn" id="resetBtn">🔄 重新拼装</button>
+  </div>
+</main>
+
+<!-- 科普卡片 -->
+<div class="modal" id="factModal">
+  <div class="fact-card">
+    <button class="fact-x" id="factClose" aria-label="关闭">✕</button>
+    <div class="fact-ic" id="factIc">🔧</div>
+    <div class="fact-name" id="factName">零件名</div>
+    <div class="fact-text" id="factText">科普一句话</div>
+    <button class="fact-ok" id="factOk">知道啦！</button>
+  </div>
+</div>
+
+<!-- 完成弹窗 -->
+<div class="modal" id="doneModal">
+  <div class="fact-card celebrate">
+    <div class="fact-ic">🎉</div>
+    <div class="fact-name">拼装完成！</div>
+    <div class="fact-text">飞机零件全部装好了，飞行模拟器已解锁！</div>
+    <button class="fact-ok big" id="startFly">🛫 开始飞行</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
