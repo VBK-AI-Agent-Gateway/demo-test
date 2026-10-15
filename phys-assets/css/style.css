@@ -85,4 +85,22 @@ textarea{min-height:96px;resize:vertical;line-height:1.7}
 .help-li{margin:9px 0;font-size:14.3px;line-height:1.8;padding-left:10px;border-left:3px solid var(--brand)}
 .toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#292524;color:#fff;padding:11px 24px;border-radius:99px;font-size:14px;z-index:200;box-shadow:0 6px 18px rgba(0,0,0,.3);animation:pop .2s}
 .foot{text-align:center;color:var(--muted);font-size:13px;padding:22px 10px 40px}
+/* ===== 上线补齐新增样式 ===== */
+.m-body.editing{background:#fffbeb;border:1px dashed #f59e0b;border-radius:8px;padding:10px 12px;outline:none;box-shadow:0 0 0 3px rgba(245,158,11,.15)}
+.copy-b{display:flex;gap:7px;justify-content:flex-end;margin-top:9px;flex-wrap:wrap}
+.copy-b button{background:#f1f5f9;border:1px solid var(--line);border-radius:7px;padding:5px 13px;font-size:12.5px;cursor:pointer;font-family:inherit}
+.copy-b button:hover{border-color:var(--brand);color:var(--brand)}
+.btn-edit,.btn-fav{background:#f1f5f9}
+.err-card{background:#fff;border:1px solid #fecaca;border-radius:13px;padding:30px 26px;text-align:center;box-shadow:var(--sh)}
+.err-t{font-size:19px;font-weight:700;color:#dc2626;margin-bottom:12px}
+.err-m{font-size:15px;color:var(--ink);background:#fef2f2;border-radius:8px;padding:11px 15px;margin-bottom:9px;line-height:1.8}
+.err-h{font-size:13.5px;color:var(--muted);margin-bottom:16px}
+.err-hint{font-size:12.5px;color:var(--muted);margin-top:14px}
+.prompt-i{margin-bottom:13px}
+.prompt-i label{display:block;font-size:13.5px;color:var(--brand);font-weight:700;margin-bottom:5px}
+.prompt-i textarea{width:100%;background:#faf8f4;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13.4px;font-family:ui-monospace,Consolas,monospace;line-height:1.7;resize:vertical;color:var(--ink)}
+.mut{color:var(--muted);font-size:13.5px;padding:5px 0}
+.hist-i .ht button{background:#eef2ff;border:1px solid var(--line);border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;margin-left:7px;font-family:inherit}
+.hist-i .ht button:hover{border-color:var(--brand);color:var(--brand)}
+input[type=file]{font-size:13px;color:var(--muted)}
 @media (max-width:960px){.wrap{grid-template-columns:1fr;padding:14px}.brand .sub{display:none}}

@@ -1,34 +1,55 @@
-// ===== 素材生成引擎 =====
-const {TOPICS,KNOWLEDGE,MATERIAL_TYPES,KINDS,LEVELS,PLAN_PLACEHOLDER,BANNER,PPT_NOTE} = window.DATA;
-
+// ===== 素材生成引擎（含提示词模板、参考材料注入、异常兜底） =====
+const {KNOWLEDGE,MATERIAL_TYPES,FALLBACK} = window.DATA;
 function getKnowledge(topic){ return KNOWLEDGE.find(k=>k.name===topic) || KNOWLEDGE[0]; }
 
-function generateMaterials(topic,kind,level,selectedTypes,plan){
-  const kp = getKnowledge(topic);
-  const results = [];
-  selectedTypes.forEach(tid=>{
-    const type = MATERIAL_TYPES.find(t=>t.id===tid);
-    if(!type) return;
-    let content = "";
-    switch(tid){
-      case "story": content = genStory(topic,kp,level); break;
-      case "demo": content = genDemo(topic,kp,level); break;
-      case "history": content = genHistory(topic,kp); break;
-      case "board": content = genBoard(topic,kp,kind,level); break;
-      case "mind": content = genMind(topic,kp,level); break;
-      case "chain": content = genChain(topic,kp,level); break;
-      case "compress": content = genCompress(topic,kp); break;
-    }
-    const pptPage = type.page;
-    const pptNote = `【PPT页建议】${pptPage} · ${type.name} · 适合${level}学生`;
-    results.push({id:tid,icon:type.icon,name:type.name,content,pptPage,pptNote,level});
-  });
-  const designIdea = `本素材设计思路：面向${kind}（${level}），紧扣${topic}知识点，适配教学环节导入/探究/巩固/应用，素材简洁实用不冗长，符合初三学生认知水平。`;
-  const planAlign = plan ? `【教案对齐】已结合您提供的教案/重难点，素材内容与教学目标保持一致。` : `【教案提示】未提供教案，素材基于课题生成通用内容；如需对齐请粘贴教案。`;
-  return {topic,kind,level,materials:results,designIdea,planAlign,banner:BANNER,pptNote:PPT_NOTE};
+function getPrompts(){
+  try{ const p=JSON.parse(localStorage.getItem('pa_prompts')); if(Array.isArray(p)&&p.length) return p; }catch(e){}
+  return window.DATA.DEFAULT_PROMPTS;
+}
+function renderPrompt(tpl,topic,kind,level,plan,reference){
+  return (tpl||"").replace(/\{topic\}/g,topic).replace(/\{kind\}/g,kind)
+    .replace(/\{level\}/g,level).replace(/\{plan\}/g,plan||"（无）")
+    .replace(/\{reference\}/g,reference||"（无）");
 }
 
-function genStory(topic,kp,level){
+function generateMaterials(topic,kind,level,selectedTypes,plan,reference){
+  const kp = getKnowledge(topic);
+  const results = [];
+  try{
+    if(!selectedTypes || selectedTypes.length===0) throw new Error(FALLBACK.emptyMsg);
+    const prompts = getPrompts();
+    selectedTypes.forEach(tid=>{
+      const type = MATERIAL_TYPES.find(t=>t.id===tid);
+      if(!type) return;
+      const pt = prompts.find(p=>p.id===tid) || prompts[0];
+      const prompt = renderPrompt(pt?pt.tpl:"", topic,kind,level,plan,reference);
+      let content = "";
+      switch(tid){
+        case "story": content = genStory(topic,kp); break;
+        case "demo": content = genDemo(topic,kp); break;
+        case "history": content = genHistory(topic,kp); break;
+        case "board": content = genBoard(topic,kp,kind,level); break;
+        case "mind": content = genMind(topic,kp,level); break;
+        case "chain": content = genChain(topic,kp,level,plan,reference); break;
+        case "compress": content = genCompress(topic,kp,reference); break;
+      }
+      if(!content || !content.trim()) throw new Error(FALLBACK.emptyMsg);
+      const pptPage = type.page;
+      const pptNote = `【PPT页建议】${pptPage} · ${type.name} · 适合${level}学生`;
+      results.push({id:tid,icon:type.icon,name:type.name,content,pptPage,pptNote,level,prompt});
+    });
+    const designIdea = `本素材设计思路：面向${kind}（${level}），紧扣${topic}知识点，适配教学环节导入/探究/巩固/应用，素材简洁实用不冗长，符合初三学生认知水平。`;
+    const planAlign = plan ? `【教案对齐】已结合您提供的教案/重难点，素材内容与教学目标保持一致。` : `【教案提示】未提供教案，素材基于课题生成通用内容；如需对齐请粘贴教案。`;
+    const refAlign = reference ? `【参考材料】已注入 ${reference.length} 字参考资料，素材已据此减少幻觉。` : "";
+    return {ok:true,topic,kind,level,materials:results,designIdea,planAlign:planAlign+refAlign,banner:window.DATA.BANNER,pptNote:window.DATA.PPT_NOTE};
+  }catch(e){
+    // ===== LLM/引擎异常兜底 =====
+    return {ok:false,error:e.message||FALLBACK.errMsg,topic,kind,level,materials:[],
+      designIdea:"",planAlign:"",banner:window.DATA.BANNER,pptNote:window.DATA.PPT_NOTE};
+  }
+}
+
+function genStory(topic,kp){
   const map = {
     "机械运动":"清晨小明坐公交车，看到路边树木飞快向后退。明明是树在动，怎么感觉自己在动？判断运动要看参照物。今天探究机械运动的奥秘。",
     "声现象":"上课铃响了，最后一排的小红听不清老师讲课。声音怎样从讲台传到她耳朵？原来空气是传播媒介。今天探究声现象规律。",
@@ -51,8 +72,7 @@ function genStory(topic,kp,level){
   };
   return map[topic] || `${topic}是初中物理重要知识点，与生活密切相关。今天我们就来探究${topic}的规律。`;
 }
-
-function genDemo(topic,kp,level){
+function genDemo(topic,kp){
   const demos = {
     "机械运动":{器材:"刻度尺、秒表、小车",步骤:"1.测小车行驶距离 2.记录时间 3.算速度",现象:"不同距离速度不同",原理:"v=s/t",提问:"如何测平均速度？"},
     "声现象":{器材:"音叉、橡胶锤、水",步骤:"1.敲击音叉 2.音叉接触水面",现象:"音叉振动溅起水花",原理:"声音由振动产生",提问:"振动停止声音会怎样？"},
@@ -80,7 +100,6 @@ function genDemo(topic,kp,level){
   if(d.推理) s += `\n推理：${d.推理}`;
   return s;
 }
-
 function genHistory(topic,kp){
   const h = {
     "机械运动":"伽利略在比萨斜塔做落体实验，挑战亚里士多德权威，开创实验物理学先河。",
@@ -104,21 +123,21 @@ function genHistory(topic,kp){
   };
   return h[topic] || `${kp.name}的发展历程中，众多科学家通过实验和推理逐步揭示其规律。`;
 }
-
 function genBoard(topic,kp,kind,level){
   return `【板书设计】${topic}\n一、${kp.name}\n   定义：${kp.content}\n   公式：${kp.formula}\n   单位：${kp.unit}\n二、典型应用\n   ${kp.example}\n三、易错点\n   - 注意条件和单位\n   - 理解物理意义\n四、${kind}小结\n   ${level}重点掌握：${kp.name}的理解与应用`;
 }
-
 function genMind(topic,kp,level){
   return `【思维导图】${topic}\n├── ${kp.name}\n│   ├── 定义：${kp.content}\n│   ├── 公式：${kp.formula}\n│   └── 单位：${kp.unit}\n├── 应用\n│   └── ${kp.example}\n├── 易错点\n│   └── 条件、单位、物理意义\n└── 拓展\n    └── ${level}进阶思考`;
 }
-
-function genChain(topic,kp,level){
-  return `【问题链】${topic}（递进式）\n1. 基础：什么是${kp.name}？如何定义？\n2. 理解：${kp.formula}中各字母代表什么？\n3. 应用：生活中哪些现象与${topic}有关？\n4. 拓展：如果条件改变，结论会怎样？\n5. 评价：${level}如何评价这一规律的适用范围？`;
+function genChain(topic,kp,level,plan,reference){
+  let extra = "";
+  if(plan) extra += `\n6. 教案对齐：结合教案要点「${plan.slice(0,60)}」追问。`;
+  if(reference) extra += `\n7. 参考材料关联：依据上传教参片段设问。`;
+  return `【问题链】${topic}（递进式）\n1. 基础：什么是${kp.name}？如何定义？\n2. 理解：${kp.formula}中各字母代表什么？\n3. 应用：生活中哪些现象与${topic}有关？\n4. 拓展：如果条件改变，结论会怎样？\n5. 评价：${level}如何评价这一规律的适用范围？${extra}`;
+}
+function genCompress(topic,kp,reference){
+  let ref = reference ? `\n参考要点：${reference.slice(0,80)}…` : "";
+  return `【阅读摘要】${topic}（初中生阅读难度）\n${kp.name}是${topic}的核心内容。\n定义：${kp.content}\n公式：${kp.formula}（单位：${kp.unit}）\n应用：${kp.example}\n要点：理解${kp.name}的物理意义，掌握${kp.formula}的应用条件。${ref}`;
 }
 
-function genCompress(topic,kp){
-  return `【阅读摘要】${topic}（初中生阅读难度）\n${kp.name}是${topic}的核心内容。\n定义：${kp.content}\n公式：${kp.formula}（单位：${kp.unit}）\n应用：${kp.example}\n要点：理解${kp.name}的物理意义，掌握${kp.formula}的应用条件。`;
-}
-
-window.GENERATOR = {generateMaterials,getKnowledge};
+window.GENERATOR = {generateMaterials,getKnowledge,getPrompts,renderPrompt};

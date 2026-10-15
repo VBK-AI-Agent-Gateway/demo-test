@@ -4,14 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>初中物理课堂素材系统 · 初三备课助手</title>
-<meta name="description" content="人教版初中物理课堂素材生成：导入故事、趣味演示、物理学史、板书、思维导图、问题链、长文本压缩，7类素材按需生成，附PPT页标注联动课件系统。AI仅辅助，教师审核后使用。">
+<meta name="description" content="人教版初中物理课堂素材生成：导入故事、趣味演示、物理学史、板书、思维导图、问题链、长文本压缩，7类素材按需生成，附PPT页标注联动课件系统，支持在线编辑、教参上传、提示词后台、异常兜底。AI仅辅助，教师审核后使用。">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <header class="top">
   <div class="brand">🧰 初中物理课堂素材系统 <span class="sub">人教版 · 新课标 · 素材→PPT 联动</span></div>
   <div class="top-r">
-    <button class="btn ghost" id="btn-history">🕘 历史</button>
+    <button class="btn ghost" id="btn-history">🗂 工程/历史/收藏</button>
+    <button class="btn ghost" id="btn-prompts">⚙️ 提示词后台</button>
     <button class="btn ghost" id="btn-help">❓ 说明</button>
   </div>
 </header>
@@ -51,22 +52,28 @@
       <label>本节教案 / 重难点（选填）</label>
       <textarea id="in-plan" placeholder="粘贴教学目标或重难点，素材对齐；留空生成通用素材。"></textarea>
     </div>
+    <div class="f-row">
+      <label>📚 参考资料（教参/课本片段，选填，减少幻觉）</label>
+      <textarea id="in-ref" placeholder="粘贴教参或课本片段（P1），素材将据此生成；也可上传 txt/md 文件。"></textarea>
+      <input type="file" id="in-file" accept=".txt,.md" style="margin-top:7px">
+    </div>
     <button class="btn primary big" id="btn-gen">⚡ 生成课堂素材</button>
-    <p class="hint">每模块开头一句话说明设计思路；导入故事100–300字；每个素材附「PPT页建议」可直接导入课件脚本系统。</p>
+    <p class="hint">每模块开头一句话说明设计思路；导入故事100–300字；每个素材附「PPT页建议」；生成后可在线编辑、单模块复制、收藏。</p>
   </section>
 
   <section class="panel out-panel">
     <div class="out-bar">
       <h2 id="out-title">素材预览</h2>
       <div class="out-acts">
+        <button class="btn" id="btn-save-proj">💾 保存工程</button>
         <button class="btn" id="btn-copy">📋 复制全部</button>
-        <button class="btn" id="btn-md">⬇ 导出 MD</button>
+        <button class="btn" id="btn-md">⬇ 导出备课包</button>
         <button class="btn" id="btn-print">🖨 打印</button>
       </div>
     </div>
-    <div class="warn-strip">📌 以下素材 <b>AI仅辅助</b>：请教师审核科学性与课堂适配性后使用；演示须先确认安全。</div>
+    <div class="warn-strip">📌 以下素材 <b>AI仅辅助</b>：请教师审核科学性与课堂适配性后使用；演示须先确认安全。生成异常时下方会有<b>兜底提示</b>。</div>
     <div class="output" id="output">
-      <div class="empty">👈 选课题 + 勾选素材类型，点击「生成课堂素材」。<br>支持：导入故事 / 趣味演示 / 物理学史 / 板书 / 思维导图 / 问题链 / 长文本压缩。<br>每个素材附「PPT页建议」，可联动课件脚本系统。</div>
+      <div class="empty">👈 选课题 + 勾选素材类型，点击「生成课堂素材」。<br>支持：导入故事 / 趣味演示 / 物理学史 / 板书 / 思维导图 / 问题链 / 长文本压缩。<br>每个素材可 ✏️ 在线编辑、📋 单模块复制、⭐ 收藏；可上传教参减少幻觉。</div>
     </div>
   </section>
 </main>
