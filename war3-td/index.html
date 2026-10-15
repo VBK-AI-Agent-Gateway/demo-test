@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>War3 TD · 魔兽争霸3 风格塔防</title>
+<meta name="description" content="War3 风格硬核塔防：伤害-护甲克制链、四种族塔、6格装备合成系统、波次挑战。">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
+</head>
+<body>
+<div class="app">
+
+  <!-- 顶栏 -->
+  <header class="top">
+    <div class="brand">🏰 War3 TD <em>魔兽风格塔防</em></div>
+    <div class="stats">
+      <span class="st">💰 <b id="gold">250</b></span>
+      <span class="st">🪵 <b id="wood">40</b></span>
+      <span class="st">❤️ <b id="hp">20</b></span>
+      <span class="st">🌊 第 <b id="wave">0</b>/<span id="waveMax">15</span> 波</span>
+      <span class="st">⭐ <b id="lvl">1</b> 级</span>
+    </div>
+    <div class="ops">
+      <button class="btn sm" id="btnPause">⏸ 暂停</button>
+      <button class="btn sm" id="btnSpeed">▶1×</button>
+      <button class="btn sm gold" id="btnWave">🚀 开波</button>
+      <button class="btn sm ghost" id="btnReset">↺ 重开</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- 左：战场 -->
+    <div class="stage">
+      <canvas id="cv"></canvas>
+      <div class="overlay" id="overlay">
+        <div class="ov-card">
+          <h2>⚔️ War3 风格塔防</h2>
+          <p>克制链 · 四族塔 · 6格装备合成 · 波次 Boss</p>
+          <p class="tip">点空地建塔 → 点塔升级/卖/装装备 → 🚀 开波守卫基地</p>
+          <button class="btn gold big" id="btnStart">开始守卫</button>
+        </div>
+      </div>
+      <div class="hint" id="hint">选择下方防御塔，点击地图草地建造</div>
+    </div>
+
+    <!-- 右：指挥面板 -->
+    <aside class="panel">
+      <!-- 塔商店 -->
+      <section class="sec">
+        <h3>🏗️ 防御塔商店</h3>
+        <div class="shop" id="shop"></div>
+      </section>
+
+      <!-- 选中塔 -->
+      <section class="sec" id="selSec" hidden>
+        <h3>🎯 当前塔 <span id="selName"></span></h3>
+        <div class="stat-grid" id="selStats"></div>
+        <div class="ops2">
+          <button class="btn sm gold" id="btnUp">⬆ 升级</button>
+          <button class="btn sm red" id="btnSell">💰 出售</button>
+          <button class="btn sm ghost" id="btnClose">✕ 关闭</button>
+        </div>
+        <!-- 6 格装备栏 -->
+        <div class="slots" id="slots"></div>
+        <div class="inv-h">🎒 背包（点击装备装入 / 已装备点击卸下 · 2 同级自动合成）</div>
+        <div class="inv" id="inv"></div>
+      </section>
+
+      <!-- 科技树 (局外养成) -->
+      <section class="sec" id="techSec">
+        <h3>🔬 局外科技树 <span class="sub-t">木材永久升级 (跨局生效)</span></h3>
+        <div class="tech-list" id="techList"></div>
+      </section>
+
+      <!-- 装备商店 -->
+      <section class="sec" id="itemShopSec">
+        <h3>🛒 装备商店 <span class="sub-t">购买基础材料自动合成</span></h3>
+        <div class="item-shop" id="itemShop"></div>
+      </section>
+
+      <!-- 波次与克制 -->
+      <section class="sec">
+        <h3>📜 战报</h3>
+        <div class="log" id="log"></div>
+      </section>
+
+      <section class="sec">
+        <h3>⚔️ 克制速查 <button class="mini" id="btnChart">展开</button></h3>
+        <div id="chart" class="chart" hidden></div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<!-- 波次选择弹窗 -->
+<div class="modal" id="waveModal" hidden>
+  <div class="m-card">
+    <h3>🌊 选择下一波怪物</h3>
+    <div class="wlist" id="waveList"></div>
+    <button class="btn ghost sm" id="btnCloseWave">取消</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="game.js"></script>
+<script src="game-ui.js"></script>
+</body>
+</html>
