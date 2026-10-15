@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Forge · 提示词生成器</title>
+<meta name="description" content="中文提示词生成器：选场景、填要素，一键生成结构化高质量 AI 提示词，可复制、可存历史。">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">Prompt<span>Forge</span> ⚡</div>
+  <div class="tagline">提示词生成器 · 把想法变成结构化提示词</div>
+  <div class="spacer"></div>
+  <button class="hbtn" id="histBtn">🕘 历史 (<span id="histN">0</span>)</button>
+</header>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-view="builder">🛠️ 生成器</button>
+  <button class="tab" data-view="lib">📚 模板库</button>
+  <button class="tab" data-view="guide">💡 写好提示词</button>
+</div>
+
+<main>
+  <!-- 生成器视图 -->
+  <div class="view" id="view-builder">
+    <div class="layout">
+      <section class="panel form-panel">
+        <h2>1 · 选择用途场景</h2>
+        <div class="chips" id="sceneChips"></div>
+
+        <h2>2 · 填写核心要素</h2>
+        <label class="field"><span>任务目标 <em>（要 AI 做什么，必填）</em></span>
+          <input id="fGoal" placeholder="例如：写一篇介绍京都旅行的公众号文章"></label>
+        <label class="field"><span>主题 / 对象</span>
+          <input id="fTopic" placeholder="例如：京都红叶季三日游"></label>
+
+        <div class="grid2">
+          <label class="field"><span>风格语气</span>
+            <select id="fStyle"></select></label>
+          <label class="field"><span>目标受众</span>
+            <input id="fAudience" placeholder="例如：25-35 岁上班族"></label>
+          <label class="field"><span>篇幅 / 输出量</span>
+            <select id="fLength"></select></label>
+          <label class="field"><span>输出格式</span>
+            <select id="fFormat"></select></label>
+        </div>
+
+        <label class="field"><span>必须包含的细节 <em>（每行一条）</em></span>
+          <textarea id="fDetails" rows="3" placeholder="例如：&#10;提到清水寺和岚山&#10;包含预算参考&#10;给出交通建议"></textarea></label>
+        <label class="field"><span>限制与禁忌 <em>（每行一条）</em></span>
+          <textarea id="fConstraints" rows="3" placeholder="例如：&#10;不要夸张宣传语&#10;不要编造价格&#10;用简体中文"></textarea></label>
+
+        <h2>3 · 生成选项</h2>
+        <div class="checks">
+          <label><input type="checkbox" id="oRole" checked> 设定专家角色</label>
+          <label><input type="checkbox" id="oSteps" checked> 要求分步思考</label>
+          <label><input type="checkbox" id="oFewshot" checked> 要求示例 (few-shot)</label>
+          <label><input type="checkbox" id="oReask" checked> 结尾自我检查</label>
+        </div>
+        <button class="gen-btn" id="genBtn">⚡ 生成提示词</button>
+        <button class="ghost-btn" id="clearBtn">清空重填</button>
+      </section>
+
+      <section class="panel preview-panel">
+        <div class="preview-head">
+          <h2>生成结果</h2>
+          <div class="pv-actions">
+            <button class="mini" id="copyBtn">📋 复制</button>
+            <button class="mini" id="saveBtn">💾 存入历史</button>
+            <button class="mini alt" id="regenBtn">🔄 换个说法</button>
+          </div>
+        </div>
+        <pre id="output" class="output">← 左侧填写要素，点击「生成提示词」，结果会出现在这里。</pre>
+        <div class="tipbar">💡 好提示词公式：<b>角色 + 任务 + 细节 + 格式 + 约束</b>；生成后可微调再发给 AI。</div>
+      </section>
+    </div>
+  </div>
+
+  <!-- 模板库视图 -->
+  <div class="view" id="view-lib" style="display:none">
+    <div class="lib-grid" id="libGrid"></div>
+  </div>
+
+  <!-- 指南视图 -->
+  <div class="view" id="view-guide" style="display:none">
+    <div class="panel guide">
+      <h2>怎样写好一条提示词？</h2>
+      <ol>
+        <li><b>给角色</b>：“你是一位有 10 年经验的……”让模型进入合适视角。</li>
+        <li><b>说清任务</b>：一句话讲明要做什么，动词开头（写/改/翻译/分析）。</li>
+        <li><b>给足细节</b>：主题、受众、风格、篇幅、必须包含的要点。</li>
+        <li><b>定格式</b>：要表格还是列表？要标题还是纯文本？字数多少？</li>
+        <li><b>设边界</b>：不要做什么、不要编造什么、用什么语言。</li>
+        <li><b>要过程</b>：要求“先列提纲再写”“给出至少 3 个示例”。</li>
+        <li><b>结尾自检</b>：让模型检查是否满足全部要求后再输出。</li>
+      </ol>
+      <h2>常见坑</h2>
+      <ul>
+        <li>❌ 一句话需求全靠猜 → ✅ 分点列清楚</li>
+        <li>❌ “写得好一点” → ✅ 给可衡量标准（字数、结构、读者）</li>
+        <li>❌ 一次塞太多不同任务 → ✅ 一次只做一件事</li>
+      </ul>
+      <p class="foot">提示词是“沟通说明书”：你越具体，AI 越稳定。</p>
+    </div>
+  </div>
+</main>
+
+<!-- 历史抽屉 -->
+<div class="modal" id="histModal">
+  <div class="modal-card">
+    <div class="modal-head"><h3>🕘 生成历史</h3><button class="hbtn" id="closeHist">✕</button></div>
+    <div class="hist-list" id="histList"></div>
+    <div class="row"><button class="ghost-btn danger" id="clearHist">清空历史</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
