@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>红薯 · 生活社区 (小红书风格 Demo)</title>
+<style>
+  :root{
+    --xhs:#ff2442;          /* 小红书标志性红 */
+    --xhs-dark:#e01a38;
+    --bg:#ffffff;
+    --ink:#333;
+    --ink2:#666;
+    --muted:#999;
+    --line:#f0f0f0;
+    --card:#fff;
+    --shadow:0 1px 8px rgba(0,0,0,.06);
+    --app-w:430px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    background:#e9ecf1;color:var(--ink);
+    display:flex;justify-content:center;align-items:stretch;
+    -webkit-user-select:none;user-select:none;
+  }
+  /* desktop phone shell */
+  #app{
+    position:relative;width:100%;max-width:var(--app-w);height:100vh;height:100dvh;
+    background:var(--bg);display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 0 60px rgba(0,0,0,.18);
+  }
+  @media(min-width:520px){
+    #app{margin:14px 0;height:calc(100vh - 28px);border-radius:26px;border:1px solid #d5d9e0}
+  }
+
+  /* ===== top bar ===== */
+  header{flex:0 0 auto;background:#fff;border-bottom:1px solid var(--line);z-index:20}
+  .topbar{display:flex;align-items:center;gap:10px;padding:10px 14px 6px}
+  .brand{display:flex;align-items:center;gap:7px;font-weight:900;font-size:19px;color:var(--xhs);letter-spacing:1px;white-space:nowrap}
+  .brand .logo{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--xhs),#ff6a7f);
+    color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 3px 8px rgba(255,36,66,.4)}
+  .search{flex:1;min-width:0;display:flex;align-items:center;gap:6px;background:#f5f6f8;border-radius:999px;
+    padding:7px 14px;color:var(--muted);font-size:13.5px;cursor:pointer}
+  .search input{border:0;background:transparent;outline:none;flex:1;font-size:13.5px;color:var(--ink);min-width:0}
+  .search input::placeholder{color:var(--muted)}
+  .icon-btn{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:#f5f6f8;font-size:17px;cursor:pointer;border:0;color:var(--ink2)}
+
+  /* channel tabs */
+  .channels{display:flex;gap:6px;overflow-x:auto;padding:4px 12px 8px;scrollbar-width:none}
+  .channels::-webkit-scrollbar{display:none}
+  .chan{flex:0 0 auto;padding:5px 14px;border-radius:999px;font-size:13.5px;color:var(--ink2);
+    background:#f5f6f8;cursor:pointer;transition:.15s;white-space:nowrap}
+  .chan.active{background:var(--xhs);color:#fff;font-weight:700;box-shadow:0 3px 10px rgba(255,36,66,.35)}
+
+  /* ===== views ===== */
+  main{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;background:#f7f8fa;position:relative;-webkit-overflow-scrolling:touch}
+  .view{display:none;min-height:100%}
+  .view.active{display:block}
+
+  /* ===== waterfall ===== */
+  .feed{columns:2;column-gap:8px;padding:8px}
+  .note{
+    break-inside:avoid;margin-bottom:8px;background:var(--card);border-radius:12px;overflow:hidden;
+    box-shadow:var(--shadow);cursor:pointer;transition:transform .12s;
+  }
+  .note:active{transform:scale(.98)}
+  .cover{position:relative;width:100%;display:block}
+  .cover svg{display:block;width:100%;height:auto}
+  .cover .play{position:absolute;right:8px;top:8px;background:rgba(0,0,0,.4);color:#fff;font-size:11px;
+    padding:2px 7px;border-radius:999px}
+  .nbody{padding:8px 10px 10px}
+  .ntitle{font-size:14px;line-height:1.45;color:var(--ink);font-weight:600;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .nmeta{display:flex;align-items:center;gap:6px;margin-top:8px}
+  .avatar{width:22px;height:22px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:11px;font-weight:700}
+  .nauthor{font-size:12px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .nlike{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:3px;cursor:pointer}
+  .nlike.liked{color:var(--xhs)}
+
+  /* ===== bottom tabbar ===== */
+  nav.tabbar{
+    flex:0 0 auto;display:flex;align-items:flex-end;justify-content:space-around;
+    background:#fff;border-top:1px solid var(--line);padding:6px 4px calc(8px + env(safe-area-inset-bottom));z-index:30
+  }
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--muted);cursor:pointer;padding:2px 0}
+  .tab .ti{font-size:21px;line-height:1.2}
+  .tab.active{color:var(--xhs);font-weight:700}
+  .tab.publish .ti{width:44px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--xhs),#ff7a5c);
+    color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 12px rgba(255,36,66,.45)}
+
+  /* ===== detail ===== */
+  #view-detail{background:#fff}
+  .d-back{position:sticky;top:0;display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.96);
+    border-bottom:1px solid var(--line);z-index:5;backdrop-filter:blur(6px)}
+  .d-back .back{font-size:22px;cursor:pointer;color:var(--ink)}
+  .d-author{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
+  .d-author .nm{font-size:14.5px;font-weight:700}
+  .d-author .sub{font-size:11.5px;color:var(--muted)}
+  .follow-btn{padding:6px 16px;border-radius:999px;background:var(--xhs);color:#fff;font-size:13px;border:0;cursor:pointer;font-weight:700}
+  .follow-btn.followed{background:#f0f0f0;color:var(--muted)}
+  .d-gallery{position:relative;background:#000;overflow:hidden}
+  .d-slides{display:flex;transition:transform .35s cubic-bezier(.2,.7,.3,1)}
+  .d-slides .slideimg{flex:0 0 100%}
+  .d-slides svg{display:block;width:100%;height:auto}
+  .d-dots{position:absolute;left:0;right:0;bottom:10px;display:flex;gap:6px;justify-content:center}
+  .d-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.5)}
+  .d-dots i.on{background:#fff;width:18px;border-radius:4px}
+  .d-arrow{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;
+    background:rgba(0,0,0,.35);color:#fff;border:0;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .d-arrow.l{left:8px}.d-arrow.r{right:8px}
+  .d-content{padding:14px 16px 12px}
+  .d-title{font-size:19px;font-weight:800;line-height:1.4;margin-bottom:8px}
+  .d-text{font-size:15px;color:#333;white-space:pre-wrap;line-height:1.75}
+  .d-tags{margin-top:10px;display:flex;flex-wrap:wrap;gap:7px}
+  .d-tag{font-size:13px;color:#4a6cff;background:#f0f4ff;padding:3px 10px;border-radius:999px;cursor:pointer}
+  .d-time{color:var(--muted);font-size:12.5px;margin-top:12px}
+  .d-stats{display:flex;gap:22px;padding:14px 16px;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);
+    color:var(--muted);font-size:13.5px;align-items:center}
+  .d-stats .s{cursor:pointer;display:flex;align-items:center;gap:5px}
+  .d-stats .s.on{color:var(--xhs);font-weight:700}
+  .comments{padding:12px 16px 20px}
+  .comments h4{font-size:14.5px;margin:0 0 10px;color:var(--ink2)}
+  .cmt{display:flex;gap:10px;margin-bottom:14px}
+  .cmt .avatar{width:32px;height:32px;font-size:13px}
+  .cmt .cbody{flex:1;min-width:0}
+  .cmt .cwho{font-size:12.5px;color:var(--muted);margin-bottom:2px}
+  .cmt .ctxt{font-size:14.5px;color:var(--ink)}
+  .cmt .clike{font-size:12px;color:var(--muted);margin-top:4px;cursor:pointer}
+  .cmt .clike.liked{color:var(--xhs)}
+  .cmt-input{position:sticky;bottom:0;display:flex;gap:8px;padding:10px 14px;background:#fff;border-top:1px solid var(--line)}
+  .cmt-input input{flex:1;border:0;background:#f5f6f8;border-radius:999px;padding:9px 15px;font-size:14px;outline:none}
+  .cmt-input button{border:0;background:var(--xhs);color:#fff;border-radius:999px;padding:0 18px;font-size:14px;font-weight:700;cursor:pointer}
+
+  /* ===== me ===== */
+  .me-head{background:linear-gradient(160deg,#fff,#fff5f6);padding:24px 18px 18px;display:flex;gap:14px;align-items:center}
+  .me-head .avatar{width:74px;height:74px;font-size:30px;box-shadow:0 6px 18px rgba(255,36,66,.3)}
+  .me-info{flex:1;min-width:0}
+  .me-name{font-size:20px;font-weight:900}
+  .me-id{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .me-bio{font-size:13.5px;color:var(--ink2);margin-top:8px}
+  .me-stats{display:flex;gap:26px;padding:16px 20px;background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .me-stat{text-align:center;cursor:pointer}
+  .me-stat b{font-size:19px;font-weight:900;display:block}
+  .me-stat span{font-size:12.5px;color:var(--muted)}
+  .me-tabs{display:flex;background:#fff;border-bottom:1px solid var(--line)}
+  .me-tab{flex:1;text-align:center;padding:12px 0;font-size:14.5px;color:var(--muted);cursor:pointer;position:relative}
+  .me-tab.active{color:var(--xhs);font-weight:800}
+  .me-tab.active::after{content:"";position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:26px;height:3px;border-radius:3px;background:var(--xhs)}
+  .empty{padding:50px 20px;text-align:center;color:var(--muted)}
+  .empty .big{font-size:44px;margin-bottom:10px}
+  .me-actions{display:flex;gap:10px;padding:14px 18px 6px}
+  .me-actions button{flex:1;padding:9px 0;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:14px;cursor:pointer;color:var(--ink)}
+  .me-actions .primary{background:var(--xhs);color:#fff;border-color:var(--xhs);font-weight:700}
+
+  /* ===== publish ===== */
+  .pub-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fff;border-bottom:1px solid var(--line)}
+  .pub-head .cancel{color:var(--ink2);font-size:15px;cursor:pointer}
+  .pub-head .do{background:var(--xhs);color:#fff;border:0;border-radius:999px;padding:7px 22px;font-size:14.5px;font-weight:800;cursor:pointer}
+  .pub-body{padding:16px;background:#fff;min-height:100%}
+  .pub-body input.title{width:100%;border:0;outline:none;font-size:18px;font-weight:700;margin-bottom:12px}
+  .pub-body textarea{width:100%;border:0;outline:none;font-size:15px;min-height:140px;resize:vertical;line-height:1.7;font-family:inherit}
+  .pub-body input.title::placeholder,.pub-body textarea::placeholder{color:#bbb;font-weight:400}
+  .pick{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
+  .pick .p{padding:6px 13px;border-radius:999px;background:#f5f6f8;font-size:13px;color:var(--ink2);cursor:pointer}
+  .pick .p.on{background:#fff0f2;color:var(--xhs);font-weight:700;box-shadow:inset 0 0 0 1px var(--xhs)}
+  .color-pick{display:flex;gap:8px;align-items:center;margin-top:6px}
+  .color-pick .sw{width:30px;height:30px;border-radius:8px;cursor:pointer;border:2px solid transparent}
+  .color-pick .sw.on{border-color:var(--ink);transform:scale(1.1)}
+  .pub-label{font-size:13px;color:var(--muted);margin-top:14px}
+
+  /* ===== messages ===== */
+  .msg-head{padding:16px;background:#fff;border-bottom:1px solid var(--line);font-size:19px;font-weight:900}
+  .msg-row{display:flex;gap:12px;align-items:center;padding:14px 16px;background:#fff;border-bottom:1px solid var(--line);cursor:pointer}
+  .msg-row .avatar{width:46px;height:46px;font-size:18px}
+  .msg-row .mb{flex:1;min-width:0}
+  .msg-row .mn{font-size:15px;font-weight:700}
+  .msg-row .mt{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .msg-row .badge{background:var(--xhs);color:#fff;font-size:11px;border-radius:999px;min-width:18px;height:18px;
+    display:flex;align-items:center;justify-content:center;padding:0 5px}
+
+  /* toast */
+  #toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(0,0,0,.82);color:#fff;
+    padding:9px 18px;border-radius:999px;font-size:13.5px;opacity:0;transition:.2s;pointer-events:none;z-index:99;white-space:nowrap;max-width:90%}
+  #toast.show{opacity:1}
+
+  /* scrollbars */
+  main::-webkit-scrollbar{width:0}
+
+  /* responsive */
+  @media (max-width:640px){
+    body{background:#fff}
+    #app{max-width:none;height:100vh;height:100dvh;box-shadow:none;border:0;border-radius:0;margin:0}
+    .ntitle{font-size:13.5px}
+  }
+  @media (max-width:400px){
+    .brand span.word{display:none}
+    .feed{column-gap:6px;padding:6px}
+    .note{border-radius:10px;margin-bottom:6px}
+    .me-head{padding:18px 14px 14px}
+    .me-head .avatar{width:64px;height:64px;font-size:26px}
+    .me-stats{gap:18px;padding:12px 14px}
+    .d-title{font-size:17px}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- top bar (hidden on detail/publish full views) -->
+  <header id="topbar">
+    <div class="topbar">
+      <div class="brand"><span class="logo">薯</span><span class="word">红薯</span></div>
+      <label class="search" onclick="focusSearch()">🔍
+        <input id="searchInput" placeholder="搜索笔记 / 作者 / 标题" oninput="onSearch(this.value)">
+      </label>
+      <button class="icon-btn" title="消息" onclick="switchTab('messages')">🔔</button>
+    </div>
+    <div class="channels" id="channels"></div>
+  </header>
+
+  <main id="main">
+    <!-- FEED -->
+    <section class="view active" id="view-feed"><div class="feed" id="feed"></div></section>
+
+    <!-- DETAIL -->
+    <section class="view" id="view-detail"></section>
+
+    <!-- PUBLISH -->
+    <section class="view" id="view-publish">
+      <div class="pub-head">
+        <span class="cancel" onclick="switchTab('feed')">✕ 取消</span>
+        <b>发布笔记</b>
+        <button class="do" onclick="doPublish()">发布</button>
+      </div>
+      <div class="pub-body">
+        <input class="title" id="pubTitle" placeholder="填写标题会有更多赞哦～" maxlength="40">
+        <textarea id="pubText" placeholder="输入正文，分享你的生活与灵感…" maxlength="1000"></textarea>
+        <div class="pub-label">选择话题</div>
+        <div class="pick" id="pubTopics"></div>
+        <div class="pub-label">封面配色（占位插画）</div>
+        <div class="color-pick" id="pubColors"></div>
+        <div class="pub-label">发布即表示同意社区规范，内容仅存于本地演示。</div>
+      </div>
+    </section>
+
+    <!-- MESSAGES -->
+    <section class="view" id="view-messages">
+      <div class="msg-head">消息</div>
+      <div id="msgList"></div>
+    </section>
+
+    <!-- ME -->
+    <section class="view" id="view-me"></section>
+  </main>
+
+  <!-- tabbar -->
+  <nav class="tabbar">
+    <div class="tab active" data-tab="feed" onclick="switchTab('feed')"><span class="ti">🏠</span><span>首页</span></div>
+    <div class="tab" data-tab="messages" onclick="switchTab('messages')"><span class="ti">💬</span><span>消息</span></div>
+    <div class="tab publish" data-tab="publish" onclick="switchTab('publish')"><span class="ti">＋</span></div>
+    <div class="tab" data-tab="me" onclick="switchTab('me')"><span class="ti">👤</span><span>我</span></div>
+    <div class="tab" data-tab="feed" onclick="toast('购物频道演示：先逛笔记吧～')"><span class="ti">🛍️</span><span>购物</span></div>
+  </nav>
+
+  <div id="toast"></div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   红薯 · 小红书风格社区 demo (UI 复刻, 原创占位素材)
+   - 双列瀑布流 / 频道 / 搜索 / 详情+评论 / 发布 / 我 / 消息
+   - localStorage 持久化: 点赞 收藏 关注 评论 自发布
+============================================================ */
+
+const $=(id)=>document.getElementById(id);
+const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------------- palette & cover generator ---------------- */
+const PALETTES=[
+  ["#ffd7e0","#ff8fa3","#fff3f5"],["#cdeffd","#7cc7f0","#eaf7ff"],["#ffe8c2","#ffb454","#fff6e6"],
+  ["#d6f5d6","#7bd88f","#ecfff0"],["#e2d6ff","#a78bfa","#f2edff"],["#ffe0c2","#ff9a76","#fff1e8"],
+  ["#c2f0f0","#4dd0d0","#e8fbfb"],["#ffd0d8","#ff5d73","#ffeef1"],["#dfe6ff","#8fa5ff","#f0f3ff"],
+  ["#fff0b3","#ffd43b","#fffbe6"]
+];
+// deterministic pseudo-random from seed
+function seeded(seed){ let x=seed*9301+49297; return ()=>{ x=(x*9301+49297)%233280; return x/233280; }; }
+function coverSVG(seed, w, h, label){
+  const P=PALETTES[seed%PALETTES.length];
+  const r=seeded(seed+7);
+  const id="g"+seed;
+  // simple flat illustration: bg + big circle + shapes + emoji glyph
+  const glyphs=["🌸","🍜","🧋","🏖️","👜","📚","🏃‍♀️","🏡","🎨","🍰","🌿","📷","🐶","💄","🛍️","🌙"];
+  const gl=glyphs[seed%glyphs.length];
+  const cx=20+r()*60, cy=30+r()*40, rad=18+r()*22;
+  const rot=Math.floor(r()*40-20);
+  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${esc(label||"封面")}">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="${P[0]}"/><stop offset="1" stop-color="${P[1]}"/></linearGradient></defs>
+    <rect width="${w}" height="${h}" fill="url(#${id})"/>
+    <circle cx="${cx}" cy="${cy}" r="${rad}" fill="${P[2]}" opacity=".7"/>
+    <rect x="${5+r()*40}" y="${h*0.55}" width="${30+r()*50}" height="${18+r()*30}" rx="6" fill="${P[1]}" opacity=".55" transform="rotate(${rot} 50 60)"/>
+    <circle cx="${80-r()*30}" cy="${70-r()*30}" r="${8+r()*10}" fill="#ffffff" opacity=".65"/>
+    <text x="50" y="58" font-size="42" text-anchor="middle">${gl}</text>
+    <rect width="${w}" height="${h}" fill="rgba(255,255,255,.04)"/>
+  </svg>`;
+}
+function avatarHTML(name, cls){
+  const P=PALETTES[[...name].reduce((s,c)=>s+c.charCodeAt(0),0)%PALETTES.length];
+  const ch=[...name][0]||"用";
+  return `<span class="avatar ${cls||""}" style="background:linear-gradient(135deg,${P[1]},${P[0]});color:#7a2b3a">${esc(ch)}</span>`;
+}
+
+/* ---------------- seed data ---------------- */
+const CHANNELS=["推荐","关注","穿搭","美食","旅行","家居","健身","美妆","读书","数码","宠物"];
+const ME={name:"红薯小主",id:"hongshu_0421",bio:"分享日常 · 记录生活 🌷\n爱美食爱旅行爱一切美好事物"};
+
+const SEED=[
+  {t:"这家巷子里的牛肉面，汤头绝了！",c:"美食",a:"阿香探店",txt:"藏在老城区巷子深处的一家面馆，牛骨熬了 12 小时的汤底，清亮却醇厚。面条是手工拉的，弹牙。加一份卤蛋和牛腩，满足感拉满。人均 22，冲！\n📍老城东路 33 号",likes:3241,comments:[["吃货本货","看着就香，周末去打卡！"],["面面俱到","汤底真的会发光哈哈"],["阿香探店","回复@面面俱到:哈哈，早点去要排队"]]},
+  {t:"3 天 2 普吉岛旅行 | 人均 3000 攻略",c:"旅行",a:"环球小柚",txt:"机票 + 酒店 + 吃喝全包人均 3000 的普吉岛玩法。\nDay1: 芭东海滩看日落 + 夜市\nDay2: 皮皮岛跳岛一日游\nDay3: 老城拍照 + 返程\n避坑：出海一定涂防晒！",likes:8912,comments:[["爱旅行的猫","收藏了！"],["环球小柚","需要行程表格的扣 1"]]},
+  {t:"小个子秋冬穿搭｜显高 10cm 的秘诀",c:"穿搭",a:"穿酱",txt:"155 也能穿出 165！核心就是：提高腰线 + 同色系延伸 + 露脚踝。\nLook1: 短款外套 + 高腰直筒裤\nLook2: 针织开衫 + A字短裙\nLook3: 长风衣 + 阔腿裤（内增高）",likes:12043,comments:[["小个子星人","太实用了！"],["穿酱","裤子链接放评论区啦"]]},
+  {t:"10㎡出租屋改造，花费不到 800 元",c:"家居",a:"改造家小林",txt:"谁说租房不能有生活感？\n✔️ 换了地毯和窗帘（300）\n✔️ 洞洞板收纳墙（200）\n✔️ 氛围灯串 + 落地灯（150）\n✔️ 绿植若干（150）\n前后对比简直两个世界。",likes:6720,comments:[["租房党","洞洞板链接求一个！"],["改造家小林","淘宝搜关键词就好～"]]},
+  {t:"居家跟练｜15 分钟瘦全身（无器械）",c:"健身",a:"教练Nina",txt:"久坐党每天 15 分钟，4 个动作循环 3 组：\n1️⃣ 开合跳 40s\n2️⃣ 深蹲 20 次\n3️⃣ 平板支撑 45s\n4️⃣ 登山跑 40s\n坚持 2 周腰围就有变化！",likes:9834,comments:[["减肥ing","跟练第 5 天！"],["教练Nina","动作标准最重要哦"]]},
+  {t:"早八人 5 分钟通勤妆，懒人狂喜",c:"美妆",a:"鹿鹿酱",txt:"底妆 + 眉毛 + 口红，5 分钟出门：\n✅ 妆前乳混粉底，用手拍开\n✅ 眉毛顺着毛流填两笔\n✅ 腮红口红一支搞定\n追求的是「看起来气色很好」不是精致。",likes:4512,comments:[["早八人","真实！"],["鹿鹿酱","手比美妆蛋快多了哈哈"]]},
+  {t:"读完《被讨厌的勇气》，我豁然开朗",c:"读书",a:"书桌角落",txt:"「一切烦恼都是人际关系的烦恼。」\n这本书用对话体讲阿德勒心理学，三个收获：\n1. 课题分离——分清别人的事和自己的事\n2. 活在当下，不是为了未来牺牲现在\n3. 被讨厌也是一种自由\n推荐给内耗严重的你。",likes:7645,comments:[["深夜书虫","课题分离真的治愈我"],["书桌角落","一起读书呀"]]},
+  {t:"露营初体验｜周末逃离城市计划",c:"旅行",a:"野游记",txt:"第一次带新手露营，选址、扎营、做饭全记录。\n装备清单：帐篷、天幕、折叠桌椅、炉具、氛围灯。\n傍晚山里的风 + 篝火 + 烤棉花糖 = 幸福具象化。",likes:5310,comments:[["城市打工人","想去！"],["野游记","下周同一地点组队"]]},
+  {t:"5 道懒人早餐，10 分钟搞定",c:"美食",a:"厨房日记",txt:"周一至周五不重样：\n🥪 鸡蛋三明治\n🥣 酸奶燕麦杯\n🥞 香蕉松饼\n🍜 葱油拌面\n🥛 豆浆 + 蒸饺\n早起 10 分钟，幸福感一整天。",likes:6128,comments:[["赖床冠军","明早就做！"],["厨房日记","燕麦杯前一晚泡好更省时"]]},
+  {t:"入手一周的降噪耳机，真香了",c:"数码",a:"数码老王",txt:"通勤地铁 + 开放办公室两大噪音场景实测：\n▶️ 地铁低频噪音削减明显\n▶️ 人声抑制中等，够用\n▶️ 续航实测 28 小时\n▶️ 通话对方说很清楚\n一句话：打工人续命神器。",likes:3987,comments:[["通勤人","纠结很久了，冲"],["数码老王","佩戴舒适度也很重要"]]},
+  {t:"我家猫主子的 100 个睡姿合集",c:"宠物",a:"橘座日记",txt:"养猫一年，记录了它各种离谱睡姿：\n🐟 肚皮朝天式\n🍩 圆环蜷缩式\n🥖 长条伸展式\n🫠 流猫地毯式\n每一张都想笑又想rua。",likes:15203,comments:[["铲屎官同行","最后一张笑死"],["橘座日记","它已经习以为常了"]]},
+  {t:"阳台种菜第 30 天｜小番茄红了！",c:"家居",a:"都市农夫",txt:"泡沫箱 + 营养土 + 阳台，30 天从种子到果实：\nDay1 播种 → Day10 发芽 → Day20 开花 → Day30 结果。\n自然熟的小番茄，酸甜味浓，和买的完全不一样。",likes:4230,comments:[["种菜新手","动力来了！"],["都市农夫","阳台朝南很重要"]]}
+];
+
+const AVATAR_COLORS=PALETTES;
+
+/* ---------------- store (localStorage) ---------------- */
+const LS="xhs_clone_v1";
+let store={likes:{},favs:{},follows:{},cmts:{},mine:[],seen:false};
+function save(){ try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){} }
+function load(){ try{ const s=localStorage.getItem(LS); if(s) store=Object.assign(store,JSON.parse(s)); }catch(e){} }
+load();
+
+function allNotes(){ return store.mine.concat(SEED); }
+function getNote(id){ return allNotes().find(n=>n.id===id); }
+function likeCount(n){ return (n.likes||0) + (store.likes[n.id]?1:0); }
+function commentList(n){ return (n.comments||[]).concat(store.cmts[n.id]||[]); }
+
+/* ---------------- state ---------------- */
+let curChan="推荐", curQuery="", curNoteId=null, curSlide=0, curGallery=0;
+let pubTopic="日常", pubColor=0;
+
+/* ---------------- channels ---------------- */
+function renderChannels(){
+  $("channels").innerHTML=CHANNELS.map(c=>`<span class="chan ${c===curChan?"active":""}" onclick="setChan('${c}')">${c}</span>`).join("");
+}
+function setChan(c){ curChan=c; renderChannels(); renderFeed(); }
+function onSearch(v){ curQuery=v.trim(); renderFeed(); }
+function focusSearch(){ $("searchInput").focus(); }
+
+/* ---------------- feed ---------------- */
+function filtered(){
+  let list=allNotes();
+  if(curChan==="关注"){
+    list=list.filter(n=>store.follows[n.author]||n.mine);
+  }else if(curChan!=="推荐"){
+    list=list.filter(n=>n.chan===curChan);
+  }
+  if(curQuery){
+    const q=curQuery.toLowerCase();
+    list=list.filter(n=>(n.title+n.author+(n.chan||"")+n.text).toLowerCase().includes(q));
+  }
+  return list;
+}
+function renderFeed(){
+  const list=filtered();
+  if(!list.length){
+    $("feed").innerHTML=`<div class="empty" style="column-span:all"><div class="big">🔍</div>没有找到相关笔记<br><small>换个频道或关键词试试</small></div>`;
+    return;
+  }
+  $("feed").innerHTML=list.map(n=>{
+    const liked=!!store.likes[n.id];
+    const h=[120,150,175,140,165][([...n.id].reduce((s,c)=>s+c.charCodeAt(0),0))%5]+ (n.mine?0:0);
+    return `<div class="note" onclick="openNote('${n.id}')">
+      <div class="cover">${coverSVG(n.seed||[...n.id].reduce((s,c)=>s+c.charCodeAt(0),0),240,240+h, n.title)}${n.video?'<span class="play">▶ 视频</span>':""}</div>
+      <div class="nbody">
+        <div class="ntitle">${n.mine?"":"📌 "}${esc(n.title)}</div>
+        <div class="nmeta">
+          ${avatarHTML(n.author)}
+          <span class="nauthor">${esc(n.author)}</span>
+          <span class="nlike ${liked?"liked":""}" onclick="event.stopPropagation();toggleLike('${n.id}',this)">${liked?"❤️":"🤍"} ${likeCount(n)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ---------------- like / fav / follow ---------------- */
+function toggleLike(id, el){
+  store.likes[id]=!store.likes[id]; if(!store.likes[id]) delete store.likes[id];
+  save();
+  if(el){ el.classList.toggle("liked",!!store.likes[id]); el.innerHTML=(store.likes[id]?"❤️":"🤍")+" "+likeCount(getNote(id)); }
+  else { renderFeed(); if(curNoteId===id) renderDetail(); }
+  renderMe();
+}
+function toggleFav(id){
+  store.favs[id]=!store.favs[id]; if(!store.favs[id]) delete store.favs[id];
+  save(); renderDetail(); toast(store.favs[id]?"已收藏 ⭐":"已取消收藏");
+}
+function toggleFollow(author){
+  store.follows[author]=!store.follows[author]; if(!store.follows[author]) delete store.follows[author];
+  save(); renderDetail(); renderFeed(); renderMe();
+  toast(store.follows[author]?"已关注 "+author:"已取消关注");
+}
+
+/* ---------------- detail ---------------- */
+function openNote(id){
+  curNoteId=id; curSlide=0;
+  renderDetail();
+  showView("detail");
+  $("main").scrollTop=0;
+}
+function closeNote(){ showView("feed"); renderFeed(); }
+
+let galleryTimer=null;
+function renderDetail(){
+  const n=getNote(curNoteId); if(!n) return;
+  const liked=!!store.likes[n.id], faved=!!store.favs[n.id], followed=!!store.follows[n.author];
+  const seed=n.seed||[...n.id].reduce((s,c)=>s+c.charCodeAt(0),0);
+  const slides=[0,1,2].map(i=>`<div class="slideimg">${coverSVG(seed+i,430,430, n.title)}</div>`).join("");
+  const cmts=commentList(n);
+  $("view-detail").innerHTML=`
+    <div class="d-back">
+      <span class="back" onclick="closeNote()">←</span>
+      <span class="d-author">${avatarHTML(n.author)}<span><span class="nm">${esc(n.author)}</span><br><span class="sub">${n.chan||"日常"} · 分享生活</span></span></span>
+      <button class="follow-btn ${followed?"followed":""}" onclick="toggleFollow('${esc(n.author)}')">${followed?"已关注":"关注"}</button>
+    </div>
+    <div class="d-gallery">
+      <div class="d-slides" id="dSlides" style="transform:translateX(-${curSlide*100}%)">${slides}</div>
+      <button class="d-arrow l" onclick="slide(-1)">‹</button>
+      <button class="d-arrow r" onclick="slide(1)">›</button>
+      <div class="d-dots">${[0,1,2].map(i=>`<i class="${i===curSlide?"on":""}"></i>`).join("")}</div>
+    </div>
+    <div class="d-content">
+      <div class="d-title">${esc(n.title)}</div>
+      <div class="d-text">${esc(n.text)}</div>
+      <div class="d-tags">${topics(n).map(t=>`<span class="d-tag" onclick="searchTag('${esc(t)}')">#${esc(t)}</span>`).join("")}</div>
+      <div class="d-time">${n.time||"2 小时前"} · ${n.chan||"日常"}</div>
+    </div>
+    <div class="d-stats">
+      <span class="s ${liked?"on":""}" onclick="toggleLike('${n.id}')">${liked?"❤️":"🤍"} ${likeCount(n)} 点赞</span>
+      <span class="s ${faved?"on":""}" onclick="toggleFav('${n.id}')">${faved?"⭐":"☆"} ${ (n.favs||120)+(faved?1:0) } 收藏</span>
+      <span class="s">💬 ${cmts.length} 评论</span>
+      <span class="s" onclick="toast('已复制分享链接（演示）')">↗ 分享</span>
+    </div>
+    <div class="comments">
+      <h4>共 ${cmts.length} 条评论</h4>
+      ${cmts.map((c,i)=>`<div class="cmt">
+        ${avatarHTML(c[0])}
+        <div class="cbody">
+          <div class="cwho">${esc(c[0])}${i===0?" · 作者":""}</div>
+          <div class="ctxt">${esc(c[1])}${c[2]?" · 回复 @"+esc(c[2]):""}</div>
+          <div class="clike" onclick="this.classList.toggle('liked');this.textContent=this.classList.contains('liked')?'❤️ 已赞':'🤍 赞'">🤍 赞</div>
+        </div>
+      </div>`).join("")||'<div class="empty">还没有评论，来抢沙发～</div>'}
+      <div class="cmt-input">
+        <input id="cmtInput" placeholder="说点什么…" onkeydown="if(event.key==='Enter')sendCmt()">
+        <button onclick="sendCmt()">发送</button>
+      </div>
+    </div>`;
+}
+function topics(n){
+  const base=[n.chan||"日常","生活记录","分享"];
+  return base;
+}
+function searchTag(t){ curQuery=t; $("searchInput").value=t; showView("feed"); renderFeed(); }
+function slide(dir){
+  curSlide=Math.max(0,Math.min(2,curSlide+dir));
+  const el=$("dSlides"); if(el) el.style.transform=`translateX(-${curSlide*100}%)`;
+  document.querySelectorAll(".d-dots i").forEach((d,i)=>d.classList.toggle("on",i===curSlide));
+}
+function sendCmt(){
+  const inp=$("cmtInput"); if(!inp) return;
+  const v=inp.value.trim(); if(!v){ toast("先写点什么吧～"); return; }
+  store.cmts[curNoteId]=(store.cmts[curNoteId]||[]).concat([[ME.name,v]]);
+  save(); renderDetail(); renderFeed(); toast("评论发布成功 💬");
+}
+
+/* ---------------- publish ---------------- */
+function renderPublishOptions(){
+  const topics=["日常","美食","旅行","穿搭","家居","健身","读书","宠物"];
+  $("pubTopics").innerHTML=topics.map(t=>`<span class="p ${t===pubTopic?"on":""}" onclick="pubTopic='${t}';renderPublishOptions()">#${t}</span>`).join("");
+  $("pubColors").innerHTML=PALETTES.map((p,i)=>`<span class="sw ${i===pubColor?"on":""}" style="background:linear-gradient(135deg,${p[0]},${p[1]})" onclick="pubColor=${i};renderPublishOptions()"></span>`).join("");
+}
+function doPublish(){
+  const t=$("pubTitle").value.trim(), x=$("pubText").value.trim();
+  if(!t){ toast("标题还没写哦～"); return; }
+  const id="mine_"+Date.now();
+  const note={id,mine:true,title:t,text:x||"（分享我的生活）",author:ME.name,chan:pubTopic,
+    likes:0,favs:1,seed:pubColor*3+5,comments:[],time:"刚刚",video:false};
+  store.mine.unshift(note); save();
+  $("pubTitle").value=""; $("pubText").value=""; pubTopic="日常"; pubColor=0;
+  renderPublishOptions(); renderFeed(); renderMe();
+  switchTab("feed"); toast("发布成功 🎉 已出现在你的主页");
+}
+
+/* ---------------- messages ---------------- */
+function renderMessages(){
+  const rows=[
+    ["赞和收藏","你的笔记《周末小记》获得了 128 个赞","❤️",12],
+    ["新增关注","穿酱 等 3 人关注了你","👤",3],
+    ["评论与回复","阿香探店 评论了你：看着就香！","💬",1],
+    ["系统通知","欢迎加入红薯社区，社区规范已更新","📣",1],
+    ["薯队长","完成新手任务，获得流量券 ×2","🎁",2],
+  ];
+  $("msgList").innerHTML=rows.map(r=>`<div class="msg-row" onclick="toast('${esc(r[1])}')">
+    ${avatarHTML(r[0])}
+    <div class="mb"><div class="mn">${r[0]}</div><div class="mt">${r[1]}</div></div>
+    <span class="badge">${r[3]}</span>
+  </div>`).join("");
+}
+
+/* ---------------- me ---------------- */
+let meTab="笔记";
+function renderMe(){
+  const mine=store.mine;
+  const likedList=allNotes().filter(n=>store.likes[n.id]);
+  const favList=allNotes().filter(n=>store.favs[n.id]);
+  let grid="";
+  if(meTab==="笔记"){
+    grid=mine.length? mine.map(n=>cardMini(n)).join("") : `<div class="empty" style="column-span:all"><div class="big">✍️</div>还没有发布笔记<br><small>点击底部 ＋ 发布第一条吧</small></div>`;
+  }else if(meTab==="赞过"){
+    grid=likedList.length? likedList.map(n=>cardMini(n)).join("") : `<div class="empty" style="column-span:all"><div class="big">❤️</div>还没有点赞的笔记</div>`;
+  }else{
+    grid=favList.length? favList.map(n=>cardMini(n)).join("") : `<div class="empty" style="column-span:all"><div class="big">⭐</div>还没有收藏的笔记</div>`;
+  }
+  const following=Object.keys(store.follows).length;
+  $("view-me").innerHTML=`
+    <div class="me-head">
+      ${avatarHTML(ME.name)}
+      <div class="me-info">
+        <div class="me-name">${ME.name}</div>
+        <div class="me-id">小红薯号：${ME.id}</div>
+        <div class="me-bio">${esc(ME.bio)}</div>
+      </div>
+    </div>
+    <div class="me-actions">
+      <button class="primary" onclick="switchTab('publish')">＋ 发布笔记</button>
+      <button onclick="toast('资料编辑演示')">编辑资料</button>
+      <button onclick="toast('设置（演示）')">⚙︎ 设置</button>
+    </div>
+    <div class="me-stats">
+      <div class="me-stat"><b>${following}</b><span>关注</span></div>
+      <div class="me-stat"><b>${128+following*3}</b><span>粉丝</span></div>
+      <div class="me-stat"><b>${likedList.reduce((s,n)=>s+likeCount(n),0)>999?Math.floor(likedList.reduce((s,n)=>s+likeCount(n),0)/100)/10+"k":likedList.reduce((s,n)=>s+likeCount(n),0)}</b><span>获赞与收藏</span></div>
+    </div>
+    <div class="me-tabs">
+      <div class="me-tab ${meTab==="笔记"?"active":""}" onclick="meTab='笔记';renderMe()">笔记 ${mine.length}</div>
+      <div class="me-tab ${meTab==="收藏"?"active":""}" onclick="meTab='收藏';renderMe()">收藏</div>
+      <div class="me-tab ${meTab==="赞过"?"active":""}" onclick="meTab='赞过';renderMe()">赞过</div>
+    </div>
+    <div class="feed" style="padding-top:8px">${grid}</div>`;
+}
+function cardMini(n){
+  const seed=n.seed||[...n.id].reduce((s,c)=>s+c.charCodeAt(0),0);
+  return `<div class="note" onclick="openNote('${n.id}')">
+    <div class="cover">${coverSVG(seed,240,240,n.title)}</div>
+    <div class="nbody"><div class="ntitle">${esc(n.title)}</div>
+    <div class="nmeta">${avatarHTML(n.author)}<span class="nauthor">${esc(n.author)}</span>
+    <span class="nlike">🤍 ${likeCount(n)}</span></div></div></div>`;
+}
+
+/* ---------------- view routing ---------------- */
+const TAB_VIEWS={feed:"feed",messages:"messages",publish:"publish",me:"me"};
+function showView(name){
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+name));
+  $("topbar").style.display=(name==="detail"||name==="publish")?"none":"";
+}
+function switchTab(tab){
+  showView(TAB_VIEWS[tab]||"feed");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===tab));
+  if(tab==="feed") renderFeed();
+  if(tab==="me") renderMe();
+  if(tab==="messages") renderMessages();
+  if(tab==="publish") renderPublishOptions();
+  $("main").scrollTop=0;
+}
+
+/* toast */
+let tt=null;
+function toast(m){ const el=$("toast"); el.textContent=m; el.classList.add("show");
+  clearTimeout(tt); tt=setTimeout(()=>el.classList.remove("show"),1800); }
+
+/* ---------------- boot ---------------- */
+renderChannels();
+renderFeed();
+renderMessages();
+renderMe();
+renderPublishOptions();
+</script>
+</body>
+</html>
