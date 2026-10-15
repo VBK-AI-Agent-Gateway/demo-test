@@ -32,15 +32,45 @@
   <div class="layout">
     <!-- 左：战场 -->
     <div class="stage">
-      <canvas id="cv"></canvas>
-      <div class="overlay" id="overlay">
+      <!-- 背景画布: pointer-events none, 绝不拦截按钮点击 -->
+      <canvas id="cv" aria-hidden="true"></canvas>
+
+      <!-- 独立交互层 ①: 首页 (开始游戏) — 强制置顶 -->
+      <div class="ui-layer" id="homeLayer">
         <div class="ov-card">
           <h2>⚔️ War3 风格塔防</h2>
           <p>克制链 · 四族塔 · 6格装备合成 · 波次 Boss</p>
-          <p class="tip">点空地建塔 → 点塔升级/卖/装装备 → 🚀 开波守卫基地</p>
-          <button class="btn gold big" id="btnStart">开始守卫</button>
+          <div class="btn-row">
+            <!-- 主按钮: 即使后台加载失败也由 JS 兜底强行渲染 -->
+            <button class="btn gold big" id="btnStart" type="button">🎮 进入游戏</button>
+            <button class="btn big ghost" id="btnQuick" type="button">⚡ 快速开始</button>
+          </div>
+          <p class="tip" id="homeTip">点【进入游戏】选择种族与地图</p>
         </div>
       </div>
+
+      <!-- 独立交互层 ②: 种族/地图选择 — 初始隐藏 -->
+      <div class="ui-layer" id="selectLayer" hidden>
+        <div class="ov-card wide">
+          <h2>🏰 选择种族</h2>
+          <div class="race-grid" id="raceGrid">
+            <button class="race-card" data-race="human" type="button"><span class="rc-ic">🛡️</span><b>人族</b><i>光环 · 协同 · 机械</i></button>
+            <button class="race-card" data-race="nightelf" type="button"><span class="rc-ic">🌿</span><b>暗夜精灵</b><i>暴击 · 毒素 · 弹射</i></button>
+            <button class="race-card" data-race="orc" type="button"><span class="rc-ic">👹</span><b>兽族</b><i>狂暴 · 控制 · 斩杀</i></button>
+            <button class="race-card" data-race="undead" type="button"><span class="rc-ic">💀</span><b>不死族</b><i>诅咒 · 冰霜 · 召唤</i></button>
+          </div>
+          <h2 class="mt">🗺️ 选择地图</h2>
+          <div class="map-grid" id="mapGrid">
+            <button class="race-card on" data-map="serpent" type="button"><span class="rc-ic">🐉</span><b>蛇形山谷</b><i>经典 S 弯 · 新手推荐</i></button>
+            <button class="race-card" data-map="chaos" type="button"><span class="rc-ic">🌀</span><b>混乱前线</b><i>标准难度</i></button>
+          </div>
+          <div class="btn-row">
+            <button class="btn gold big" id="btnPlay" type="button">⚔️ 开始守卫</button>
+            <button class="btn big ghost" id="btnBack" type="button">↩ 返回</button>
+          </div>
+        </div>
+      </div>
+
       <div class="hint" id="hint">选择下方防御塔，点击地图草地建造</div>
     </div>
 

@@ -534,25 +534,88 @@ $("#btnChart").addEventListener("click",function(){
   c.innerHTML=h;
 });
 
-/* 开始/结束遮罩 */
-function showOverlayHTML(title,sub,tip){
-  var ov=$("#overlay");
-  ov.classList.remove("hide");
-  ov.querySelector("h2").textContent=title;
-  var ps=ov.querySelectorAll("p");
-  ps[0].textContent=sub; ps[1].textContent=tip;
-  ov.querySelector(".btn").textContent="↺ 再来一局";
-  ov.querySelector(".btn").onclick=function(){location.reload();};
+/* ================= 首页交互层: 高容错启动 + 种族/地图选择 ================= */
+var homeLayer = $("#homeLayer"), selectLayer = $("#selectLayer");
+var pick = { race: null, map: "serpent" };
+function showHome(){
+  if(homeLayer) homeLayer.hidden = false;
+  if(selectLayer) selectLayer.hidden = true;
 }
+function showSelect(){
+  if(homeLayer) homeLayer.hidden = true;
+  if(selectLayer) selectLayer.hidden = false;
+}
+function forceRenderStartBtn(){
+  // 异步加载容错: DOM 兜底, 无论如何保证主按钮存在且可点
+  var b = $("#btnStart");
+  if(!b){
+    b = document.createElement("button");
+    b.id = "btnStart"; b.type = "button";
+    b.className = "btn gold big";
+    b.textContent = "🎮 进入游戏";
+    var card = homeLayer && homeLayer.querySelector(".ov-card");
+    if(card) card.appendChild(b); else document.body.appendChild(b);
+  }
+  if(b.style.display === "none") b.style.display = "";
+  b.disabled = false;
+  b.onclick = function(){ showSelect(); };
+  return b;
+}
+try { forceRenderStartBtn(); } catch(e){ /* 任何异常都不能挡住按钮 */ }
+
+var btnQuick = $("#btnQuick");
+if(btnQuick) btnQuick.onclick = function(){ pick.race = pick.race || "human"; startGame(); };
+var btnBack = $("#btnBack");
+if(btnBack) btnBack.onclick = function(){ showHome(); };
+var btnPlay = $("#btnPlay");
+if(btnPlay) btnPlay.onclick = function(){
+  if(!pick.race){ W.toast("🛡️ 请先选择种族"); return; }
+  startGame();
+};
+// 种族卡片
+var raceGrid = $("#raceGrid");
+if(raceGrid) raceGrid.addEventListener("click", function(e){
+  var c = e.target.closest("[data-race]"); if(!c) return;
+  pick.race = c.getAttribute("data-race");
+  Array.prototype.forEach.call(raceGrid.querySelectorAll(".race-card"), function(x){ x.classList.remove("on"); });
+  c.classList.add("on");
+  W.toast("已选种族: " + (c.querySelector("b") ? c.querySelector("b").textContent : pick.race));
+});
+// 地图卡片
+var mapGrid = $("#mapGrid");
+if(mapGrid) mapGrid.addEventListener("click", function(e){
+  var c = e.target.closest("[data-map]"); if(!c) return;
+  pick.map = c.getAttribute("data-map");
+  Array.prototype.forEach.call(mapGrid.querySelectorAll(".race-card"), function(x){ x.classList.remove("on"); });
+  c.classList.add("on");
+});
+function startGame(){
+  try { if(homeLayer) homeLayer.hidden = true; } catch(e){}
+  try { if(selectLayer) selectLayer.hidden = true; } catch(e){}
+  G.paused = false;
+  G.race = pick.race || "human";
+  G.mapId = pick.map || "serpent";
+  var raceName = {human:"🛡️ 人族", nightelf:"🌿 暗夜精灵", orc:"👹 兽族", undead:"💀 不死族"}[G.race] || "🛡️ 人族";
+  try { W.addLog("⚔️ 守卫开始! 种族: " + raceName + " · 点塔商店建塔, 然后 🚀 开波", "good"); } catch(e){}
+  try { openWaveModal(); } catch(e){}
+}
+/* 结束画面: 直接复用首页交互层 (极简备份结构) */
 W.closeWaveModal = closeWaveModal;
 W.openWaveModal = openWaveModal;
-W.showOverlay = showOverlayHTML;
-$("#btnStart").addEventListener("click",function(){
-  $("#overlay").classList.add("hide");
-  G.paused=false;
-  W.addLog("⚔️ 守卫开始! 点塔商店建塔, 然后点 🚀 开波","good");
-  openWaveModal();
-});
+W.showOverlay = function(title, sub, tip){
+  showHome();
+  try{
+    var ov = homeLayer;
+    ov.querySelector("h2").textContent = title;
+    var ps = ov.querySelectorAll("p");
+    if(ps[0]) ps[0].textContent = sub;
+    if(ps[1]) ps[1].textContent = tip;
+    var b = $("#btnStart");
+    if(b){ b.textContent = "↺ 再来一局"; b.onclick = function(){ location.reload(); }; }
+  }catch(e){}
+};
+W.homeLayer = homeLayer; W.selectLayer = selectLayer;
+showHome();
 
 /* ================= v2: 科技树 / 装备商店 UI ================= */
 function renderTech(){
