@@ -39,7 +39,8 @@ tailwind.config = {
 
     <nav class="flex-1 overflow-y-auto px-3 py-3 space-y-1" id="navList">
       <div class="text-[11px] font-bold tracking-widest text-slate-500 px-2 pt-1 pb-1">六大核心功能</div>
-      <button class="nav-item active" data-nav="contract">📜 合同审查 Redline</button>
+      <button class="nav-item active" data-nav="home">🏠 功能菜单 / 主菜单</button>
+      <button class="nav-item" data-nav="contract">📜 合同审查 Redline</button>
       <button class="nav-item" data-nav="ai">🤖 AI 治理 AIA</button>
       <button class="nav-item" data-nav="procure">🛒 AI/SaaS 采购风控</button>
       <button class="nav-item" data-nav="data">🛡️ 数据合规与出境</button>
@@ -69,8 +70,26 @@ tailwind.config = {
       </div>
     </header>
 
+    <!-- ===== 欢迎屏：功能菜单引导 ===== -->
+    <main class="pane flex-1 p-4 md:p-6" data-pane="home">
+      <blockquote class="exec-card">
+        <div class="exec-t">LexAI 服务已就绪</div>
+        <p>你好，我是 <b>LexAI 全能企业法务与 AI 合规总监</b>。请从下方 6 大功能中选择一项开始，我会<b>分段输出</b>，每次只给你 Top 2~3 个最高风险点，绝不刷屏。</p>
+      </blockquote>
+      <div class="sub-h">🛠️ 请选择服务模块</div>
+      <div class="menu-grid" id="menuGrid">
+        <button class="menu-card" data-go="contract"><span class="mc-ic">📜</span><b>智能合同审查与 Redline</b><i>标注 🔴高/🟡中风险，给出修改条款</i></button>
+        <button class="menu-card" data-go="ai"><span class="mc-ic">🤖</span><b>AI 系统治理与 AIA</b><i>判别风险等级，出具影响评估</i></button>
+        <button class="menu-card" data-go="procure"><span class="mc-ic">🛒</span><b>第三方 AI/SaaS 采购风控</b><i>排查训练授权与隐私泄露</i></button>
+        <button class="menu-card" data-go="data"><span class="mc-ic">🛡️</span><b>数据合规与跨境 (PIA)</b><i>收集合法性与出境合规</i></button>
+        <button class="menu-card" data-go="search"><span class="mc-ic">🔍</span><b>法律法规与判例检索</b><i>引用条款与裁判要旨</i></button>
+        <button class="menu-card" data-go="alert"><span class="mc-ic">📁</span><b>履约预警与合同看板</b><i>付款 / 到期 / 解约窗口</i></button>
+      </div>
+      <div class="hint-bar">💡 轻量交互：每个模块单次只输出 Top 2~3 风险点，用底部按钮翻页 · 回复【M】可随时返回本菜单</div>
+    </main>
+
     <!-- ===== 功能1：合同审查 ===== -->
-    <main class="pane flex-1 p-4 md:p-6" data-pane="contract">
+    <main class="pane hidden flex-1 p-4 md:p-6" data-pane="contract">
       <div class="pane-tabs lg:hidden flex gap-2 p-1 mb-4 rounded-xl bg-ink2 border border-white/10">
         <button class="pane-tab active flex-1 h-11 rounded-lg text-sm font-bold" data-side="input">① 输入与原文</button>
         <button class="pane-tab flex-1 h-11 rounded-lg text-sm font-bold" data-side="result">② 风控卡片</button>
@@ -96,6 +115,7 @@ tailwind.config = {
         <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden flex flex-col">
           <div class="flex items-center h-12 px-4 border-b border-white/10 shrink-0 text-sm font-black text-white">🛡️ 风控卡片输出</div>
           <div id="ctOut" class="p-4 space-y-3 overflow-auto max-h-[70vh]"></div>
+          <div class="chunk-bar" id="ctBar"></div>
         </section>
       </div>
     </main>
@@ -134,6 +154,7 @@ tailwind.config = {
         <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
           <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">📊 AI 影响评估清单 (AIA)</div>
           <div id="aiOut" class="p-4 space-y-3 overflow-auto max-h-[70vh]"></div>
+          <div class="chunk-bar" id="aiBar"></div>
         </section>
       </div>
     </main>
@@ -162,6 +183,7 @@ tailwind.config = {
         <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
           <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">🛡️ 采购风控卡片</div>
           <div id="apOut" class="p-4 space-y-3 overflow-auto max-h-[70vh]"></div>
+          <div class="chunk-bar" id="apBar"></div>
         </section>
       </div>
     </main>
@@ -196,6 +218,7 @@ tailwind.config = {
         <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
           <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">📋 数据合规行动清单</div>
           <div id="dpOut" class="p-4 space-y-3 overflow-auto max-h-[70vh]"></div>
+          <div class="chunk-bar" id="dpBar"></div>
         </section>
       </div>
     </main>
@@ -221,6 +244,7 @@ tailwind.config = {
         <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
           <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">📖 法规引用与行动指南</div>
           <div id="lsOut" class="p-4 space-y-3 overflow-auto max-h-[70vh]"></div>
+          <div class="chunk-bar" id="lsBar"></div>
         </section>
       </div>
     </main>
@@ -250,6 +274,7 @@ tailwind.config = {
         <section class="pane-side rounded-2xl bg-ink2 border border-white/10 overflow-hidden">
           <div class="flex items-center h-12 px-4 border-b border-white/10 text-sm font-black text-white">✅ 节点预警待办</div>
           <div id="alOut" class="p-4 space-y-3 overflow-auto max-h-[70vh]"></div>
+          <div class="chunk-bar" id="alBar"></div>
         </section>
       </div>
     </main>

@@ -19,20 +19,74 @@
   scrim.addEventListener("click", closeSide);
 
   var TITLES = {
-    contract: "📜 合同审查与 Redline 替换", ai: "🤖 AI 系统合规与 AIA 评估",
+    home: "🏠 LexAI 服务菜单", contract: "📜 合同审查与 Redline 替换", ai: "🤖 AI 系统合规与 AIA 评估",
     procure: "🛒 第三方 AI/SaaS 采购条款审查", data: "🛡️ 数据合规与出境评估",
-    search: "🔍 法规与判例检索建议", alert: "📅 履约与节点预警提示"
+    search: "🔍 法规与判例检索建议", alert: "📁 履约与合同看板"
   };
   var RUNNERS = {}; // 由下方各模块注册
 
-  var current = "contract";
+  /* ============ 分段输出（Chunking）核心 ============ */
+  var CH = { pages: [], idx: 0, out: null, bar: null };
+  function chunkInit(outSel, barSel, headerHtml) {
+    CH.out = $(outSel); CH.bar = $(barSel); CH.idx = 0;
+    CH.header = headerHtml || "";
+    CH.pages = [];
+    return {
+      add: function (html) { CH.pages.push(html); },
+      setHeader: function (h) { CH.header = h; },
+      flush: function (extraTail) { CH.tail = extraTail || ""; renderChunk(0); }
+    };
+  }
+  function renderChunk(i) {
+    if (!CH.out) return;
+    CH.idx = Math.max(0, Math.min(i, CH.pages.length - 1));
+    var total = CH.pages.length;
+    var html = CH.header;
+    if (total) html += CH.pages[CH.idx];
+    if (CH.tail && CH.idx === total - 1) html += CH.tail;
+    CH.out.innerHTML = html;
+    CH.out.scrollTop = 0;
+    // 分页提示条
+    if (total <= 1 && !CH.tail) { CH.bar.innerHTML = ""; return; }
+    var b = '<div class="cb-in">';
+    b += '<span class="cb-info">📄 第 ' + (CH.idx + 1) + "/" + Math.max(total, 1) + " 段 · 每段仅 Top " + (CH.idx === 0 ? "2~3" : "2~3") + ' 个风险点</span>';
+    b += '<span class="cb-btns">';
+    if (CH.idx > 0) b += '<button class="cb-btn" data-chunk="' + (CH.idx - 1) + '">◀ 上一段</button>';
+    if (CH.idx < total - 1) b += '<button class="cb-btn hot" data-chunk="' + (CH.idx + 1) + '">回复【1】查看更多风险 ▶</button>';
+    b += '<button class="cb-btn" data-chunk="menu">回复【M】返回主菜单</button>';
+    b += "</span></div>";
+    CH.bar.innerHTML = b;
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-chunk]");
+    if (!b) return;
+    var v = b.getAttribute("data-chunk");
+    if (v === "menu") { document.querySelector('.nav-item[data-nav="home"]').click(); return; }
+    renderChunk(parseInt(v, 10));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  /* 功能菜单卡点击 */
+  $("#menuGrid").addEventListener("click", function (e) {
+    var c = e.target.closest("[data-go]"); if (!c) return;
+    var n = document.querySelector('.nav-item[data-nav="' + c.getAttribute("data-go") + '"]');
+    if (n) n.click();
+  });
+
+  var current = "home";
+  function goHome() {
+    current = "home";
+    $$(".nav-item").forEach(function (x) { x.classList.toggle("active", x.getAttribute("data-nav") === "home"); });
+    $$(".pane[data-pane]").forEach(function (p) { p.classList.toggle("hidden", p.getAttribute("data-pane") !== "home"); });
+    $("#pageTitle").textContent = TITLES.home;
+    if (window.innerWidth < 768) { closeSide(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+  }
   $$(".nav-item").forEach(function (n) {
     n.addEventListener("click", function () {
       $$(".nav-item").forEach(function (x) { x.classList.toggle("active", x === n); });
       current = n.getAttribute("data-nav");
       $$(".pane[data-pane]").forEach(function (p) { p.classList.toggle("hidden", p.getAttribute("data-pane") !== current); });
       $("#pageTitle").textContent = TITLES[current];
-      if (window.innerWidth < 768) { closeSide(); window.scrollTo({ top: 0, behavior: "smooth" }); switchSide("input"); }
       if (RUNNERS[current]) RUNNERS[current]();
     });
   });
@@ -122,28 +176,38 @@
   ];
   RUNNERS.contract = function () {
     var raw = v("#ctText");
-    if (!raw) { $("#ctOut").innerHTML = '<p class="empty">请粘贴合同文本后点击「运行审查」</p>'; return; }
+    if (!raw) { $("#ctOut").innerHTML = '<p class="empty">请粘贴合同文本后点击「运行审查」</p>'; $("#ctBar").innerHTML = ""; return; }
     var hits = CT_RULES.filter(function (r) { return r.key.test(raw); });
     var reds = hits.filter(function (x) { return x.lvl === "red"; }).length;
     var ambers = hits.filter(function (x) { return x.lvl === "amber"; }).length;
     var lvl = reds ? "red" : ambers ? "amber" : "ok";
     var concl = reds ? "🔴 暂缓签署" : ambers ? "🟡 需修改条款后签署" : "🟢 放行";
-    var html = execCard("📜 合同审查（" + v("#ctType") + "）", concl, lvl,
-      "《民法典》合同编 / EU AI Act 相关义务" + "（命中 " + hits.length + " 项）");
+    var ck = chunkInit("#ctOut", "#ctBar",
+      execCard("📜 合同审查（" + v("#ctType") + "）", concl, lvl,
+        "《民法典》合同编 / EU AI Act（命中 " + hits.length + " 项，分段输出中）"));
     if (hits.length) {
-      html += '<div class="sub-h">🔍 核心风险项与 Redline</div>';
-      hits.forEach(function (h, i) { html += redlineCard(i + 1, h.name, h.lvl, h.orig, h.analysis, h.fix); });
+      // 每段最多 3 张 Redline 卡
+      for (var i = 0; i < hits.length; i += 3) {
+        var seg = hits.slice(i, i + 3);
+        var h2 = '<div class="sub-h">🔍 核心风险与 Redline（第 ' + (i / 3 + 1) + " 段 · Top " + seg.length + "）</div>";
+        seg.forEach(function (hh, k) { h2 += redlineCard(i + k + 1, hh.name, hh.lvl, hh.orig, hh.analysis, hh.fix); });
+        ck.add(h2);
+      }
     } else {
-      html += noteBox("🟢 未命中内置高风险模式", "请人工核对：付款节点与交付标准是否对等、通知送达条款、变更是否书面化、附件清单是否齐备。");
+      ck.add(noteBox("🟢 未命中内置高风险模式", "请人工核对：付款节点与交付标准是否对等、通知送达条款、变更是否书面化、附件清单是否齐备。"));
     }
-    html += '<div class="sub-h">🛡️ 数据合规与行动清单</div>';
-    html += actionTable([
-      ["数据授权", ambers ? "🟡 需补充" : "🟢 已具备", "核对个人信息处理告知同意文本"],
-      ["算法/模型条款", reds ? "🔴 高风险" : "🟢 无异常", "涉 AI 条款转「采购风控」模块细审"],
-      ["违约与赔付", reds ? "🔴 未封顶" : "🟡 建议封顶", "补充赔偿责任上限与间接损失排除"]
-    ]);
-    $("#ctOut").innerHTML = html;
-    toast("审查完成：" + reds + " 高风险 / " + ambers + " 中风险");
+    // 尾段：数据合规行动清单
+    ck.tailHtml = '<div class="sub-h">🛡️ 数据合规与行动清单</div>' +
+      actionTable([
+        ["数据授权", ambers ? "🟡 需补充" : "🟢 已具备", "核对个人信息处理告知同意文本"],
+        ["算法/模型条款", reds ? "🔴 高风险" : "🟢 无异常", "涉 AI 条款转「采购风控」模块细审"],
+        ["违约与赔付", reds ? "🔴 未封顶" : "🟡 建议封顶", "补充赔偿责任上限与间接损失排除"]
+      ]);
+    // flush 时把尾段追加到最后一段
+    var origFlush = ck.flush;
+    ck.flush = function () { CH.tail = ck.tailHtml; renderChunk(0); };
+    ck.flush();
+    toast("审查完成：分 " + CH.pages.length + " 段输出 · " + reds + " 高风险 / " + ambers + " 中风险");
   };
 
   /* ============ 功能 2：AI 治理 AIA ============ */
@@ -156,27 +220,38 @@
   };
   var TIER_TXT = { red: "🔴 高风险 (Art.6)", amber: "🟠 透明度风险 (Art.50)", ok: "🟢 低风险 (Art.6(3))" };
   RUNNERS.ai = function () {
-    var s = SCENES[v("#aiScene")], role = v("#aiRole"), sens = v("#dpSens") === "" ? v("#aiSensitive") : v("#aiSensitive"), law = v("#aiLaw");
+    var s = SCENES[v("#aiScene")], role = v("#aiRole"), sens = v("#aiSensitive"), law = v("#aiLaw");
     var lvl = s.t;
     var concl = lvl === "red" ? "🔴 暂缓投放，先完成合格评定" : lvl === "amber" ? "🟡 补齐透明度义务后上线" : "🟢 放行（保留内部治理）";
     var lawBasis = (law !== "cn" ? "EU AI Act" : "") + (law === "both" ? " + " : "") + (law !== "eu" ? "中国《生成式AI办法》/PIPL" : "");
-    var html = execCard("🤖 AI 治理与 AIA（" + s.n + "）", concl, lvl, lawBasis || "EU AI Act");
-    html += '<div class="exec-card"><div class="exec-t">🧭 角色与定级</div>' +
+    var ck = chunkInit("#aiOut", "#aiBar",
+      execCard("🤖 AI 治理与 AIA（" + s.n + "）", concl, lvl, lawBasis || "EU AI Act"));
+    // 段 1：角色与定级
+    ck.add('<div class="exec-card"><div class="exec-t">🧭 角色与定级（第 1 段）</div>' +
       '<p><b>企业角色：</b>' + ({ deployer: "Deployer 部署者", provider: "Provider 提供者", both: "Provider + Deployer 双重" })[role] + '</p>' +
       '<p><b>AI Act 定级：</b><span class="lvl-pill t-' + lvlColor(lvl) + '">' + TIER_TXT[lvl] + '</span></p>' +
-      '<p><b>依据：</b>' + s.art + (law !== "eu" ? "；" + s.cn : "") + '</p></div>';
-    if (role !== "deployer") html += noteBox("Provider 义务", "质量管理体系 Art.17、技术文档 Art.11、上市后监测 Art.72；罚则最高 3500 万欧元或全球营业额 7%（Art.99）。");
-    if (role !== "provider") html += noteBox("Deployer 义务", "指定人工监督人员、输出人工复核、员工 AI 素养培训（Art.4/26）；罚则最高 1500 万欧元或 3%。");
-    html += '<div class="sub-h">📊 AI 影响评估清单 (AIA)</div>';
-    html += actionTable([
-      ["数据合法性", sens === "yes" ? "🔴 需专项评估" : "🟡 需台账", "建立数据来源授权台账（Art.10）"],
-      ["偏见与歧视", lvl === "red" ? "🔴 必测" : "🟡 抽测", "分组准确率测试并留存报告"],
-      ["隐私与泄露", sens === "yes" ? "🔴 单独同意" : "🟡 脱敏", "签署 DPA、输入脱敏与输出过滤"],
-      ["人机协同", role === "provider" ? "🟡 监督人" : "🔴 必须", "设置人工复核关卡并留痕"],
-      ["透明度标识", lvl === "ok" ? "🟢 内部告知" : "🔴 对外告知", "界面明示「正在与 AI 交互」"]
-    ]);
-    $("#aiOut").innerHTML = html;
-    toast("AIA 评估完成：" + concl);
+      '<p><b>依据：</b>' + s.art + (law !== "eu" ? "；" + s.cn : "") + '</p>' +
+      (role !== "deployer" ? noteBox("Provider 义务", "质量管理体系 Art.17、技术文档 Art.11、上市后监测 Art.72；罚则最高 3500 万欧元或全球营业额 7%（Art.99）。") : "") +
+      (role !== "provider" ? noteBox("Deployer 义务", "指定人工监督人员、输出人工复核、员工 AI 素养培训（Art.4/26）；罚则最高 1500 万欧元或 3%。") : "") +
+      '</div>');
+    // 段 2：AIA 前 3 维
+    ck.add('<div class="sub-h">📊 AI 影响评估清单 (AIA) · 第 1 段 Top 3</div>' +
+      actionTable([
+        ["数据合法性", sens === "yes" ? "🔴 需专项评估" : "🟡 需台账", "建立数据来源授权台账（Art.10）"],
+        ["偏见与歧视", lvl === "red" ? "🔴 必测" : "🟡 抽测", "分组准确率测试并留存报告"],
+        ["隐私与泄露", sens === "yes" ? "🔴 单独同意" : "🟡 脱敏", "签署 DPA、输入脱敏与输出过滤"]
+      ]));
+    // 段 3：AIA 后 2 维
+    ck.add('<div class="sub-h">📊 AIA 清单 · 第 2 段</div>' +
+      actionTable([
+        ["人机协同", role === "provider" ? "🟡 监督人" : "🔴 必须", "设置人工复核关卡并留痕"],
+        ["透明度标识", lvl === "ok" ? "🟢 内部告知" : "🔴 对外告知", "界面明示「正在与 AI 交互」"]
+      ]) + noteBox("👉 更多合规建议", "回复【2】查看 GDPR/数据合规专项建议，或回复【M】返回主菜单。"));
+    CH.out = $("#aiOut"); CH.bar = $("#aiBar"); CH.idx = 0;
+    CH.header = execCard("🤖 AI 治理与 AIA（" + s.n + "）", concl, lvl, lawBasis || "EU AI Act");
+    CH.tail = "";
+    renderChunk(0);
+    toast("AIA 分段就绪：" + concl);
   };
 
   /* ============ 功能 3：采购风控 ============ */
@@ -204,24 +279,34 @@
   ];
   RUNNERS.procure = function () {
     var raw = v("#apText");
-    if (!raw) { $("#apOut").innerHTML = '<p class="empty">请粘贴采购条款后运行</p>'; return; }
+    if (!raw) { $("#apOut").innerHTML = '<p class="empty">请粘贴采购条款后运行</p>'; $("#apBar").innerHTML = ""; return; }
     var hits = AP_RULES.filter(function (r) { return r.key.test(raw); });
     var reds = hits.filter(function (x) { return x.lvl === "red"; }).length;
     var lvl = reds ? "red" : hits.length ? "amber" : "ok";
     var concl = reds ? "🔴 暂缓签署" : hits.length ? "🟡 需修改条款后签署" : "🟢 放行";
-    var html = execCard("🛒 AI 工具采购审查（" + v("#apKind") + "）", concl, lvl, "EU AI Act / PIPL / 《生成式AI办法》");
-    html += '<div class="sub-h">🔍 核心风险项与 Redline</div>';
-    if (hits.length) hits.forEach(function (h, i) { html += redlineCard(i + 1, h.name, h.lvl, h.orig, h.analysis, h.fix); });
-    else html += noteBox("🟢 未命中高危 AI 采购模式", "仍建议核查四类条款：数据训练授权、输出版权归属、幻觉责任、SLA 赔付。");
-    html += '<div class="sub-h">🛡️ 采购风控行动清单</div>';
-    html += actionTable([
+    CH.out = $("#apOut"); CH.bar = $("#apBar"); CH.idx = 0;
+    CH.header = execCard("🛒 AI 工具采购审查（" + v("#apKind") + "）", concl, lvl, "EU AI Act / PIPL / 《生成式AI办法》");
+    CH.pages = [];
+    // 每段最多 2 张 Redline 卡（Top 2~3 规范）
+    if (hits.length) {
+      for (var i = 0; i < hits.length; i += 2) {
+        var seg = hits.slice(i, i + 2);
+        var h2 = '<div class="sub-h">🔍 核心风险与 Redline · Top ' + seg.length + "</div>";
+        seg.forEach(function (hh, k) { h2 += redlineCard(i + k + 1, hh.name, hh.lvl, hh.orig, hh.analysis, hh.fix); });
+        CH.pages.push(h2);
+      }
+    } else {
+      CH.pages.push(noteBox("🟢 未命中高危 AI 采购模式", "仍建议核查四类条款：数据训练授权、输出版权归属、幻觉责任、SLA 赔付。"));
+    }
+    // 尾段：采购风控行动清单
+    CH.tail = '<div class="sub-h">🛡️ 采购风控行动清单</div>' + actionTable([
       ["数据训练授权", hits.some(function (h) { return h.name.indexOf("训练") >= 0; }) ? "🔴 必改" : "🟡 建议书面确认", "补签「不用于训练」承诺函"],
       ["输出版权归属", reds ? "🔴 归属错位" : "🟢 待人工确认", "合同附件明确生成内容权属"],
       ["服务中断赔付", hits.some(function (h) { return h.name.indexOf("中断") >= 0; }) ? "🔴 缺失" : "🟡 核对 SLA", "补充可用率承诺与阶梯赔付"],
       ["算法备案", "🟡 提示", "确认供应商已完成算法/大模型备案"]
     ]);
-    $("#apOut").innerHTML = html;
-    toast("采购风控完成：" + concl);
+    renderChunk(0);
+    toast("采购风控完成：" + concl + " · 分 " + CH.pages.length + " 段输出");
   };
 
   /* ============ 功能 4：数据合规出境 ============ */
@@ -230,19 +315,30 @@
     var lvl = (sens === "yes" && cross === "standard") ? "red" : (sens === "yes" || cross === "standard" || minor === "yes") ? "amber" : "ok";
     var concl = lvl === "red" ? "🔴 暂缓处理，先完成出境合规路径" : lvl === "amber" ? "🟡 补充授权与告知后进行" : "🟢 放行";
     var lawBasis = law === "both" ? "GDPR + PIPL《个保法》/《数据安全法》" : law === "pipl" ? "PIPL《个保法》/《数据安全法》" : "GDPR";
-    var html = execCard("🛡️ 数据合规与出境评估", concl, lvl, lawBasis);
-    if (cross === "standard") html += noteBox("🔴 数据出境路径提示", "适用标准合同须向省级网信部门备案，并完成个人信息保护影响评估(PIA)；重要数据出境须走安全评估（《数据出境安全评估办法》第4条）。");
-    if (sens === "yes") html += noteBox("🛡️ 敏感个人信息", "须单独同意 + 特定目的与充分必要性告知（PIPL 29条）；GDPR 下需 Art.9 明确法律依据。");
-    if (minor === "yes") html += noteBox("🧑‍🤝‍🧑 未成年人", "处理不满 14 周岁未成年人信息须取得监护人同意，并制定专门处理规则（PIPL 31条）。");
-    html += '<div class="sub-h">📋 数据合规行动清单</div>';
-    html += actionTable([
+    CH.out = $("#dpOut"); CH.bar = $("#dpBar"); CH.idx = 0;
+    CH.header = execCard("🛡️ 数据合规与出境评估", concl, lvl, lawBasis);
+    CH.pages = [];
+    // 段 1：Top 2 高危提示
+    var p1 = "";
+    if (cross === "standard") p1 += noteBox("🔴 数据出境路径提示", "适用标准合同须向省级网信部门备案，并完成个人信息保护影响评估(PIA)；重要数据出境须走安全评估（《数据出境安全评估办法》第4条）。");
+    if (sens === "yes") p1 += noteBox("🛡️ 敏感个人信息", "须单独同意 + 特定目的与充分必要性告知（PIPL 29条）；GDPR 下需 Art.9 明确法律依据。");
+    if (!p1) p1 = noteBox("🟢 未触发出境/敏感红线", "仍需核对隐私政策告知完整性与最小必要原则。");
+    CH.pages.push(p1);
+    // 段 2：剩余提示
+    var p2 = "";
+    if (minor === "yes") p2 += noteBox("🧑‍🤝‍🧑 未成年人", "处理不满 14 周岁未成年人信息须取得监护人同意，并制定专门处理规则（PIPL 31条）。");
+    if (cross === "cert") p2 += noteBox("🟢 已有认证/评估", "请留存评估报告与认证证书，每次数据范围变更后重新评估。");
+    if (law !== "pipl") p2 += noteBox("GDPR 专项（回复【2】）", "跨境须依赖 SCCs 或充分性认定；高风险处理须做 DPIA（Art.35）。");
+    if (p2) CH.pages.push(p2);
+    // 尾段：行动清单
+    CH.tail = '<div class="sub-h">🛡️ 数据合规与行动清单</div>' + actionTable([
       ["数据授权", sens === "yes" ? "🔴 单独同意" : "🟡 需补充", "补签用户授权同意书 (Consent Form)"],
       ["出境路径", cross === "no" ? "🟢 不出境" : cross === "cert" ? "🟢 已认证" : "🔴 标准合同", cross === "standard" ? "签署并备案标准合同" : "留存认证/评估证明"],
       ["算法备案", law !== "gdpr" ? "🔴 未完成" : "🟡 提示", "上线前完成深度合成/大模型算法备案"],
       ["隐私政策", "🟡 更新", "更新隐私政策披露出境主体、目的、范围"],
       ["影响评估", "🟡 待做", "完成 PIA/PIA 并留存 3 年"]
     ]);
-    $("#dpOut").innerHTML = html;
+    renderChunk(0);
     toast("数据合规评估：" + concl);
   };
 
@@ -269,22 +365,29 @@
   ];
   RUNNERS.search = function () {
     var q = v("#lsQ");
-    if (!q) { $("#lsOut").innerHTML = '<p class="empty">请输入法务问题或点选示例</p>'; return; }
+    if (!q) { $("#lsOut").innerHTML = '<p class="empty">请输入法务问题或点选示例</p>'; $("#lsBar").innerHTML = ""; return; }
     var hit = LS_RULES.filter(function (r) { return r.key.test(q); });
     if (!hit.length) hit = [LS_RULES[4], LS_RULES[3]]; // 兜底
     var lvl = hit[0].tag.indexOf("出境") >= 0 || hit[0].tag.indexOf("生物") >= 0 ? "red" : "amber";
-    var html = execCard("🔍 法规与判例检索建议", (lvl === "red" ? "🔴 需重点合规整改" : "🟡 需补充合规动作") + " · 涉 " + hit.length + " 个主题", lvl, hit.map(function (h) { return h.tag; }).join(" / "));
-    hit.forEach(function (h, i) {
-      html += redlineCard(i + 1, h.tag, i === 0 ? lvl : "amber", "问题原文：" + q.slice(0, 60) + (q.length > 60 ? "…" : ""),
+    CH.out = $("#lsOut"); CH.bar = $("#lsBar"); CH.idx = 0;
+    CH.header = execCard("🔍 法规与判例检索建议",
+      (lvl === "red" ? "🔴 需重点合规整改" : "🟡 需补充合规动作") + " · 涉 " + hit.length + " 个主题（分段输出中）",
+      lvl, hit.map(function (h) { return h.tag; }).join(" / "));
+    CH.pages = [];
+    // 每段 1 个主题（Top 1~2）
+    hit.slice(0, 4).forEach(function (h, i) {
+      var seg = '<div class="sub-h">📖 主题 ' + (i + 1) + "：" + h.tag + "</div>";
+      seg += noteBox("⚖️ 引用法条", h.laws.join("<br>"));
+      seg += redlineCard(i + 1, h.tag + " · 行动指南", i === 0 ? lvl : "amber",
+        "问题：" + q.slice(0, 60) + (q.length > 60 ? "…" : ""),
         "命中主题「" + h.tag + "」，对应法规与司法规则如下，建议按优先级推进。", h.guide);
-      html += noteBox("📖 引用法条（" + h.tag + "）", h.laws.join("<br>"));
+      CH.pages.push(seg);
     });
-    html += '<div class="sub-h">📱 行动指南</div>';
-    html += actionTable(hit.map(function (h, i) {
+    CH.tail = '<div class="sub-h">📱 汇总行动指南</div>' + actionTable(hit.slice(0, 4).map(function (h, i) {
       return [h.tag, i === 0 ? (lvl === "red" ? "🔴 紧急" : "🟡 重要") : "🟡 关注", h.guide.slice(0, 40) + (h.guide.length > 40 ? "…" : "")];
     }));
-    $("#lsOut").innerHTML = html;
-    toast("检索完成：命中 " + hit.length + " 个法规主题");
+    renderChunk(0);
+    toast("检索完成：分 " + CH.pages.length + " 段输出 · " + hit.length + " 个法规主题");
   };
   $("#lsChips").addEventListener("click", function (e) {
     var c = e.target.closest(".chipbtn"); if (!c) return;
@@ -309,40 +412,35 @@
       { k: "续约/解约窗口", el: "#alRenew", act: "评估是否续约，窗口期内书面通知对方", warn: "窗口期一般 30 日，逾期视为续约" },
       { k: "质保截止", el: "#alWar", act: "排查未闭环质量事项，到期前完成索赔", warn: "过期丧失质保索赔权" }
     ];
-    var lvl = "amber";
-    var html = execCard("📅 履约与节点预警（" + name + "）", "🟡 共 4 个节点待跟进", "amber", "《民法典》第509/563条 履行与解除规则");
-    html += '<div class="sub-h">✅ 履约待办清单</div>';
-    var rows = "";
-    items.forEach(function (it, i) {
+    CH.out = $("#alOut"); CH.bar = $("#alBar"); CH.idx = 0;
+    CH.header = execCard("📁 履约预警与合同看板（" + name + "）", "🟡 共 4 个节点待跟进", "amber", "《民法典》第509/563条 履行与解除规则");
+    CH.pages = [];
+    function todoHtml(it, i) {
       var raw = $(it.el).value;
       var days = raw ? Math.ceil((new Date(raw) - new Date(new Date().toDateString())) / 864e5) : null;
       var urgent = days !== null && days <= 7;
       var st = urgent ? "🔴 " + days + " 天内" : days < 0 ? "🔴 已逾期" : "🟡 " + days + " 天";
-      rows += '<div class="todo' + (urgent ? " todo-hot" : "") + '">' +
+      return '<div class="todo' + (urgent ? " todo-hot" : "") + '">' +
         '<span class="todo-n">' + (i + 1) + '</span>' +
         '<div class="todo-b"><b>' + it.k + '</b><span>' + (raw || "未设置") + " · " + it.act + '</span><i>' + it.warn + '</i></div>' +
         '<span class="lvl-pill ' + (urgent ? "t-risk" : "t-warn") + '">' + st + "</span></div>";
-    });
-    html += rows;
-    html += '<div class="sub-h">📱 节点提醒建议</div>';
-    html += actionTable([
+    }
+    // 每段 2 个节点
+    CH.pages.push('<div class="sub-h">✅ 节点预警 · 第 1 段</div>' + todoHtml(items[0], 0) + todoHtml(items[1], 1));
+    CH.pages.push('<div class="sub-h">✅ 节点预警 · 第 2 段</div>' + todoHtml(items[2], 2) + todoHtml(items[3], 3));
+    CH.tail = '<div class="sub-h">📱 节点提醒建议</div>' + actionTable([
       ["日历同步", "🟡 建议", "将 4 个节点录入企业日历并设多重提醒"],
       ["证据留存", "🟢 关键", "交付/付款均以书面单据与邮件回执留痕"],
       ["解约窗口", "🔴 易错过", "窗口期前完成内部决策与书面通知"],
       ["续签约谈", "🟡 提前", "续约前 60 日启动价格与条款复盘"]
     ]);
-    $("#alOut").innerHTML = html;
-    toast("履约清单已生成");
+    renderChunk(0);
+    toast("履约看板已分 2 段生成");
   };
   $("#alGo").addEventListener("click", function () { RUNNERS.alert(); switchSide("result"); });
 
-  /* ============ 启动 ============ */
+  /* ============ 启动：默认展示功能菜单 ============ */
   initDates();
-  RUNNERS.contract();
-  RUNNERS.ai();
-  RUNNERS.procure();
-  RUNNERS.data();
-  RUNNERS.search();
-  RUNNERS.alert();
+  goHome();
   switchSide("input");
 })();

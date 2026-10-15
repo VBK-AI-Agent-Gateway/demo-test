@@ -2,6 +2,38 @@
 *{-webkit-tap-highlight-color:transparent}
 body{background:#0D0E11;color:#cbd5e1;overflow-x:hidden}
 
+/* ===== 功能菜单卡（首屏引导） ===== */
+.menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:10px}
+@media (max-width:640px){.menu-grid{grid-template-columns:1fr}}
+.menu-card{
+  display:flex;flex-direction:column;gap:5px;align-items:flex-start;text-align:left;
+  background:#1B1E25;border:1.5px solid rgba(255,255,255,.1);border-radius:16px;
+  padding:16px 16px;min-height:96px;transition:.16s;
+}
+.menu-card:hover{border-color:rgba(59,130,246,.6);background:rgba(59,130,246,.08);transform:translateY(-3px);box-shadow:0 12px 30px rgba(59,130,246,.16)}
+.menu-card:active{transform:scale(.97)}
+.mc-ic{font-size:26px}
+.menu-card b{color:#fff;font-size:15.5px;font-weight:900}
+.menu-card i{font-style:normal;font-size:12.5px;color:#94a3b8;line-height:1.6}
+.hint-bar{
+  margin-top:16px;background:rgba(59,130,246,.08);border:1px dashed rgba(59,130,246,.5);
+  border-radius:12px;padding:11px 14px;font-size:13px;color:#93c5fd;line-height:1.8;
+}
+
+/* ===== 分页提示条（Chunking） ===== */
+.chunk-bar{border-top:1px dashed rgba(255,255,255,.12);padding:10px 16px 14px;background:rgba(255,255,255,.02)}
+.cb-in{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.cb-info{font-size:12.5px;font-weight:800;color:#64748b}
+.cb-btns{display:flex;flex-wrap:wrap;gap:8px}
+.cb-btn{
+  min-height:40px;padding:8px 15px;border-radius:999px;font-size:13px;font-weight:900;
+  background:#1B1E25;border:1.5px solid rgba(255,255,255,.16);color:#cbd5e1;transition:.15s;
+}
+.cb-btn:hover{border-color:rgba(59,130,246,.6);color:#fff}
+.cb-btn:active{transform:scale(.96)}
+.cb-btn.hot{background:#3B82F6;border-color:#3B82F6;color:#fff;box-shadow:0 6px 18px rgba(59,130,246,.35)}
+.cb-btn.hot:hover{filter:brightness(1.12)}
+
 /* ===== 侧栏导航 ===== */
 .nav-item{
   display:flex;align-items:center;gap:9px;width:100%;min-height:44px;
