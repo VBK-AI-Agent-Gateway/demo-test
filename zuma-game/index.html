@@ -1,846 +1,651 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>祖玛 Zuma · 网页版</title>
+<meta charset="UTF-8">
+<title>祖玛玛雅 · Zuma Classic</title>
+<meta name="description" content="经典祖玛游戏，玛雅石雕风格，单文件HTML，打开即玩。">
 <style>
-  :root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--fg:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922}
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0}
-  body{
-    background:radial-gradient(1200px 600px at 50% -10%,#1a2233,#0d1117 60%);
-    color:var(--fg);font:15px/1.5 -apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
-    display:flex;flex-direction:column;align-items:center;overflow:hidden;touch-action:none;
-    -webkit-user-select:none;user-select:none;
-  }
-  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;padding:10px 14px 4px}
-  h1{margin:0;font-size:19px;display:flex;gap:8px;align-items:center}
-  h1 .logo{color:var(--accent)}
-  .hud{display:flex;gap:14px;font-size:13px;color:var(--muted);flex-wrap:wrap;justify-content:center}
-  .hud b{color:var(--fg);font-variant-numeric:tabular-nums}
-  .hud .warn b{color:var(--red)}
-  .btns{display:flex;gap:8px}
-  button{
-    background:var(--accent);border:0;color:#04121f;font-weight:600;padding:8px 14px;
-    border-radius:8px;cursor:pointer;font-size:13.5px;
-  }
-  button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
-  button:active{transform:translateY(1px)}
-  #stage{position:relative;flex:1;width:100%;max-width:980px;display:flex;align-items:center;justify-content:center;min-height:0}
-  canvas{
-    background:radial-gradient(600px 400px at 50% 40%,#141b28,#0b0f16 75%);
-    border:1px solid var(--border);border-radius:14px;
-    max-width:100%;max-height:100%;touch-action:none;display:block;
-    box-shadow:0 18px 50px rgba(0,0,0,.5);
-  }
-  footer{color:var(--muted);font-size:12.5px;padding:6px 10px 10px;text-align:center}
-  /* overlays */
-  .overlay{
-    position:absolute;inset:0;display:none;align-items:center;justify-content:center;
-    background:rgba(5,8,12,.72);backdrop-filter:blur(3px);z-index:10;border-radius:14px;
-  }
-  .overlay.open{display:flex}
-  .panel{
-    background:var(--panel);border:1px solid var(--border);border-radius:14px;
-    padding:22px 26px;max-width:420px;width:calc(100% - 32px);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6);
-  }
-  .panel h2{margin:0 0 10px;font-size:24px}
-  .panel p{color:var(--muted);margin:6px 0 14px;font-size:14px}
-  .panel .big{font-size:40px;margin:8px 0;color:var(--yellow);font-weight:700}
-  .panel .actions{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
-  .legend{display:flex;gap:6px;justify-content:center;margin:10px 0;flex-wrap:wrap}
-  .ball{width:16px;height:16px;border-radius:50%;box-shadow:inset -2px -3px 5px rgba(0,0,0,.45), 0 0 6px rgba(255,255,255,.15)}
-  kbd{background:#21262d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:12px}
-  @media (max-width:900px){header{padding:8px 10px 2px}h1{font-size:17px}}
-  @media (max-width:640px){h1{font-size:16px}.hud{gap:10px;font-size:12px}footer{font-size:11.5px}}
-  @media (max-width:420px){header{gap:8px}.btns button{padding:7px 11px;font-size:12.5px}}
+/* ===== 固定画布布局，PC端专用，不响应式 ===== */
+html,body{margin:0;padding:0;background:#0b1410;height:100%;overflow:hidden;font-family:"Microsoft YaHei",sans-serif}
+#stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:960px;height:640px}
+canvas{display:block;position:absolute;left:0;top:0}
+#ui{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+/* 顶部HUD */
+#hud{position:absolute;top:8px;left:0;width:100%;display:flex;justify-content:center;gap:26px;color:#f4e6c1;font-size:17px;text-shadow:0 2px 4px #000;letter-spacing:2px}
+#hud b{color:#ffd76e;font-size:20px}
+/* 弹窗通用 */
+.modal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:430px;background:linear-gradient(160deg,#3d4f3a,#2a3628);border:6px solid #6b5b3e;border-radius:14px;box-shadow:0 0 60px #000 inset,0 12px 40px rgba(0,0,0,.7);padding:26px 30px;text-align:center;color:#f4e6c1;pointer-events:auto;display:none}
+.modal h1{margin:0 0 6px;font-size:34px;color:#ffd76e;text-shadow:0 3px 0 #6b4a12,0 0 22px #ffae00}
+.modal h2{margin:0 0 14px;font-size:24px;color:#a8e6a1}
+.modal p{font-size:15px;line-height:1.9;color:#d8d2b8;margin:8px 0}
+.modal .rule{background:rgba(0,0,0,.35);border:1px solid #6b5b3e;border-radius:8px;padding:8px 12px;text-align:left;font-size:13.5px;line-height:1.9}
+.btn{display:inline-block;margin:14px 6px 4px;padding:11px 26px;font-size:17px;font-weight:bold;color:#2a1c05;background:linear-gradient(#ffe08a,#e0a030);border:3px solid #8a6a20;border-radius:10px;cursor:pointer;box-shadow:0 4px 0 #6b4a12;letter-spacing:3px}
+.btn:hover{filter:brightness(1.1)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #6b4a12}
+.lvbtn{display:inline-block;margin:5px;padding:8px 15px;font-size:15px;color:#f4e6c1;background:#4a5f44;border:2px solid #6b5b3e;border-radius:8px;cursor:pointer}
+.lvbtn:hover{background:#5d7754;border-color:#ffd76e}
+.lvbtn.sel{background:#8a6a20;color:#fff;border-color:#ffd76e}
+.small{font-size:13px;color:#a8a08a}
 </style>
 </head>
 <body>
-<header>
-  <h1><span class="logo">◉</span> 祖玛 Zuma</h1>
-  <div class="hud">
-    <span>得分 <b id="score">0</b></span>
-    <span>连击 <b id="combo">x1</b></span>
-    <span>剩余 <b id="left">0</b></span>
-    <span class="warn">进度 <b id="danger">0%</b></span>
-  </div>
-  <div class="btns">
-    <button id="btnPause" class="ghost">⏸ 暂停</button>
-    <button id="btnRestart" class="ghost">↺ 重开</button>
-    <button id="btnMute" class="ghost">🔊</button>
-  </div>
-</header>
-
 <div id="stage">
-  <canvas id="game" width="960" height="600" aria-label="祖玛游戏画布"></canvas>
-
-  <!-- start menu -->
-  <div class="overlay open" id="menu">
-    <div class="panel">
-      <h2>◉ 祖玛 Zuma</h2>
-      <p>珠子沿轨道涌向洞口。<b style="color:var(--fg)">瞄准并发射</b>同色珠子，<b style="color:var(--fg)">3 连及以上</b>即可消除；利用间隙回缩制造<b style="color:var(--fg)">连锁</b>。清空全部珠子获胜，珠子进洞则失败。</p>
-      <div class="legend">
-        <span class="ball" style="background:#ef5350"></span>
-        <span class="ball" style="background:#42a5f5"></span>
-        <span class="ball" style="background:#66bb6a"></span>
-        <span class="ball" style="background:#ffa726"></span>
-        <span class="ball" style="background:#ab47bc"></span>
-        <span class="ball" style="background:#ffee58"></span>
-      </div>
-      <p style="font-size:13px">🖱 鼠标移动瞄准 · 点击发射 &nbsp;|&nbsp; 📱 触摸拖动瞄准 · 松手发射 &nbsp;|&nbsp; <kbd>空格</kbd> 暂停</p>
-      <div class="actions">
-        <button id="btnStart">▶ 开始游戏</button>
-      </div>
+  <canvas id="cv" width="960" height="640"></canvas>
+  <div id="ui">
+    <div id="hud">
+      <span>分数 <b id="hScore">0</b></span>
+      <span>最高 <b id="hBest">0</b></span>
+      <span>连击 <b id="hCombo">0</b></span>
+      <span>关卡 <b id="hLevel">1</b></span>
+      <span>生命 <b id="hLives">❤❤❤</b></span>
+      <span>静音 <b id="hMute">关</b></span>
     </div>
-  </div>
 
-  <!-- pause -->
-  <div class="overlay" id="pause">
-    <div class="panel">
-      <h2>⏸ 已暂停</h2>
-      <div class="actions">
-        <button id="btnResume">▶ 继续</button>
-        <button id="btnPauseRestart" class="ghost">↺ 重新开始</button>
+    <!-- 开始游戏弹窗 -->
+    <div class="modal" id="mStart">
+      <h1>祖 玛 玛 雅</h1>
+      <p>ZUMA · 玛雅丛林石雕经典复刻</p>
+      <div class="rule">
+        🐸 中心石蛙跟随鼠标旋转，<b>点击左键</b>发射弹珠<br>
+        💠 珠链沿石槽前进，<b>同色≥3颗</b>消除，后珠冲刺可连锁<br>
+        ⌨️ <b>空格</b> 交换当前球与备用球<br>
+        ⛩ 珠链进入终点洞口则失败；清空轨道即通关<br>
+        ⭐ 消除越多连击越高，分数加成越大
       </div>
+      <p>选择关卡：<span id="lvSel"></span></p>
+      <div class="btn" id="btnStart">开始游戏</div>
+      <p class="small">提示：首次点击页面后音效才会响起（浏览器自动播放限制）</p>
     </div>
-  </div>
 
-  <!-- result -->
-  <div class="overlay" id="result">
-    <div class="panel">
-      <h2 id="resultTitle">🎉 你赢了！</h2>
-      <div class="big" id="resultScore">0</div>
-      <p id="resultMsg"></p>
-      <div class="actions">
-        <button id="btnAgain">↺ 再玩一局</button>
-      </div>
+    <!-- 游戏结束弹窗 -->
+    <div class="modal" id="mOver">
+      <h1 style="color:#ff7b6b;text-shadow:0 3px 0 #5a1212">游 戏 失 败</h1>
+      <h2>珠链涌入神庙深渊…</h2>
+      <p>本局得分：<b id="oScore">0</b>　最高连击：<b id="oCombo">0</b></p>
+      <div class="btn" id="btnRetry">重新开始</div>
+      <div class="btn" id="btnMenu1">返回菜单</div>
+    </div>
+
+    <!-- 通关弹窗 -->
+    <div class="modal" id="mWin">
+      <h1>🎊 通 关 ！</h1>
+      <h2>轨道已清空，玛雅之力加持</h2>
+      <p>本关得分：<b id="wScore">0</b>　最高连击：<b id="wCombo">0</b></p>
+      <div class="btn" id="btnNext">下一关</div>
+      <div class="btn" id="btnMenu2">返回菜单</div>
     </div>
   </div>
 </div>
 
-<footer>祖玛 · Canvas 单文件实现 · 同色 3 连消除 + 连锁 + 轨道推进 · 支持鼠标/触摸</footer>
-
 <script>
-"use strict";
 /* ============================================================
-   祖玛 Zuma — single-file HTML5 Canvas game
-   - Chain of balls advancing along a sampled path (arc-length s)
-   - Shooter aims with mouse/touch, fires flying balls
-   - Collision -> insert into chain -> >=3 same color -> clear
-   - Gaps collapse (with chain reaction) -> combo
-   - All cleared -> win; head reaches pit -> lose
-============================================================ */
+   祖玛玛雅 Zuma - 单文件实现
+   结构：1)音频 2)赛道 3)珠链状态 4)输入 5)游戏主循环 6)绘制
+   ============================================================ */
+"use strict";
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var W=960,H=640;
+var $=function(id){return document.getElementById(id);};
 
-const COLORS = ["#ef5350", "#42a5f5", "#66bb6a", "#ffa726", "#ab47bc", "#ffee58"];
-const COLOR_COUNT = COLORS.length;
-const BALL_R = 16;          // ball radius (path spacing)
-const SPACING = BALL_R * 2; // distance between adjacent chain balls
-const SPEED = 26;           // chain advance px/s (base)
-const FLY_SPEED = 900;      // flying ball px/s
-const CLEAR_RADIUS = 3;     // gap (in ball units) that triggers collapse
-
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-const W = canvas.width, H = canvas.height;
-
-/* ---------------- path: sampled polyline (spiral into pit) ---------------- */
-function buildPath(w, h) {
-  // spiral from top-left down into center pit
-  const pts = [];
-  const cx = w / 2, cy = h / 2;
-  const turns = 2.15;
-  const startR = Math.min(w, h) * 0.46;
-  const endR = 34;
-  const steps = 900;
-  // entry: come from top-left corner area
-  for (let i = 0; i <= 40; i++) {
-    const t = i / 40;
-    pts.push({ x: w * (0.02 + 0.10 * t), y: h * (0.06 + 0.16 * Math.sin(t * Math.PI * 0.5)) });
-  }
-  // spiral inward (clockwise), starting angle from entry direction
-  const startAngle = Math.PI * 0.18;
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const ang = startAngle + t * turns * Math.PI * 2;
-    const r = startR + (endR - startR) * Math.pow(t, 1.15);
-    pts.push({ x: cx + Math.cos(ang) * r, y: cy + Math.sin(ang) * r * 0.92 });
-  }
-  // cumulative arc length
-  const cum = [0];
-  for (let i = 1; i < pts.length; i++) {
-    const dx = pts[i].x - pts[i - 1].x, dy = pts[i].y - pts[i - 1].y;
-    cum.push(cum[i - 1] + Math.hypot(dx, dy));
-  }
-  return { pts, cum, len: cum[cum.length - 1], pit: { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y } };
+/* ---------- 1. WebAudio 简易音效（无外部音频文件） ---------- */
+var actx=null, muted=false;
+function audio(){ if(!actx){ try{actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } return actx; }
+function tone(freq,dur,type,vol,slide){ // 基础音：频率/时长/波形/音量/滑音
+  var a=audio(); if(!a||muted)return;
+  var o=a.createOscillator(),g=a.createGain();
+  o.type=type||"sine"; o.frequency.setValueAtTime(freq,a.currentTime);
+  if(slide)o.frequency.exponentialRampToValueAtTime(slide,a.currentTime+dur);
+  g.gain.setValueAtTime(vol||.15,a.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);
+  o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur);
 }
+var SFX={
+  shoot:function(){tone(520,.12,"square",.10,240);},                      // 发射
+  hit:function(){tone(300,.07,"triangle",.12);},                           // 撞击
+  pop:function(){tone(660,.16,"sine",.18,1200);tone(880,.14,"sine",.12);}, // 消除爆炸
+  chain:function(c){tone(700+c*90,.18,"sine",.18,1500);tone(1050+c*110,.16,"triangle",.13);}, // 连锁
+  fail:function(){tone(320,.7,"sawtooth",.2,60);tone(240,.9,"sawtooth",.14,40);}, // 失败
+  win:function(){var n=[523,659,784,1046];n.forEach(function(f,i){setTimeout(function(){tone(f,.28,"triangle",.2);},i*140);});}, // 通关
+  swap:function(){tone(440,.08,"square",.1,660);}
+};
 
-let path = buildPath(W, H);
-
-// position along path at arc length s (clamped)
-function posAt(s) {
-  const { pts, cum, len } = path;
-  if (s <= 0) return { x: pts[0].x, y: pts[0].y, ang: 0 };
-  if (s >= len) {
-    const n = pts.length;
-    const a = pts[n - 2], b = pts[n - 1];
-    return { x: b.x, y: b.y, ang: Math.atan2(b.y - a.y, b.x - a.x) };
-  }
-  // binary search
-  let lo = 0, hi = cum.length - 1;
-  while (lo < hi - 1) {
-    const mid = (lo + hi) >> 1;
-    if (cum[mid] <= s) lo = mid; else hi = mid;
-  }
-  const seg = cum[hi] - cum[lo] || 1;
-  const t = (s - cum[lo]) / seg;
-  const a = pts[lo], b = pts[hi];
-  return {
-    x: a.x + (b.x - a.x) * t,
-    y: a.y + (b.y - a.y) * t,
-    ang: Math.atan2(b.y - a.y, b.x - a.x),
-  };
-}
-
-/* ---------------- game state ---------------- */
-let state = "menu"; // menu | playing | paused | over
-let chain = [];     // [{color, s}] s = arc length of ball center from path start (0 at pit end? see below)
-                     // Convention: s measured from PATH START; head (closest to pit) has LARGEST s.
-let headS = 0;      // s of the front-most ball (largest s)
-let shooter = { x: W / 2, y: H / 2, ang: -Math.PI / 2 };
-let current = null; // {color} loaded in shooter
-let next = null;    // {color} next up
-let flying = [];    // [{x,y,vx,vy,color}]
-let score = 0, combo = 1, comboTimer = 0;
-let spawned = 0, cleared = 0;
-let muted = false;
-let lastT = 0;
-let shakeT = 0;
-
-const TOTAL_BALLS = 90;
-
-function randColor() {
-  // bias towards colors present in chain to make matches possible
-  return COLORS[(Math.random() * COLOR_COUNT) | 0];
-}
-
-function resetGame() {
-  path = buildPath(W, H);
-  chain = [];
-  headS = 0;
-  // spawn initial chain: balls start "before" the path start (s < 0 means off-screen feed),
-  // but simpler: start at s = 0 and grow backwards (s decreasing) — head advances toward len.
-  spawned = 0;
-  const initial = Math.min(TOTAL_BALLS, 34);
-  for (let i = 0; i < initial; i++) {
-    chain.push({ color: randColor(), s: -i * SPACING }); // tail has smallest s
-    spawned++;
-  }
-  // ensure no immediate free 3s at start? keep simple: normalize runs
-  normalizeRuns();
-  chain.sort((a, b) => a.s - b.s); // ascending: tail -> head
-  headS = chain[chain.length - 1].s;
-  shooter = { x: W / 2, y: H / 2, ang: -Math.PI / 2 };
-  current = { color: randColor() };
-  next = { color: randColor() };
-  flying = [];
-  score = 0; combo = 1; comboTimer = 0; cleared = 0;
-  shakeT = 0;
-  updateHUD();
-}
-
-function normalizeRuns() {
-  // avoid 3+ same color in a row at spawn
-  for (let i = 2; i < chain.length; i++) {
-    if (chain[i].color === chain[i - 1].color && chain[i].color === chain[i - 2].color) {
-      let c;
-      do { c = randColor(); } while (c === chain[i - 1].color);
-      chain[i].color = c;
+/* ---------- 2. 赛道：Catmull-Rom 样条 → 等距采样点 ---------- */
+// 三条预设弯曲轨道（关卡1/2/3），控制点坐标
+var TRACKS=[
+ [[-40,320],[120,140],[300,120],[430,260],[380,430],[220,500],[140,420],[230,320],[400,330],[560,470],[760,520],[900,380],[940,240],[860,120],[700,90],[620,200],[660,340],[540,380],[470,300],[520,180],[660,150],[820,210],[880,420],[780,560],[560,590],[340,590],[160,540],[60,440],[40,360],[40,300]],
+ [[-40,540],[140,560],[320,520],[430,420],[370,300],[220,260],[120,340],[160,470],[320,470],[470,400],[520,270],[440,160],[300,110],[170,150],[140,270],[220,380],[380,410],[560,370],[700,280],[760,150],[680,60],[520,40],[420,110],[470,230],[600,240],[740,330],[860,450],[900,570],[760,610],[560,610],[360,610],[180,610],[40,570],[40,470]],
+ [[-40,120],[160,90],[340,140],[400,280],[300,380],[150,350],[110,220],[220,150],[350,220],[360,360],[250,470],[110,470],[70,360],[140,430],[300,500],[470,470],[560,360],[540,220],[440,160],[480,300],[600,340],[720,280],[780,150],[700,70],[560,60],[520,160],[640,140],[780,170],[880,300],[900,470],[780,580],[600,590],[420,590],[240,590],[80,540],[40,420],[40,260],[40,150]]
+];
+// 生成等距点：pts[i]={x,y} 均匀步长 STEP px
+var STEP=6;
+function buildPath(ctrl){
+  // Catmull-Rom 插值
+  var pts=[],n=ctrl.length;
+  for(var i=0;i<n-1;i++){
+    var p0=ctrl[Math.max(0,i-1)],p1=ctrl[i],p2=ctrl[i+1],p3=ctrl[Math.min(n-1,i+2)];
+    for(var t=0;t<1;t+=0.05){
+      var t2=t*t,t3=t2*t;
+      pts.push({
+        x:.5*((2*p1[0])+(-p0[0]+p2[0])*t+(2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*t2+(-p0[0]+3*p1[0]-3*p2[0]+p3[0])*t3),
+        y:.5*((2*p1[1])+(-p0[1]+p2[1])*t+(2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*t2+(-p0[1]+3*p1[1]-3*p2[1]+p3[1])*t3)
+      });
     }
   }
-}
-
-/* ---------------- HUD ---------------- */
-const elScore = document.getElementById("score");
-const elCombo = document.getElementById("combo");
-const elLeft = document.getElementById("left");
-const elDanger = document.getElementById("danger");
-function updateHUD() {
-  elScore.textContent = score;
-  elCombo.textContent = "x" + combo;
-  elLeft.textContent = Math.max(0, TOTAL_BALLS - cleared);
-  const pct = path.len > 0 ? Math.max(0, Math.min(100, Math.round((headS / path.len) * 100))) : 0;
-  elDanger.textContent = pct + "%";
-}
-
-/* ---------------- audio (tiny WebAudio blips, optional) ---------------- */
-let actx = null;
-function beep(freq, dur, type, vol) {
-  if (muted) return;
-  try {
-    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
-    const o = actx.createOscillator(), g = actx.createGain();
-    o.type = type || "sine"; o.frequency.value = freq;
-    g.gain.value = vol || 0.06;
-    o.connect(g); g.connect(actx.destination);
-    o.start();
-    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + (dur || 0.12));
-    o.stop(actx.currentTime + (dur || 0.12) + 0.02);
-  } catch (e) {}
-}
-
-/* ---------------- shooting ---------------- */
-function fire() {
-  if (state !== "playing" || !current) return;
-  const speed = FLY_SPEED;
-  flying.push({
-    x: shooter.x + Math.cos(shooter.ang) * 26,
-    y: shooter.y + Math.sin(shooter.ang) * 26,
-    vx: Math.cos(shooter.ang) * speed,
-    vy: Math.sin(shooter.ang) * speed,
-    color: current.color,
-  });
-  beep(520, 0.08, "square", 0.04);
-  current = next;
-  next = { color: randColor() };
-}
-
-function swapShooter() {
-  if (state !== "playing" || !current || !next) return;
-  const t = current; current = next; next = t;
-  beep(300, 0.06, "triangle", 0.04);
-}
-
-/* ---------------- collision & chain logic ---------------- */
-function updateFlying(dt) {
-  for (let i = flying.length - 1; i >= 0; i--) {
-    const b = flying[i];
-    b.x += b.vx * dt;
-    b.y += b.vy * dt;
-
-    // out of bounds -> remove
-    if (b.x < -30 || b.x > W + 30 || b.y < -30 || b.y > H + 30) {
-      flying.splice(i, 1);
-      continue;
+  pts.push({x:ctrl[n-1][0],y:ctrl[n-1][1]});
+  // 弧长均匀重采样
+  var out=[pts[0]],acc=0;
+  for(var i=1;i<pts.length;i++){
+    var dx=pts[i].x-pts[i-1].x,dy=pts[i].y-pts[i-1].y,d=Math.sqrt(dx*dx+dy*dy);
+    acc+=d;
+    while(acc>=STEP){ // 线性插值补点
+      acc-=STEP;
+      var f=acc/d;
+      out.push({x:pts[i-1].x+dx*f,y:pts[i-1].y+dy*f});
     }
+    out.push(pts[i]);
+  }
+  return out;
+}
+var pathPts=[];      // 当前轨道采样点
+var pathLen=0;       // 轨道总长（采样点数）
+function loadLevel(lv){
+  pathPts=buildPath(TRACKS[lv-1]);
+  pathLen=pathPts.length;
+}
+function posAt(s){ // 弧长 s → 坐标（采样索引）
+  var i=Math.max(0,Math.min(pathLen-1,Math.round(s)));
+  return pathPts[i];
+}
+function tanAt(s){ // 切线方向（单位向量）
+  var i=Math.max(0,Math.min(pathLen-1,Math.round(s)));
+  var j=Math.min(pathLen-1,i+3),k=Math.max(0,i-3);
+  var dx=pathPts[j].x-pathPts[k].x,dy=pathPts[j].y-pathPts[k].y,d=Math.sqrt(dx*dx+dy*dy)||1;
+  return{x:dx/d,y:dy/d};
+}
 
-    // hit pit rim (center) without chain contact? ignore.
-    // collision with chain balls
-    let hitIdx = -1, hitDist = Infinity;
-    for (let j = 0; j < chain.length; j++) {
-      const p = posAt(chain[j].s);
-      const d = Math.hypot(p.x - b.x, p.y - b.y);
-      if (d < BALL_R * 2 - 2 && d < hitDist) { hitDist = d; hitIdx = j; }
-    }
+/* ---------- 3. 游戏状态 ---------- */
+var COLORS=["#e23b3b","#f2c12e","#3b7de2","#3fbf5f","#9b4de0","#ef8b2c"]; // 红黄蓝绿紫橙
+var CN=["红","黄","蓝","绿","紫","橙"];
+var R=15; // 珠子半径
+var G={ // 全局游戏状态
+  state:"menu",       // menu/playing/over/win
+  level:1,
+  balls:[],           // 珠链：{s:弧长位置, c:颜色索引}
+  speed:1.0,          // 基础前进速度 (采样/帧)
+  score:0, best:0, combo:0, maxCombo:0, lives:3,
+  spawned:0, total:0, // 已生成/本关总珠数
+  frog:{x:W/2,y:H/2,a:-Math.PI/2}, // 青蛙位置与朝向角
+  cur:0, next:0,      // 当前/备用弹珠颜色
+  shot:null,          // 飞行中的弹珠 {x,y,vx,vy,c}
+  shake:0,            // 屏幕震动
+  floats:[]           // 飘字效果 {x,y,txt,life}
+};
+try{G.best=parseInt(localStorage.getItem("zuma_best")||"0",10)||0;}catch(e){}
+$("hBest").textContent=G.best;
 
-    if (hitIdx >= 0) {
-      insertBall(b, hitIdx);
-      flying.splice(i, 1);
-      continue;
-    }
+/* 珠链排序：s 越小越靠后（s=pathLen-1 处是终点洞口） */
+function sortBalls(){ G.balls.sort(function(a,b){return a.s-b.s;}); }
+function headS(){ return G.balls.length?G.balls[G.balls.length-1].s:-999; } // 最前方珠
+function tailS(){ return G.balls.length?G.balls[0].s:-999; }               // 最后方珠
 
-    // hit the shooter? (self) skip
+// 生成一颗珠子颜色（尽量避免生成即三连）
+function pickColor(){
+  var c=Math.floor(Math.random()*6);
+  var n=G.balls.length;
+  if(n>=2){
+    var t=G.balls[n-1];
+    if(t && G.balls[n-2] && G.balls[n-2].c===t.c && t.c===c) c=(c+1+Math.floor(Math.random()*5))%6;
+  }
+  return c;
+}
+// 初始生成珠链
+function spawnChain(total){
+  G.balls=[];G.total=total;G.spawned=0;
+  var n=Math.min(total,14);
+  for(var i=0;i<n;i++){
+    G.balls.push({s:-i*R*1.6, c:pickColor(), dx:0}); // 从轨道起点外逐步入场
+    G.spawned++;
+  }
+  sortBalls();
+}
+// 后续补珠：只有当前方留出空隙才补
+function refill(){
+  if(G.spawned>=G.total)return;
+  var gap=(pathLen-1)-headS();
+  if(gap>R*3){
+    G.balls.push({s:headS()+R*2.0, c:pickColor(), dx:0});
+    G.spawned++;sortBalls();
   }
 }
 
-function insertBall(b, idx) {
-  if (chain.length === 0) {
-    // start a new chain at current head position
-    const s = Math.max(0, Math.min(path.len - SPACING, headS));
-    chain.push({ color: b.color, s });
-    checkMatches(chain.length - 1);
-    return;
-  }
-  const target = chain[idx];
-  const p = posAt(target.s);
-  // decide side: front (toward pit) or back based on approach direction
-  // project flight position relative to target along path tangent
-  const aheadSign = Math.sign(
-    (b.x - p.x) * Math.cos(p.ang) + (b.y - p.y) * Math.sin(p.ang)
-  );
-  // insertion index in sorted-ascending array
-  let insertAt = aheadSign >= 0 ? idx + 1 : idx;
-  if (insertAt < 0) insertAt = 0;
-  if (insertAt > chain.length) insertAt = chain.length;
-
-  // new s = neighbor s +/- spacing (toward smaller s = toward start/tail)
-  let newS;
-  if (insertAt === chain.length) {
-    newS = chain[chain.length - 1].s + SPACING;
-    if (newS > path.len) newS = chain[chain.length - 1].s - SPACING, insertAt = chain.length - 1;
-  } else if (insertAt === 0) {
-    newS = chain[0].s - SPACING;
-  } else {
-    const prev = chain[insertAt - 1], nextB = chain[insertAt];
-    newS = (prev.s + nextB.s) / 2;
-    // if gap too small, push forward by resolving later in resolveOverlaps
-  }
-
-  chain.splice(insertAt, 0, { color: b.color, s: newS });
-  headS = chain[chain.length - 1].s;
-
-  resolveOverlaps(insertAt);
-  checkMatches(insertAt);
-  updateHUD();
-}
-
-// push balls apart if closer than SPACING (toward head direction)
-function resolveOverlaps(startIdx) {
-  // forward pass: ensure each ball >= SPACING after previous
-  for (let i = Math.max(1, startIdx); i < chain.length; i++) {
-    if (chain[i].s < chain[i - 1].s + SPACING) {
-      chain[i].s = chain[i - 1].s + SPACING;
-    }
-  }
-  // backward pass for inserted ball behind others
-  for (let i = Math.min(chain.length - 2, startIdx); i >= 0; i--) {
-    if (chain[i].s > chain[i + 1].s - SPACING) {
-      chain[i].s = chain[i + 1].s - SPACING;
-    }
-  }
-  headS = chain.length ? chain[chain.length - 1].s : headS;
-}
-
-function checkMatches(idx) {
-  if (idx < 0 || idx >= chain.length) return;
-  const color = chain[idx].color;
-  let a = idx, b = idx;
-  while (a - 1 >= 0 && chain[a - 1].color === color) a--;
-  while (b + 1 < chain.length && chain[b + 1].color === color) b++;
-  const runLen = b - a + 1;
-  if (runLen >= 3) {
-    // score: base + combo multiplier
-    const gain = runLen * 10 * combo;
-    score += gain;
-    cleared += runLen;
-    combo = Math.min(9, combo + 1);
-    comboTimer = 2.2;
-    // remove run
-    chain.splice(a, runLen);
-    beep(660 + combo * 60, 0.14, "sine", 0.07);
-    shakeT = 0.18;
-
-    // collapse: move tail balls forward to close gap (toward head, increasing s)
-    // find new anchor: the ball before removed run (chain[a-1]) or after (chain[a])
-    // Balls with s < removed run's s should move up by runLen*SPACING (cap at spacing chain)
-    // Simpler: leave gaps; gap collapse handled in updateChain (gap collapse animation)
-    // Trigger collapse by nudging: set a flag to collapse this gap
-    collapseGap(a);
-    updateHUD();
-
-    // chain reaction check after collapse (immediate): recheck around junction
-    if (a > 0 && a < chain.length) {
-      // after collapse the two sides join -> may form new run
-      checkMatches(a);
-    }
-    // win?
-    if (chain.length === 0 && spawned >= TOTAL_BALLS) {
-      endGame(true);
-    }
-  } else {
-    // no match; combo resets if timer expired (handled in loop)
-  }
-}
-
-// collapse gap at index a: pull all balls with smaller s forward until spacing restored
-function collapseGap(a) {
-  if (a <= 0) {
-    // gap at tail end: nothing behind to pull
-    return;
-  }
-  // balls from a-1 backwards are "behind" the removed run; move them forward
-  // actually after splice, chain[a] is the ball that was after the run (front side),
-  // chain[a-1] is behind (tail side). Pull tail side forward: increase s of balls [0..a-1]
-  const frontS = chain[a] ? chain[a].s : headS;
-  // distance the tail block should move:
-  // tail ball a-1 should be SPACING behind chain[a]
-  let need = frontS - SPACING - chain[a - 1].s;
-  if (need <= 0) return;
-  // apply with "animation": we just set target s; smoothing in updateChain
-  for (let i = 0; i <= a - 1; i++) {
-    chain[i].targetS = chain[i].s + need;
-  }
-}
-
-/* ---------------- chain advance & gap smoothing ---------------- */
-function updateChain(dt) {
-  if (chain.length === 0) return;
-  // advance head toward pit
-  const speedBoost = 1 + (spawned >= TOTAL_BALLS ? 0.15 : 0);
-  headS += SPEED * speedBoost * dt;
-
-  // enforce head position
-  // maintain spacing from head backwards (tail follows)
-  // first, apply smooth collapse targets
-  for (let i = 0; i < chain.length; i++) {
-    if (chain[i].targetS !== undefined) {
-      const diff = chain[i].targetS - chain[i].s;
-      if (Math.abs(diff) < 1) { chain[i].s = chain[i].targetS; delete chain[i].targetS; }
-      else chain[i].s += diff * Math.min(1, dt * 14);
-    }
-  }
-
-  // head ball takes headS
-  chain[chain.length - 1].s = headS;
-
-  // forward pass: keep spacing (tail pulled forward if gap collapsed / head moved)
-  for (let i = chain.length - 2; i >= 0; i--) {
-    const maxS = chain[i + 1].s - SPACING;
-    // If there's a gap (chain[i+1].s - chain[i].s > SPACING + tolerance) and targetS set, handled above.
-    // Normal follow: tail ball cannot be more than... it follows head: if gap exists, it stays;
-    // but if chain[i].s > maxS (overlap), clamp down.
-    if (chain[i].s > maxS) chain[i].s = maxS;
-  }
-
-  // detect lose: head ball at pit
-  if (headS >= path.len - 2) {
-    endGame(false);
-    return;
-  }
-
-  // danger: if any ball s beyond len (shouldn't happen), clamp
-  headS = chain[chain.length - 1].s;
-}
-
-/* ---------------- spawning tail balls ---------------- */
-let spawnTimer = 0;
-function updateSpawning(dt) {
-  if (spawned >= TOTAL_BALLS) return;
-  spawnTimer -= dt;
-  if (spawnTimer > 0) return;
-  spawnTimer = 1.4; // new ball every 1.4s
-  const tailS = chain.length ? chain[0].s : 0;
-  const newS = tailS - SPACING;
-  // only spawn if there's room before path start (s >= -something); allow negative (feed in)
-  chain.unshift({ color: randColor(), s: newS });
-  spawned++;
-  // avoid instant 3-run at tail
-  if (chain.length >= 3 &&
-      chain[0].color === chain[1].color && chain[1].color === chain[2].color) {
-    let c; do { c = randColor(); } while (c === chain[1].color);
-    chain[0].color = c;
-  }
-  updateHUD();
-}
-
-/* ---------------- aiming ---------------- */
-function aimAt(x, y) {
-  shooter.ang = Math.atan2(y - shooter.y, x - shooter.x);
-}
-
-function canvasPoint(clientX, clientY) {
-  const rect = canvas.getBoundingClientRect();
-  return {
-    x: ((clientX - rect.left) / rect.width) * W,
-    y: ((clientY - rect.top) / rect.height) * H,
-  };
-}
-
-canvas.addEventListener("mousemove", (e) => {
-  if (state !== "playing") return;
-  const p = canvasPoint(e.clientX, e.clientY);
-  aimAt(p.x, p.y);
+/* ---------- 4. 输入 ---------- */
+var mouse={x:W/2,y:100};
+$("stage").addEventListener("mousemove",function(e){
+  var r=cv.getBoundingClientRect();
+  mouse.x=(e.clientX-r.left)*(W/r.width);
+  mouse.y=(e.clientY-r.top)*(H/r.height);
+  // 青蛙跟随鼠标旋转
+  G.frog.a=Math.atan2(mouse.y-G.frog.y,mouse.x-G.frog.x);
 });
-canvas.addEventListener("mousedown", (e) => {
-  if (state !== "playing") return;
-  e.preventDefault();
-  const p = canvasPoint(e.clientX, e.clientY);
-  aimAt(p.x, p.y);
-  fire();
+$("stage").addEventListener("mousedown",function(){
+  audio(); // 首次交互解锁音频
+  if(G.state!=="playing")return;
+  if(G.shot)return; // 同时只有一发
+  // 沿青蛙朝向发射
+  var a=G.frog.a;
+  G.shot={x:G.frog.x+Math.cos(a)*30, y:G.frog.y+Math.sin(a)*30,
+          vx:Math.cos(a)*11, vy:Math.sin(a)*11, c:G.cur};
+  SFX.shoot();
+  G.cur=G.next; G.next=pickColor(); // 发射后换上备用球
+  drawHUD();
 });
-canvas.addEventListener("touchstart", (e) => {
-  if (state !== "playing") return;
-  e.preventDefault();
-  const t = e.touches[0];
-  const p = canvasPoint(t.clientX, t.clientY);
-  aimAt(p.x, p.y);
-}, { passive: false });
-canvas.addEventListener("touchmove", (e) => {
-  if (state !== "playing") return;
-  e.preventDefault();
-  const t = e.touches[0];
-  const p = canvasPoint(t.clientX, t.clientY);
-  aimAt(p.x, p.y);
-}, { passive: false });
-canvas.addEventListener("touchend", (e) => {
-  if (state !== "playing") return;
-  e.preventDefault();
-  fire();
-}, { passive: false });
-
-document.addEventListener("keydown", (e) => {
-  if (e.code === "Space") {
+window.addEventListener("keydown",function(e){
+  if(e.code==="Space"){ // 空格交换当前/备用
     e.preventDefault();
-    if (state === "playing") setPause(true);
-    else if (state === "paused") setPause(false);
-  } else if (e.key === "q" || e.key === "Q") {
-    swapShooter();
-  } else if (e.key === "Escape") {
-    if (state === "playing") setPause(true);
+    if(G.state==="playing"){var t=G.cur;G.cur=G.next;G.next=t;SFX.swap();drawHUD();}
   }
+  if(e.code==="KeyM"){muted=!muted;$("hMute").textContent=muted?"开":"关";}
 });
 
-/* ---------------- drawing ---------------- */
-function drawPath() {
-  ctx.save();
-  ctx.lineWidth = BALL_R * 2 + 8;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.strokeStyle = "rgba(255,255,255,0.05)";
-  ctx.beginPath();
-  const step = 12;
-  for (let s = 0; s <= path.len; s += step) {
-    const p = posAt(s);
-    if (s === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+/* ---------- 5. 消除与连锁逻辑 ---------- */
+function dist(a,b){var dx=a.x-b.x,dy=a.y-b.y;return Math.sqrt(dx*dx+dy*dy);}
+// 在弧长 s 处插入珠子
+function insertBall(s,c){
+  G.balls.push({s:s,c:c,dx:0});sortBalls();
+}
+// 检查并消除以 idx 为中心的同色≥3
+function checkMatch(idx){
+  var c=G.balls[idx].c;
+  // 向左右扩展
+  var L=idx,R2=idx;
+  while(L-1>=0 && G.balls[L-1].c===c && G.balls[L-1].s-G.balls[L].s<0){L--;}
+  while(R2+1<G.balls.length && G.balls[R2+1].c===c){R2++;}
+  // 修正：按 s 顺序连续同色
+  L=idx;R2=idx;
+  while(L>0 && G.balls[L-1].c===c)L--;
+  while(R2<G.balls.length-1 && G.balls[R2+1].c===c)R2++;
+  var cnt=R2-L+1;
+  if(cnt<3)return false;
+  // 消除区间 [L,R2]
+  var removed=G.balls.splice(L,cnt);
+  var pt=posAt((removed[0].s+removed[removed.length-1].s)/2);
+  G.combo++;
+  if(G.combo>G.maxCombo)G.maxCombo=G.combo;
+  var gain=cnt*10*G.combo;
+  G.score+=gain;
+  // 飘字
+  G.floats.push({x:pt.x,y:pt.y,txt:"+"+gain+(G.combo>1?" 连击x"+G.combo:""),life:60});
+  if(G.combo>1)SFX.chain(G.combo); else SFX.pop();
+  G.shake=8;
+  // 后方珠子向前冲刺（消除后留出空隙 → 后珠补位）
+  var gapS=removed[removed.length-1].s-removed[0].s+R*2;
+  for(var i=0;i<L;i++) { G.balls[i].push=G.balls[i].push||0; G.balls[i].push=gapS; }
+  // 消除后相邻可能发生新三连 → 连锁
+  sortBalls();
+  if(L<G.balls.length){
+    setTimeout(function(){ if(G.state==="playing"){checkChainAt(L);} },90);
   }
-  ctx.stroke();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = "rgba(88,166,255,0.18)";
-  ctx.stroke();
-  ctx.restore();
-
-  // pit (goal hole) at end of path
-  const pit = path.pit;
-  const g = ctx.createRadialGradient(pit.x, pit.y, 4, pit.x, pit.y, 30);
-  g.addColorStop(0, "#000");
-  g.addColorStop(0.7, "#05070c");
-  g.addColorStop(1, "rgba(248,81,73,0.35)");
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.arc(pit.x, pit.y, 30, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(248,81,73,0.6)";
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  drawHUD();
+  checkWin();
+  return true;
 }
-
-function drawBall(x, y, color, r) {
-  r = r || BALL_R - 2;
-  const grad = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
-  grad.addColorStop(0, lighten(color, 0.45));
-  grad.addColorStop(1, darken(color, 0.35));
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(0,0,0,0.35)";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  // highlight
-  ctx.fillStyle = "rgba(255,255,255,0.35)";
-  ctx.beginPath();
-  ctx.arc(x - r * 0.3, y - r * 0.35, r * 0.22, 0, Math.PI * 2);
-  ctx.fill();
+// 连锁检查（防止递归过深，用标记）
+function checkChainAt(idx){
+  if(idx<0||idx>=G.balls.length)return;
+  var c=G.balls[idx].c;
+  // 找出连续同色段
+  var L=idx,R2=idx;
+  while(L>0 && G.balls[L-1].c===c)L--;
+  while(R2<G.balls.length-1 && G.balls[R2+1].c===c)R2++;
+  if(R2-L+1>=3) checkMatch(L);
 }
-
-function lighten(hex, amt) { return shade(hex, amt); }
-function darken(hex, amt) { return shade(hex, -amt); }
-function shade(hex, amt) {
-  const n = parseInt(hex.slice(1), 16);
-  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-  if (amt >= 0) { r = r + (255 - r) * amt; g = g + (255 - g) * amt; b = b + (255 - b) * amt; }
-  else { r = r * (1 + amt); g = g * (1 + amt); b = b * (1 + amt); }
-  return `rgb(${r | 0},${g | 0},${b | 0})`;
-}
-
-function drawShooter() {
-  // base
-  ctx.save();
-  ctx.translate(shooter.x, shooter.y);
-  // barrel
-  ctx.rotate(shooter.ang);
-  ctx.fillStyle = "#2b3550";
-  ctx.strokeStyle = "#58a6ff";
-  ctx.lineWidth = 2;
-  const bw = 44, bh = 20;
-  ctx.beginPath();
-  ctx.roundRect(6, -bh / 2, bw, bh, 8);
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
-
-  // hub
-  ctx.beginPath();
-  ctx.fillStyle = "#1c2436";
-  ctx.strokeStyle = "#58a6ff";
-  ctx.lineWidth = 2.5;
-  ctx.arc(shooter.x, shooter.y, 24, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-
-  // current ball in mouth
-  if (current) {
-    drawBall(shooter.x + Math.cos(shooter.ang) * 10, shooter.y + Math.sin(shooter.ang) * 10, current.color, 13);
-  }
-  // next ball (small, behind)
-  if (next) {
-    const nx = shooter.x - Math.cos(shooter.ang) * 34;
-    const ny = shooter.y - Math.sin(shooter.ang) * 34;
-    drawBall(nx, ny, next.color, 9);
-  }
-
-  // aim guide (dotted)
-  ctx.save();
-  ctx.setLineDash([3, 12]);
-  ctx.strokeStyle = "rgba(88,166,255,0.35)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(shooter.x + Math.cos(shooter.ang) * 46, shooter.y + Math.sin(shooter.ang) * 46);
-  ctx.lineTo(shooter.x + Math.cos(shooter.ang) * 260, shooter.y + Math.sin(shooter.ang) * 260);
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawFlying() {
-  for (const b of flying) {
-    drawBall(b.x, b.y, b.color);
-  }
-}
-
-function drawChain() {
-  // draw from tail to head so head overlaps correctly
-  for (let i = 0; i < chain.length; i++) {
-    const p = posAt(chain[i].s);
-    if (p.x < -BALL_R * 2 || p.x > W + BALL_R * 2 || p.y < -BALL_R * 2 || p.y > H + BALL_R * 2) continue;
-    drawBall(p.x, p.y, chain[i].color);
-  }
-}
-
-function drawComboFlash() {
-  if (comboTimer > 0 && combo > 1) {
-    ctx.save();
-    ctx.globalAlpha = Math.min(1, comboTimer);
-    ctx.fillStyle = "#d29922";
-    ctx.font = "bold 34px system-ui, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("COMBO x" + combo, W / 2, 70);
-    ctx.restore();
-  }
-}
-
-/* ---------------- main loop ---------------- */
-function loop(t) {
-  const dt = Math.min(0.05, (t - lastT) / 1000 || 0);
-  lastT = t;
-
-  if (state === "playing") {
-    updateChain(dt);
-    updateSpawning(dt);
-    updateFlying(dt);
-    if (comboTimer > 0) {
-      comboTimer -= dt;
-      if (comboTimer <= 0) combo = 1;
+// 飞行弹珠碰撞检测
+function shotHit(){
+  if(!G.shot)return;
+  var s=G.shot;
+  // 越界判定
+  if(s.x<-30||s.x>W+30||s.y<-30||s.y>H+30){G.shot=null;return;}
+  for(var i=0;i<G.balls.length;i++){
+    var p=posAt(G.balls[i].s);
+    var d=dist({x:s.x,y:s.y},p);
+    if(d<R*1.9){
+      // 决定插入前方还是后方：沿切线方向比较
+      var t=tanAt(G.balls[i].s);
+      var dot=(s.x-p.x)*t.x+(s.y-p.y)*t.y;
+      var insS=G.balls[i].s+(dot>0?R*1.8:-R*1.8);
+      G.shot=null;
+      insertBall(insS,s.c);
+      SFX.hit();
+      sortBalls();
+      // 找到插入后的索引并检查三连
+      var idx=0;
+      for(var k=0;k<G.balls.length;k++){ if(Math.abs(G.balls[k].s-insS)<0.5){idx=k;break;} }
+      if(!checkMatch(idx)){
+        G.combo=0;drawHUD();
+      }
+      return;
     }
-    updateHUD();
   }
+}
 
-  // draw
-  ctx.save();
-  if (shakeT > 0) {
-    shakeT -= dt;
-    const mag = 4 * (shakeT / 0.18);
-    ctx.translate((Math.random() - 0.5) * mag, (Math.random() - 0.5) * mag);
+/* 胜负判定 */
+function checkWin(){
+  if(G.state!=="playing")return;
+  if(G.balls.length===0 && G.spawned>=G.total){
+    G.state="win";
+    SFX.win();
+    addBest();
+    $("wScore").textContent=G.score;
+    $("wCombo").textContent=G.maxCombo;
+    $("mWin").style.display="block";
+    drawHUD();
   }
-  ctx.clearRect(-10, -10, W + 20, H + 20);
-  drawPath();
-  drawChain();
-  drawFlying();
-  if (state === "playing" || state === "paused") drawShooter();
-  drawComboFlash();
+}
+function addBest(){
+  if(G.score>G.best){G.best=G.score;try{localStorage.setItem("zuma_best",String(G.best));}catch(e){}}
+  $("hBest").textContent=G.best;
+}
+function gameOver(){
+  if(G.state!=="playing")return;
+  G.lives--;
+  if(G.lives>0){ // 还有生命：珠链退回一段，本关重来
+    SFX.hit();
+    G.floats.push({x:W/2,y:H/2,txt:"生命 -1",life:90});
+    G.combo=0;
+    G.state="playing";
+    spawnChain(G.total);
+    drawHUD();
+    return;
+  }
+  G.state="over";
+  SFX.fail();
+  addBest();
+  $("oScore").textContent=G.score;
+  $("oCombo").textContent=G.maxCombo;
+  $("mOver").style.display="block";
+  drawHUD();
+}
+
+/* ---------- 5b. 主更新 ---------- */
+function update(){
+  if(G.state!=="playing")return;
+  // 补珠
+  refill();
+  // 珠链前进
+  for(var i=0;i<G.balls.length;i++){
+    var b=G.balls[i];
+    // push：被消除后受连锁冲刺加速（每帧衰减）
+    var sp=G.speed;
+    if(b.push&&b.push>0){ sp+=Math.min(b.push,3.5); b.push-=3.5; if(b.push<0)b.push=0; }
+    b.s+=sp;
+  }
+  // 紧密贴合：后珠不能超过前珠-R*1.85
+  sortBalls();
+  for(var i=G.balls.length-2;i>=0;i--){
+    var front=G.balls[i+1], back=G.balls[i];
+    var maxS=front.s-R*1.85;
+    if(back.s>maxS)back.s=maxS;
+    if(back.s<0 && front.s>0) back.s=Math.min(back.s,0); // 未入场的保持
+  }
+  // 入场队列：把负 s 的珠子逐步推进（自然进入轨道）
+  // 终点判定：头部到达洞口
+  if(G.balls.length && headS()>=pathLen-1){
+    gameOver();
+  }
+  // 飞行弹珠
+  if(G.shot){ G.shot.x+=G.shot.vx; G.shot.y+=G.shot.vy; shotHit(); }
+  // 青蛙朝向鼠标
+  G.frog.a=Math.atan2(mouse.y-G.frog.y,mouse.x-G.frog.x);
+  // 飘字
+  for(var i=G.floats.length-1;i>=0;i--){ G.floats[i].life--; G.floats[i].y-=.6; if(G.floats[i].life<=0)G.floats.splice(i,1); }
+  if(G.shake>0)G.shake*=0.85;
+}
+</script>
+<script>
+/* ---------- 6. 绘制层（全部 Canvas 手绘，无外部图片） ---------- */
+// 丛林石壁背景（带随机苔藓斑点，预生成避免闪烁）
+var bgCv=document.createElement("canvas");bgCv.width=W;bgCv.height=H;
+function drawBackground(){
+  var g=bgCv.getContext("2d");
+  // 石壁底色渐变
+  var grd=g.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,"#2f4a35");grd.addColorStop(.5,"#25392b");grd.addColorStop(1,"#1a2a20");
+  g.fillStyle=grd;g.fillRect(0,0,W,H);
+  // 石块砖缝
+  g.strokeStyle="rgba(0,0,0,.35)";g.lineWidth=3;
+  for(var y=0;y<H;y+=64){
+    var off=(y/64%2)*48;
+    g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke();
+    for(var x=off;x<W;x+=96){g.beginPath();g.moveTo(x,y);g.lineTo(x,y+64);g.stroke();}
+  }
+  // 苔藓与藤蔓点缀
+  for(var i=0;i<160;i++){
+    var x=Math.random()*W,y=Math.random()*H,r=3+Math.random()*14;
+    g.fillStyle=Math.random()<.6?"rgba(90,150,70,.18)":"rgba(40,80,45,.25)";
+    g.beginPath();g.arc(x,y,r,0,7);g.fill();
+  }
+  // 角落暗角
+  var vg=g.createRadialGradient(W/2,H/2,H*.4,W/2,H/2,H*.95);
+  vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,"rgba(0,0,0,.55)");
+  g.fillStyle=vg;g.fillRect(0,0,W,H);
+}
+
+// 石质凹槽轨道
+function drawTrack(){
+  ctx.lineCap="round";ctx.lineJoin="round";
+  // 外层石壁
+  ctx.beginPath();
+  for(var i=0;i<pathLen;i+=2){ i===0?ctx.moveTo(pathPts[i].x,pathPts[i].y):ctx.lineTo(pathPts[i].x,pathPts[i].y); }
+  ctx.strokeStyle="#5a5140";ctx.lineWidth=R*2+16;ctx.stroke();
+  // 中层
+  ctx.strokeStyle="#3b352a";ctx.lineWidth=R*2+8;ctx.stroke();
+  // 内凹槽（深色）
+  ctx.strokeStyle="#171410";ctx.lineWidth=R*2;ctx.stroke();
+  // 高光边
+  ctx.strokeStyle="rgba(160,150,120,.35)";ctx.lineWidth=R*2+12;ctx.stroke();
+}
+
+// 玛雅石雕青蛙（多边形+纹理绘制）
+function drawFrog(){
+  var f=G.frog;
+  ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.a);
+  // 身体（石质底座椭圆）
+  ctx.fillStyle="#5f6b52";ctx.strokeStyle="#2e3628";ctx.lineWidth=3;
+  ctx.beginPath();ctx.ellipse(0,6,30,24,0,0,7);ctx.fill();ctx.stroke();
+  // 头部
+  ctx.fillStyle="#77845f";
+  ctx.beginPath();ctx.ellipse(6,0,24,18,0,0,7);ctx.fill();ctx.stroke();
+  // 眼睛（金玛雅风格）
+  ctx.fillStyle="#ffd76e";ctx.strokeStyle="#4a3a10";ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(14,-9,7,0,7);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.arc(14,9,7,0,7);ctx.fill();ctx.stroke();
+  ctx.fillStyle="#231a05";
+  ctx.beginPath();ctx.arc(16,-9,3,0,7);ctx.fill();
+  ctx.beginPath();ctx.arc(16,9,3,0,7);ctx.fill();
+  // 嘴巴（炮口）
+  ctx.strokeStyle="#2e3628";ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(24,-4);ctx.lineTo(34,0);ctx.lineTo(24,4);ctx.stroke();
+  // 石头纹理刻痕
+  ctx.strokeStyle="rgba(0,0,0,.3)";ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(-14,-8);ctx.lineTo(-4,-12);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-16,10);ctx.lineTo(-4,7);ctx.stroke();
+  // 前爪
+  ctx.fillStyle="#5f6b52";ctx.strokeStyle="#2e3628";
+  ctx.beginPath();ctx.ellipse(4,20,9,6,-.4,0,7);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.ellipse(4,-20,9,6,.4,0,7);ctx.fill();ctx.stroke();
   ctx.restore();
+  // 当前弹珠画在蛙嘴前（示意装填）
+  if(G.state==="playing"&&!G.shot){
+    var a=f.a;
+    drawBall(f.x+Math.cos(a)*40,f.y+Math.sin(a)*40,G.cur,R*0.9);
+    // 备用球显示在青蛙左下
+    drawBall(f.x-34,f.y+34,G.next,R*0.7);
+    ctx.fillStyle="#f4e6c1";ctx.font="12px sans-serif";ctx.textAlign="center";
+    ctx.fillText("空格交换",f.x-34,f.y+56);
+  }
+}
 
+// 圆润光泽珠子
+function drawBall(x,y,c,r){
+  r=r||R;
+  var col=COLORS[c];
+  ctx.save();
+  // 底部阴影
+  ctx.fillStyle="rgba(0,0,0,.4)";
+  ctx.beginPath();ctx.ellipse(x+2,y+3,r,r*.9,0,0,7);ctx.fill();
+  // 主体
+  var g=ctx.createRadialGradient(x-r*.35,y-r*.4,r*.1,x,y,r);
+  g.addColorStop(0,"#ffffff");g.addColorStop(.25,col);g.addColorStop(1,shade(col,-40));
+  ctx.fillStyle=g;
+  ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
+  // 边缘
+  ctx.strokeStyle="rgba(0,0,0,.45)";ctx.lineWidth=1.5;ctx.stroke();
+  // 高光
+  ctx.fillStyle="rgba(255,255,255,.75)";
+  ctx.beginPath();ctx.ellipse(x-r*.32,y-r*.4,r*.26,r*.18,-.6,0,7);ctx.fill();
+  ctx.restore();
+}
+// 颜色明暗调整
+function shade(hex,amt){
+  var n=parseInt(hex.slice(1),16);
+  var r=Math.max(0,Math.min(255,(n>>16)+amt));
+  var g=Math.max(0,Math.min(255,((n>>8)&255)+amt));
+  var b=Math.max(0,Math.min(255,(n&255)+amt));
+  return "#"+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
+
+// 终点洞口（神庙深渊）
+function drawHole(){
+  var p=posAt(pathLen-1);
+  ctx.save();
+  var g=ctx.createRadialGradient(p.x,p.y,4,p.x,p.y,R*3);
+  g.addColorStop(0,"#000");g.addColorStop(.7,"#1a120a");g.addColorStop(1,"#6b5b3e");
+  ctx.fillStyle=g;
+  ctx.beginPath();ctx.arc(p.x,p.y,R*2.6,0,7);ctx.fill();
+  ctx.strokeStyle="#8a6a20";ctx.lineWidth=4;ctx.stroke();
+  // 危险提示光晕
+  ctx.strokeStyle="rgba(255,80,50,"+(0.3+0.3*Math.sin(Date.now()/300))+")";
+  ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,R*3.1,0,7);ctx.stroke();
+  ctx.restore();
+}
+
+// 绘制珠链
+function drawBalls(){
+  for(var i=0;i<G.balls.length;i++){
+    var b=G.balls[i];
+    if(b.s<0||b.s>pathLen-1)continue;
+    var p=posAt(b.s);
+    drawBall(p.x,p.y,b.c,R);
+  }
+}
+
+// 飘字
+function drawFloats(){
+  ctx.save();ctx.textAlign="center";
+  for(var i=0;i<G.floats.length;i++){
+    var f=G.floats[i];
+    ctx.globalAlpha=Math.min(1,f.life/30);
+    ctx.font="bold 22px sans-serif";
+    ctx.fillStyle="#ffd76e";ctx.strokeStyle="#3a2a05";ctx.lineWidth=4;
+    ctx.strokeText(f.txt,f.x,f.y);ctx.fillText(f.txt,f.x,f.y);
+  }
+  ctx.restore();ctx.globalAlpha=1;
+}
+
+function drawHUD(){
+  $("hScore").textContent=G.score;
+  $("hCombo").textContent=G.combo;
+  $("hLevel").textContent=G.level;
+  $("hLives").textContent=G.lives>0?"❤".repeat(G.lives):"💀";
+}
+
+// 主渲染
+function render(){
+  ctx.save();
+  if(G.shake>0.5)ctx.translate((Math.random()-.5)*G.shake,(Math.random()-.5)*G.shake);
+  ctx.drawImage(bgCv,0,0);
+  if(G.state!=="menu"){
+    drawTrack();
+    drawHole();
+    drawBalls();
+    drawFrog();
+    // 飞行中的弹珠
+    if(G.shot)drawBall(G.shot.x,G.shot.y,G.shot.c,R);
+    drawFloats();
+  }else{
+    // 菜单背景也画条轨道做装饰
+    drawTrack();drawHole();
+  }
+  ctx.restore();
+}
+
+/* ---------- 主循环 ---------- */
+var last=0,acc=0;
+function loop(t){
+  if(!last)last=t;
+  var dt=t-last;last=t;
+  acc+=dt;
+  // 60fps 固定步长更新
+  while(acc>=16.7){ update(); acc-=16.7; }
+  render();
   requestAnimationFrame(loop);
 }
 
-/* ---------------- game flow ---------------- */
-const menuEl = document.getElementById("menu");
-const pauseEl = document.getElementById("pause");
-const resultEl = document.getElementById("result");
-
-function openOverlay(el) { el.classList.add("open"); }
-function closeOverlay(el) { el.classList.remove("open"); }
-
-function startGame() {
-  resetGame();
-  state = "playing";
-  closeOverlay(menuEl);
-  closeOverlay(pauseEl);
-  closeOverlay(resultEl);
-  beep(440, 0.12, "sine", 0.05);
+/* ---------- 关卡/流程控制 ---------- */
+function startGame(lv){
+  G.level=lv;
+  G.score=0;G.combo=0;G.maxCombo=0;G.lives=3;
+  G.shot=null;G.floats=[];
+  G.speed=1.0+(lv-1)*0.35; // 关卡越高速度越快
+  loadLevel(lv);
+  spawnChain(18+lv*6);
+  G.state="playing";
+  G.cur=pickColor();G.next=pickColor();
+  $("mStart").style.display="none";
+  $("mOver").style.display="none";
+  $("mWin").style.display="none";
+  drawHUD();
+  audio();
+}
+function toMenu(){
+  G.state="menu";
+  $("mStart").style.display="block";
+  $("mOver").style.display="none";
+  $("mWin").style.display="none";
 }
 
-function setPause(p) {
-  if (p && state === "playing") {
-    state = "paused";
-    openOverlay(pauseEl);
-  } else if (!p && state === "paused") {
-    state = "playing";
-    closeOverlay(pauseEl);
-    lastT = performance.now();
+/* 关卡选择按钮 */
+var selLv=1;
+function buildLvSel(){
+  var box=$("lvSel");box.innerHTML="";
+  for(var i=1;i<=3;i++){
+    (function(n){
+      var b=document.createElement("span");
+      b.className="lvbtn"+(n===selLv?" sel":"");
+      b.textContent="第"+n+"关";
+      b.onclick=function(){selLv=n;buildLvSel();};
+      box.appendChild(b);
+    })(i);
   }
 }
+buildLvSel();
 
-function endGame(won) {
-  state = "over";
-  document.getElementById("resultTitle").textContent = won ? "🎉 你赢了！" : "💥 珠子进洞，失败";
-  document.getElementById("resultScore").textContent = score;
-  document.getElementById("resultMsg").textContent = won
-    ? "全部珠子已消除，漂亮！"
-    : "珠链抵达洞口。瞄准同色、制造连锁再来一局！";
-  openOverlay(resultEl);
-  beep(won ? 880 : 160, 0.3, won ? "sine" : "sawtooth", 0.07);
-}
+/* 弹窗按钮绑定 */
+$("btnStart").onclick=function(){startGame(selLv);};
+$("btnRetry").onclick=function(){startGame(selLv);};
+$("btnNext").onclick=function(){ if(selLv<3){selLv++;buildLvSel();} startGame(selLv); };
+$("btnMenu1").onclick=toMenu;
+$("btnMenu2").onclick=toMenu;
 
-document.getElementById("btnStart").addEventListener("click", startGame);
-document.getElementById("btnAgain").addEventListener("click", startGame);
-document.getElementById("btnPauseRestart").addEventListener("click", startGame);
-document.getElementById("btnResume").addEventListener("click", () => setPause(false));
-document.getElementById("btnPause").addEventListener("click", () => {
-  if (state === "playing") setPause(true);
-  else if (state === "paused") setPause(false);
-});
-document.getElementById("btnRestart").addEventListener("click", () => {
-  if (confirm("重新开始？")) startGame();
-});
-document.getElementById("btnMute").addEventListener("click", (e) => {
-  muted = !muted;
-  e.target.textContent = muted ? "🔇" : "🔊";
-});
-
-/* ---------------- responsive canvas ---------------- */
-function fitCanvas() {
-  const stage = document.getElementById("stage");
-  const maxW = stage.clientWidth - 8;
-  const maxH = stage.clientHeight - 8;
-  const ratio = W / H;
-  let cw = maxW, ch = cw / ratio;
-  if (ch > maxH) { ch = maxH; cw = ch * ratio; }
-  canvas.style.width = cw + "px";
-  canvas.style.height = ch + "px";
-}
-window.addEventListener("resize", fitCanvas);
-
-/* ---------------- boot ---------------- */
-resetGame();
-state = "menu";
-openOverlay(menuEl);
-fitCanvas();
+/* 启动 */
+drawBackground();
+loadLevel(1);
+$("mStart").style.display="block";
 requestAnimationFrame(loop);
 
-// roundRect polyfill for older browsers
-if (!CanvasRenderingContext2D.prototype.roundRect) {
-  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    this.moveTo(x + r, y);
-    this.arcTo(x + w, y, x + w, y + h, r);
-    this.arcTo(x + w, y + h, x, y + h, r);
-    this.arcTo(x, y + h, x, y, r);
-    this.arcTo(x, y, x + w, y, r);
-    this.closePath();
-    return this;
-  };
-}
+/* 使用说明（控制台+页面提示） */
+console.log("%c祖玛玛雅 Zuma","color:#ffd76e;font-size:20px");
+console.log("鼠标移动=瞄准, 左键=发射, 空格=换球, M=静音");
 </script>
 </body>
 </html>
