@@ -4,16 +4,100 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>初中物理课堂素材系统 · 初三备课助手</title>
-<meta name="description" content="人教版初中物理课堂素材生成：导入故事、趣味演示、物理学史、板书、思维导图、问题链、长文本压缩，7类素材按需生成，附PPT页标注联动课件系统，支持在线编辑、教参上传、提示词后台、异常兜底。AI仅辅助，教师审核后使用。">
-<link rel="stylesheet" href="css/style.css">
+<meta name="description" content="人教版初中物理课堂素材生成：7类素材按需生成，PPT页标注联动，在线编辑、单模块复制、提示词后台、教参上传、收藏、导出备课包。AI仅辅助，教师审核后使用。">
+<style>
+:root{--bg:#f6f4ef;--paper:#fff;--ink:#26221c;--muted:#7d7468;--line:#e8e2d6;--brand:#b45309;--r:12px;--sh:0 5px 18px rgba(80,60,30,.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+button{font-family:inherit}
+.top{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:13px 24px;background:linear-gradient(90deg,#7c2d12,#b45309);color:#fff;position:sticky;top:0;z-index:50;box-shadow:0 3px 14px rgba(0,0,0,.2)}
+.brand{font-size:17.5px;font-weight:700}.brand .sub{font-size:12px;opacity:.85;font-weight:400;margin-left:8px}
+.top-r{display:flex;gap:9px;flex-wrap:wrap}
+.btn{background:var(--paper);border:1px solid var(--line);color:var(--ink);padding:9px 16px;border-radius:9px;cursor:pointer;font-size:14px;transition:.14s}
+.btn:hover{border-color:var(--brand);color:var(--brand)}
+.btn.ghost{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.45);color:#fff}
+.btn.ghost:hover{background:#fff;color:var(--brand)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+.btn.primary:hover{background:#d97706;color:#fff}
+.btn.big{width:100%;padding:14px;font-size:16px;border-radius:11px}
+.banner{background:#fffbeb;border-bottom:1px solid #fde68a;color:#92400e;padding:10px 24px;font-size:14.2px;text-align:center}
+.banner b{color:#b45309}
+.wrap{display:grid;grid-template-columns:370px 1fr;gap:18px;padding:18px 22px;max-width:1460px;margin:0 auto}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:20px 22px}
+.form-panel h2,.out-bar h2,.sec-t{font-size:16px;margin-bottom:4px;color:var(--brand)}
+.f-row{margin:15px 0}
+.f-row label{display:block;font-size:13.4px;color:var(--muted);margin-bottom:7px}
+.f-row .req{color:#b91c1c;font-size:12px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;min-width:84px;background:#f5f2ec;border:1px solid var(--line);border-radius:9px;padding:9px 5px;cursor:pointer;font-size:13.4px;transition:.14s}
+.seg button:hover{border-color:var(--brand)}
+.seg button.active{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+select,input[type=text],input[type=file],textarea{width:100%;background:#faf8f4;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:14.3px;outline:none;color:var(--ink)}
+select:focus,input:focus,textarea:focus{border-color:var(--brand);background:#fff}
+textarea{min-height:90px;resize:vertical;line-height:1.7}
+input[type=file]{font-size:13px;color:var(--muted);padding:7px}
+.checks{display:flex;flex-direction:column;gap:8px}
+.checks label{display:flex;align-items:flex-start;gap:9px;font-size:13.7px;color:var(--ink);cursor:pointer;margin:0;line-height:1.6}
+.checks input{accent-color:var(--brand);width:15px;height:15px;margin-top:3px}
+.checks .ckd{color:var(--muted);font-size:12.3px;display:block}
+.hint{font-size:12.5px;color:var(--muted);margin-top:11px;line-height:1.7}
+.meta-line{font-size:12.5px;color:#7c3aed;margin-top:7px}
+.warn-strip{background:#fefce8;border:1px solid #fde68a;border-radius:9px;padding:10px 14px;font-size:13.4px;color:#854d0e;margin-bottom:14px;line-height:1.7}
+.warn-strip b{color:#b45309}
+.out-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.out-acts{display:flex;gap:8px;flex-wrap:wrap}
+.out-acts .btn{padding:7px 13px;font-size:13px}
+.output{display:flex;flex-direction:column;gap:14px}
+.empty{color:var(--muted);text-align:center;padding:60px 20px;font-size:15px;line-height:2.2;background:var(--paper);border:1px solid var(--line);border-radius:10px}
+.idea{background:#fff7ed;border:1px solid #fed7aa;border-radius:9px;padding:11px 15px;font-size:14.5px}
+.idea b{color:#d97706}
+.mat{background:var(--paper);border:1px solid var(--line);border-radius:11px;overflow:hidden;box-shadow:0 3px 10px rgba(80,60,30,.05)}
+.mat-h{padding:11px 17px;background:linear-gradient(90,#b45309,#d97706);color:#fff;font-size:15px;font-weight:700;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.mat-h .lv{background:rgba(255,255,255,.22);border-radius:99px;padding:2px 12px;font-size:12.5px}
+.mat-b{padding:15px 18px}
+.m-body{font-size:14.5px;line-height:1.95}
+.m-body.editing{background:#fffbeb;border:1px dashed #f59e0b;border-radius:8px;padding:10px 12px;outline:none;box-shadow:0 0 0 3px rgba(245,158,11,.15)}
+.sec-t{border-left:3px solid var(--brand);padding-left:9px;margin:16px 0 8px}
+.pill{display:inline-block;font-size:11.5px;border-radius:99px;padding:2px 9px;margin:2px 4px 2px 0;font-weight:600;background:#dcfce7;color:#15803d}
+.ppt-tag{background:#0f766e;color:#fff;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;display:inline-block;margin-right:6px}
+.ppt-note{background:#f0fdfa;border:1px solid #99f6e4;border-radius:7px;padding:8px 13px;font-size:13.4px;color:#115e59;margin-top:9px;line-height:1.8}
+.copy-b{display:flex;gap:7px;justify-content:flex-end;margin-top:9px;flex-wrap:wrap}
+.copy-b button{background:#f1f5f9;border:1px solid var(--line);border-radius:7px;padding:5px 13px;font-size:12.5px;cursor:pointer}
+.copy-b button:hover{border-color:var(--brand);color:var(--brand)}
+.err-card{background:#fff;border:1px solid #fecaca;border-radius:13px;padding:30px 26px;text-align:center;box-shadow:var(--sh)}
+.err-t{font-size:19px;font-weight:700;color:#dc2626;margin-bottom:12px}
+.err-m{font-size:15px;background:#fef2f2;border-radius:8px;padding:11px 15px;margin-bottom:9px;line-height:1.8}
+.err-h{font-size:13.5px;color:var(--muted);margin-bottom:16px}
+.err-hint{font-size:12.5px;color:var(--muted);margin-top:14px}
+.mask{position:fixed;inset:0;background:rgba(40,30,15,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:18px}
+.mask.on{display:flex}
+.modal{background:var(--paper);border-radius:14px;width:640px;max-width:100%;max-height:86vh;overflow-y:auto;padding:24px 26px;animation:pop .18s}
+@keyframes pop{from{transform:scale(.95);opacity:0}to{transform:1;opacity:1}}
+.modal h3{font-size:17px;color:var(--brand);margin-bottom:14px}
+.close{float:right;cursor:pointer;color:var(--muted);font-size:22px;line-height:1;background:none;border:none}
+.hist-i{border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin-bottom:11px}
+.hist-i .ht{font-weight:700;font-size:14.5px}
+.hist-i .hm{font-size:12.5px;color:var(--muted);margin-top:5px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hist-i button{background:#eef2ff;border:1px solid var(--line);border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer}
+.hist-i button:hover{border-color:var(--brand);color:var(--brand)}
+.mut{color:var(--muted);font-size:13.5px;padding:5px 0}
+.prompt-i{margin-bottom:13px}
+.prompt-i label{display:block;font-size:13.5px;color:var(--brand);font-weight:700;margin-bottom:5px}
+.prompt-i textarea{font-family:ui-monospace,Consolas,monospace;font-size:13.4px}
+.help-li{margin:9px 0;font-size:14.3px;line-height:1.8;padding-left:10px;border-left:3px solid var(--brand)}
+.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#292524;color:#fff;padding:11px 24px;border-radius:99px;font-size:14px;z-index:200;box-shadow:0 6px 18px rgba(0,0,0,.3);display:none;animation:pop .2s}
+.foot{text-align:center;color:var(--muted);font-size:13px;padding:22px 10px 40px}
+@media (max-width:960px){.wrap{grid-template-columns:1fr;padding:14px}.brand .sub{display:none}}
+@media print{.top,.banner,.form-panel,.out-acts,.foot,.copy-b{display:none!important}.wrap{grid-template-columns:1fr;padding:0}}
+</style>
 </head>
 <body>
 <header class="top">
   <div class="brand">🧰 初中物理课堂素材系统 <span class="sub">人教版 · 新课标 · 素材→PPT 联动</span></div>
   <div class="top-r">
-    <button class="btn ghost" id="btn-history">🗂 工程/历史/收藏</button>
-    <button class="btn ghost" id="btn-prompts">⚙️ 提示词后台</button>
-    <button class="btn ghost" id="btn-help">❓ 说明</button>
+    <button class="btn ghost" id="btn-history" type="button">🗂 工程/历史/收藏</button>
+    <button class="btn ghost" id="btn-prompts" type="button">⚙️ 提示词后台</button>
+    <button class="btn ghost" id="btn-help" type="button">❓ 说明</button>
   </div>
 </header>
 
@@ -22,42 +106,33 @@
 <main class="wrap">
   <section class="panel form-panel">
     <h2>备课需求</h2>
-    <div class="f-row">
-      <label>课型</label>
+    <div class="f-row"><label>课型</label>
       <div class="seg" id="seg-kind">
-        <button class="active" data-k="新授课">新授课</button>
-        <button data-k="复习课">复习课</button>
-        <button data-k="实验课">实验课</button>
+        <button class="active" data-k="新授课" type="button">新授课</button>
+        <button data-k="复习课" type="button">复习课</button>
+        <button data-k="实验课" type="button">实验课</button>
       </div>
     </div>
-    <div class="f-row">
-      <label>课题 / 知识点 <span class="req">（选库中课题或自定义）</span></label>
+    <div class="f-row"><label>课题 / 知识点 <span class="req">（选库中课题或自定义）</span></label>
       <select id="sel-topic"></select>
       <input type="text" id="in-custom" placeholder="或自定义课题（如：浮力的应用）" style="margin-top:8px">
     </div>
-    <div class="f-row">
-      <label>学情层次</label>
+    <div class="f-row"><label>学情层次</label>
       <div class="seg" id="seg-level">
-        <button data-l="学困生">🌱 学困</button>
-        <button class="active" data-l="中等生">⚡ 中等</button>
-        <button data-l="优等生">🚀 优等</button>
+        <button data-l="学困生" type="button">🌱 学困</button>
+        <button class="active" data-l="中等生" type="button">⚡ 中等</button>
+        <button data-l="优等生" type="button">🚀 优等</button>
       </div>
       <div class="meta-line" id="level-meta"></div>
     </div>
-    <div class="f-row">
-      <label>需要哪些素材？（多选，至少1项）</label>
-      <div class="checks" id="ck-types"></div>
-    </div>
-    <div class="f-row">
-      <label>本节教案 / 重难点（选填）</label>
-      <textarea id="in-plan" placeholder="粘贴教学目标或重难点，素材对齐；留空生成通用素材。"></textarea>
-    </div>
-    <div class="f-row">
-      <label>📚 参考资料（教参/课本片段，选填，减少幻觉）</label>
-      <textarea id="in-ref" placeholder="粘贴教参或课本片段（P1），素材将据此生成；也可上传 txt/md 文件。"></textarea>
+    <div class="f-row"><label>需要哪些素材？（多选，至少1项）</label><div class="checks" id="ck-types"></div></div>
+    <div class="f-row"><label>本节教案 / 重难点（选填）</label>
+      <textarea id="in-plan" placeholder="粘贴教学目标或重难点，素材对齐；留空生成通用素材。"></textarea></div>
+    <div class="f-row"><label>📚 参考资料（教参/课本片段，选填，减少幻觉）</label>
+      <textarea id="in-ref" placeholder="粘贴教参或课本片段，素材将据此生成；也可上传 txt/md 文件。"></textarea>
       <input type="file" id="in-file" accept=".txt,.md" style="margin-top:7px">
     </div>
-    <button class="btn primary big" id="btn-gen">⚡ 生成课堂素材</button>
+    <button class="btn primary big" id="btn-gen" type="button">⚡ 生成课堂素材</button>
     <p class="hint">每模块开头一句话说明设计思路；导入故事100–300字；每个素材附「PPT页建议」；生成后可在线编辑、单模块复制、收藏。</p>
   </section>
 
@@ -65,10 +140,10 @@
     <div class="out-bar">
       <h2 id="out-title">素材预览</h2>
       <div class="out-acts">
-        <button class="btn" id="btn-save-proj">💾 保存工程</button>
-        <button class="btn" id="btn-copy">📋 复制全部</button>
-        <button class="btn" id="btn-md">⬇ 导出备课包</button>
-        <button class="btn" id="btn-print">🖨 打印</button>
+        <button class="btn" id="btn-save-proj" type="button">💾 保存工程</button>
+        <button class="btn" id="btn-copy" type="button">📋 复制全部</button>
+        <button class="btn" id="btn-md" type="button">⬇ 导出备课包</button>
+        <button class="btn" id="btn-print" type="button">🖨 打印</button>
       </div>
     </div>
     <div class="warn-strip">📌 以下素材 <b>AI仅辅助</b>：请教师审核科学性与课堂适配性后使用；演示须先确认安全。生成异常时下方会有<b>兜底提示</b>。</div>
@@ -80,11 +155,224 @@
 
 <footer class="foot">人教版初中物理 · 新课标核心素养 · 初三课堂限时素材 · 不超纲 · 教师审核后使用 · 素材→PPT联动</footer>
 
-<div class="mask" id="mask" style="display:none"><div class="modal" id="modal"></div></div>
-<div class="toast" id="toast" style="display:none"></div>
+<div class="mask" id="mask"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
 
-<script src="js/data.js"></script>
-<script src="js/generator.js"></script>
-<script src="js/app.js"></script>
+<script>
+(function(){
+"use strict";
+var TOPICS=["机械运动","声现象","光的折射","凸透镜成像","物态变化","质量与密度","力与运动","压强","浮力","功和机械能","简单机械","内能与热量","电流和电路","欧姆定律","电功率","电与磁","信息的传递","能源与可持续发展"];
+var KNOWLEDGE=[
+{name:"机械运动",content:"位置随时间变化",formula:"v=s/t",unit:"m/s",example:"汽车行驶"},
+{name:"声现象",content:"声音由振动产生",formula:"v=340m/s",unit:"m/s",example:"回声测距"},
+{name:"光的折射",content:"光从一种介质斜射入另一种介质",formula:"n=sin i/sin r",unit:"—",example:"筷子弯折"},
+{name:"凸透镜成像",content:"物距与像距关系",formula:"1/f=1/u+1/v",unit:"—",example:"放大镜"},
+{name:"物态变化",content:"物质三态及其转化",formula:"Q=cmΔt",unit:"J",example:"水结冰"},
+{name:"质量与密度",content:"物体所含物质的多少",formula:"ρ=m/V",unit:"kg/m³",example:"鉴别真假"},
+{name:"力与运动",content:"力是改变物体运动状态的原因",formula:"F=ma",unit:"N",example:"刹车"},
+{name:"压强",content:"单位面积上受到的压力",formula:"p=F/S",unit:"Pa",example:"图钉尖"},
+{name:"浮力",content:"浸在液体中的物体受到向上的力",formula:"F浮=ρ液gV排",unit:"N",example:"轮船浮水"},
+{name:"功和机械能",content:"功等于力与距离的乘积",formula:"W=Fs",unit:"J",example:"举高物体"},
+{name:"简单机械",content:"杠杆、滑轮等省力机械",formula:"F1L1=F2L2",unit:"N",example:"开瓶器"},
+{name:"内能与热量",content:"分子热运动能量总和",formula:"Q=cmΔt",unit:"J",example:"烧水"},
+{name:"电流和电路",content:"电荷的定向移动形成电流",formula:"I=U/R",unit:"A",example:"手电筒"},
+{name:"欧姆定律",content:"导体中的电流与电压成正比",formula:"I=U/R",unit:"A",example:"调光灯"},
+{name:"电功率",content:"电流单位时间做的功",formula:"P=UI",unit:"W",example:"电热水壶"},
+{name:"电与磁",content:"电流周围存在磁场",formula:"F=BIL",unit:"N",example:"电动机"},
+{name:"信息的传递",content:"电磁波传递信息",formula:"c=λf",unit:"m/s",example:"手机通信"},
+{name:"能源与可持续发展",content:"能源分类与合理利用",formula:"η=W有/W总",unit:"—",example:"太阳能"}];
+var MATERIAL_TYPES=[
+{id:"story",name:"课堂导入故事",icon:"📖",page:"第2页"},
+{id:"demo",name:"科学趣味演示",icon:"🧪",page:"第4页"},
+{id:"history",name:"物理学史小故事",icon:"📜",page:"第5页"},
+{id:"board",name:"板书文字（精简版）",icon:"✒️",page:"第8页"},
+{id:"mind",name:"思维导图框架",icon:"🧠",page:"第9页"},
+{id:"chain",name:"课堂讨论问题链",icon:"🔗",page:"第6页"},
+{id:"compress",name:"长文本精简压缩",icon:"📄",page:"第10页"}];
+var KINDS=["新授课","复习课","实验课"];
+var LEVELS=[{id:"学困生"},{id:"中等生"},{id:"优等生"}];
+var BANNER="AI生成素材仅作教学辅助，使用前请教师审核科学性与课堂适配性；严格限定初中物理，不引入高中公式，杜绝伪科学与虚假物理学史。";
+var FALLBACK={errTitle:"⚠️ 生成失败",errMsg:"AI 服务暂时不可用（超时/限流/返回异常）。素材未生成，请稍后重试。",retry:"🔄 重试生成",emptyMsg:"AI 返回内容为空，请调整课题或稍后重试。"};
+var DEFAULT_PROMPTS=[
+{id:"base",name:"通用素材生成",tpl:"你是初中物理教研助手。课题：{topic}；课型：{kind}；学情：{level}。教案要点：{plan}。参考资料：{reference}。仅用初中物理知识，禁止高中公式，史料必须真实。"},
+{id:"story",name:"课堂导入故事",tpl:"为课题「{topic}」写100-300字生活化课堂导入故事，面向{level}，贴合{kind}，结尾抛出核心问题。"},
+{id:"demo",name:"科学趣味演示",tpl:"为「{topic}」设计安全小实验：器材/步骤/现象/原理/提问，面向{level}，不超纲不危险。"},
+{id:"history",name:"物理学史",tpl:"讲一个与「{topic}」相关的真实物理学史故事，突出探究过程，史料必须真实，不编造。"},
+{id:"chain",name:"问题链",tpl:"为「{topic}」设计由浅入深递进问题链5问，面向{level}，对齐教案：{plan}。"}];
+
+var $=function(s){return document.querySelector(s);};
+var $$=function(s){return document.querySelectorAll(s);};
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function toast(m){var t=$("#toast");t.textContent=m;t.style.display="block";clearTimeout(t._h);t._h=setTimeout(function(){t.style.display="none";},2200);}
+function getK(t){for(var i=0;i<KNOWLEDGE.length;i++){if(KNOWLEDGE[i].name===t)return KNOWLEDGE[i];}return KNOWLEDGE[0];}
+function getPrompts(){try{var p=JSON.parse(localStorage.getItem("pa_prompts"));if(p&&p.length)return p;}catch(e){}return DEFAULT_PROMPTS;}
+function renderPrompt(t,topic,kind,level,plan,ref){return (t||"").replace(/\{topic\}/g,topic).replace(/\{kind\}/g,kind).replace(/\{level\}/g,level).replace(/\{plan\}/g,plan||"（无）").replace(/\{reference\}/g,ref||"（无）");}
+
+var state={topic:TOPICS[0],kind:KINDS[0],level:"中等生",selectedTypes:["story","demo","board"],plan:"",reference:"",lastResult:null};
+
+// ---- 素材生成 ----
+var STORY={"机械运动":"清晨小明坐公交车，看到路边树木飞快向后退。明明是树在动，怎么感觉自己在动？判断运动要看参照物。今天探究机械运动的奥秘。","声现象":"上课铃响了，最后一排的小红听不清老师讲课。声音怎样从讲台传到她耳朵？原来空气是传播媒介。今天探究声现象规律。","光的折射":"小明把筷子插入水中，看到筷子弯折了。拿出一看筷子完好。原来光从空气斜射入水中会折射。今天探究光的折射规律。","凸透镜成像":"小华用放大镜看报纸字变大，拿远字又变小甚至倒立。原来凸透镜成像与物距有关。今天探究凸透镜成像规律。","物态变化":"冬天戴眼镜进教室镜片起雾，夏天从冰箱拿饮料瓶壁出汗。这都与物态变化有关。今天探究物质三态转化规律。","质量与密度":"小明怀疑金戒指是假的，放入水中沉浮与真金不同。原来不同物质密度不同。今天探究质量与密度知识。","力与运动":"小红骑车下坡不蹬脚踏板车也能前进。什么维持了车的运动？原来力不是维持运动的原因。今天探究力与运动关系。","压强":"小明用铅笔尖和笔尾压手指，笔尖更疼。原来受力面积越小压强越大。今天探究压强规律。","浮力":"小明把木块按入水中，感觉有股力量向上推。原来浸在液体中的物体受浮力。今天探究浮力规律。","功和机械能":"小红把书包从地上提到桌上，对书包做了功。做功多少与什么有关？今天探究功和机械能知识。","简单机械":"小明用开瓶器开瓶盖感觉很省力。原来开瓶器是杠杆。今天探究简单机械原理。","内能与热量":"小红搓手取暖感觉手变热。原来摩擦生热，机械能转化为内能。今天探究内能与热量知识。","电流和电路":"小明的手电筒不亮了，检查发现灯泡坏了。原来电路必须闭合才能工作。今天探究电流和电路知识。","欧姆定律":"小红调节台灯亮度，旋钮能改变灯的亮度。原来电阻可以改变电流大小。今天探究欧姆定律规律。","电功率":"小明用电热水壶烧水，水很快烧开了。原来电热水壶电功率大做功快。今天探究电功率知识。","电与磁":"小红发现通电导线旁的小磁针会偏转。原来电流周围存在磁场。今天探究电与磁的知识。","信息的传递":"小明用手机打电话，声音通过电磁波传递。原来电磁波可在真空中传播。今天探究信息传递方式。","能源与可持续发展":"小红知道煤石油是不可再生能源。如何合理利用能源？今天探究能源与可持续发展知识。"};
+var HISTORY={"机械运动":"伽利略在比萨斜塔做落体实验，挑战亚里士多德权威，开创实验物理学先河。","声现象":"17世纪伽利略测量了声音传播速度，为声学研究奠定基础。","光的折射":"1621年斯涅尔发现光的折射定律。","凸透镜成像":"17世纪开普勒改进望远镜，研究凸透镜成像规律。","物态变化":"18世纪布莱克区分热量和温度概念。","质量与密度":"1783年拉瓦锡精密实验测定水的密度。","力与运动":"牛顿总结三大运动定律，建立经典力学体系。","压强":"1653年帕斯卡裂桶实验证明液体压强。","浮力":"公元前3世纪阿基米德发现浮力原理，留下尤里卡佳话。","功和机械能":"19世纪焦耳测定热功当量，奠定能量守恒定律。","简单机械":"阿基米德研究杠杆原理，说出给我一个支点可以撬动地球。","内能与热量":"18世纪瓦特改良蒸汽机，推动工业革命。","电流和电路":"1800年伏打发明电池。","欧姆定律":"1827年欧姆发现电流与电压电阻关系。","电功率":"19世纪焦耳精确测定电流热效应。","电与磁":"1820年奥斯特发现电流磁效应。","信息的传递":"19世纪麦克斯韦预言电磁波存在。","能源与可持续发展":"20世纪爱因斯坦提出质能方程。"};
+var DEMO={"机械运动":["刻度尺、秒表、小车","1.测距离 2.记时间 3.算速度","不同距离速度不同","v=s/t","如何测平均速度？"],"声现象":["音叉、橡胶锤、水","1.敲击音叉 2.接触水面","音叉振动溅起水花","声音由振动产生","振动停止声音会怎样？"],"光的折射":["玻璃砖、激光笔、白纸","1.光斜射入玻璃砖 2.观察","光线偏折","折射定律","垂直入射会怎样？"],"凸透镜成像":["凸透镜、蜡烛、光屏","1.点燃蜡烛 2.移动光屏","成倒立缩小实像","物距大于2倍焦距","物距变小像如何变化？"],"物态变化":["烧杯、水、冰块、温度计","1.加热冰块 2.记录温度","冰熔化时温度不变","晶体熔化特点","熔化吸热还是放热？"],"质量与密度":["天平、量筒、水、石块","1.测质量 2.测体积 3.算密度","石块密度大于水","ρ=m/V","如何测不规则固体密度？"],"力与运动":["小车、木板、毛巾","1.同一高度滑下 2.比较距离","表面越光滑滑得越远","阻力越小运动越远","若无阻力将匀速直线运动"],"压强":["铅笔、海绵","1.笔尖压海绵 2.笔尾压海绵","笔尖压痕更深","p=F/S","如何增大压强？"],"浮力":["弹簧测力计、石块、水桶","1.测重力 2.浸入测拉力 3.求浮力","拉力减小","F浮=G-F拉","浮力与排开体积关系？"],"功和机械能":["弹簧测力计、钩码、刻度尺","1.提升钩码 2.测量计算","W=Fs","功的计算","额外功来自哪里？"],"简单机械":["杠杆、支架、钩码","1.调平衡 2.挂钩码 3.读力臂","杠杆平衡","F1L1=F2L2","如何判断省力杠杆？"],"内能与热量":["温度计、水、酒精灯","1.测初温 2.加热 3.记录","温度升高","Q=cmΔt","比热容大升温快还是慢？"],"电流和电路":["电池、小灯泡、导线、开关","1.连接电路 2.闭合开关","灯泡发光","闭合电路","断路会怎样？"],"欧姆定律":["电源、电阻、电流表、电压表、滑动变阻器","1.连接 2.调节滑片 3.记录","电流与电压成正比","I=U/R","电压增大电流如何变化？"],"电功率":["电源、小灯泡、滑动变阻器、电压表、电流表","1.连接 2.调节电压 3.测功率","灯泡亮度变化","P=UI","额定与实际功率区别？"],"电与磁":["电池、导线、小磁针","1.导线放磁针上方 2.通电","磁针偏转","电流磁效应","断开电源磁针会怎样？"],"信息的传递":["手机、收音机","1.打开手机 2.收音机靠近","收音机杂音","电磁波干扰","电磁波如何传递信息？"],"能源与可持续发展":["太阳能电池板、小风扇","1.电池板接风扇 2.照射","风扇转动","太阳能转化","太阳能优缺点？"]};
+var STORIES=STORY,HISTORIES=HISTORY,DEMOS=DEMO;
+
+function kpOf(topic){return getK(topic);}
+function genStory(t){return STORIES[t]|| (t+"是初中物理重要知识点，与生活密切相关。今天我们就来探究"+t+"的规律。");}
+function genHistory(t,kp){return HISTORIES[t]||(kp.name+"的发展历程中，众多科学家通过实验和推理逐步揭示其规律。");}
+function genDemo(t){var d=DEMOS[t];if(!d)return "【演示】围绕"+t+"设计安全小实验，器材简单，观察现象，理解原理。";var s="【演示】"+t+"趣味实验\n器材："+d[0]+"\n步骤："+d[1]+"\n现象："+d[2]+"\n原理："+d[3]+"\n课堂提问："+d[4];return s;}
+function genBoard(t,kp,kind,level){return "【板书设计】"+t+"\n一、"+kp.name+"\n   定义："+kp.content+"\n   公式："+kp.formula+"\n   单位："+kp.unit+"\n二、典型应用\n   "+kp.example+"\n三、易错点\n   - 注意条件和单位\n   - 理解物理意义\n四、"+kind+"小结\n   "+level+"重点掌握："+kp.name+"的理解与应用";}
+function genMind(t,kp,level){return "【思维导图】"+t+"\n├── "+kp.name+"\n│   ├── 定义："+kp.content+"\n│   ├── 公式："+kp.formula+"\n│   └── 单位："+kp.unit+"\n├── 应用\n│   └── "+kp.example+"\n├── 易错点\n│   └── 条件、单位、物理意义\n└── 拓展\n    └── "+level+"进阶思考";}
+function genChain(t,kp,level,plan,ref){var x="";if(plan)x+="\n6. 教案对齐：结合教案要点追问。";if(ref)x+="\n7. 参考材料关联：依据上传教参设问。";return "【问题链】"+t+"（递进式）\n1. 基础：什么是"+kp.name+"？如何定义？\n2. 理解："+kp.formula+"中各字母代表什么？\n3. 应用：生活中哪些现象与"+t+"有关？\n4. 拓展：如果条件改变，结论会怎样？\n5. 评价："+level+"如何评价这一规律的适用范围？"+x;}
+function genCompress(t,kp,ref){var r=ref?"\n参考要点："+ref.slice(0,80)+"…":"";return "【阅读摘要】"+t+"（初中生阅读难度）\n"+kp.name+"是"+t+"的核心内容。\n定义："+kp.content+"\n公式："+kp.formula+"（单位："+kp.unit+"）\n应用："+kp.example+"\n要点：理解"+kp.name+"的物理意义，掌握"+kp.formula+"的应用条件。"+r;}
+
+function generate(topic,kind,level,types,plan,ref){
+  var kp=kpOf(topic),results=[];
+  try{
+    if(!types||!types.length)throw new Error(FALLBACK.emptyMsg);
+    var prompts=getPrompts();
+    types.forEach(function(tid){
+      var type=null;MATERIAL_TYPES.forEach(function(x){if(x.id===tid)type=x;});
+      if(!type)return;
+      var pt=prompts[0];prompts.forEach(function(p){if(p.id===tid)pt=p;});
+      var prompt=renderPrompt(pt.tpl,topic,kind,level,plan,ref);
+      var content="";
+      if(tid==="story")content=genStory(topic);
+      else if(tid==="demo")content=genDemo(topic);
+      else if(tid==="history")content=genHistory(topic,kp);
+      else if(tid==="board")content=genBoard(topic,kp,kind,level);
+      else if(tid==="mind")content=genMind(topic,kp,level);
+      else if(tid==="chain")content=genChain(topic,kp,level,plan,ref);
+      else if(tid==="compress")content=genCompress(topic,kp,ref);
+      if(!content||!content.trim())throw new Error(FALLBACK.emptyMsg);
+      results.push({id:tid,icon:type.icon,name:type.name,content:content,pptPage:type.page,pptNote:"【PPT页建议】"+type.page+" · "+type.name+" · 适合"+level+"学生",prompt:prompt});
+    });
+    var idea="本素材设计思路：面向"+kind+"（"+level+"），紧扣"+topic+"知识点，适配教学环节导入/探究/巩固/应用，素材简洁实用，符合初三认知。";
+    var align=plan?"【教案对齐】已结合您提供的教案/重难点，素材与教学目标一致。":"【教案提示】未提供教案，素材基于课题通用生成。";
+    if(ref)align+="【参考材料】已注入"+ref.length+"字参考资料，据此减少幻觉。";
+    return {ok:true,topic:topic,kind:kind,level:level,materials:results,designIdea:idea,planAlign:align,banner:BANNER,pptNote:"本素材已标注PPT页建议，可直接复制到课件脚本系统。"};
+  }catch(e){
+    return {ok:false,error:(e&&e.message)||FALLBACK.errMsg,topic:topic,kind:kind,level:level,materials:[],designIdea:"",planAlign:"",banner:BANNER,pptNote:""};
+  }
+}
+
+// ---- 渲染 ----
+function renderError(r){
+  $("#out-title").textContent="生成结果："+r.topic;
+  var box=document.createElement("div");box.className="err-card";
+  box.innerHTML='<div class="err-t">'+FALLBACK.errTitle+'</div><div class="err-m">'+esc(r.error)+'</div><div class="err-h">'+FALLBACK.errMsg+'</div><button class="btn primary" id="btn-retry" type="button">'+FALLBACK.retry+'</button><div class="err-hint">提示：可缩短教参、换课题、或稍后再试。</div>';
+  var out=$("#output");out.innerHTML="";out.appendChild(box);
+  $("#btn-retry").addEventListener("click",function(){$("#btn-gen").click();});
+}
+function renderResult(r){
+  $("#out-title").textContent="素材预览："+r.topic+" · "+r.kind+" · "+r.level;
+  var out=$("#output");out.innerHTML="";
+  var idea=document.createElement("div");idea.className="idea";idea.innerHTML="<b>💡 设计思路：</b>"+esc(r.designIdea);out.appendChild(idea);
+  var al=document.createElement("div");al.className="warn-strip";al.textContent=r.planAlign;out.appendChild(al);
+  r.materials.forEach(function(m){
+    var card=document.createElement("div");card.className="mat";
+    card.innerHTML='<div class="mat-h"><span>'+m.icon+" "+m.name+'</span><span class="lv">'+r.level+'</span></div><div class="mat-b"><div class="ppt-note"><span class="ppt-tag">PPT</span>'+esc(m.pptNote)+'</div><div class="m-body" style="white-space:pre-wrap;margin-top:10px"></div><div class="copy-b"><button class="btn-edit" type="button">✏️ 编辑</button><button class="btn-cp" type="button">📋 复制</button><button class="btn-fav" type="button">⭐ 收藏</button></div></div>';
+    card.querySelector(".m-body").textContent=m.content;
+    card.querySelector(".btn-edit").addEventListener("click",function(){toggleEdit(this,m);});
+    card.querySelector(".btn-cp").addEventListener("click",function(){navigator.clipboard&&navigator.clipboard.writeText(m.pptNote+"\n\n"+m.content);toast("已复制该模块");});
+    card.querySelector(".btn-fav").addEventListener("click",function(){fav(m,r.topic);});
+    out.appendChild(card);
+  });
+  var w=document.createElement("div");w.className="warn-strip";w.textContent="📌 "+r.banner;out.appendChild(w);
+}
+function toggleEdit(btn,m){
+  var card=btn.closest(".mat");var body=card.querySelector(".m-body");
+  var on=body.isContentEditable;
+  if(on){m.content=body.innerText;body.contentEditable="false";body.classList.remove("editing");btn.textContent="✏️ 编辑";toast("已保存编辑");}
+  else{body.contentEditable="true";body.classList.add("editing");btn.textContent="💾 保存";body.focus();toast("进入编辑，改完点保存");}
+}
+function fav(m,topic){
+  try{var f=JSON.parse(localStorage.getItem("pa_fav")||"[]");f.unshift({name:m.name,content:m.content,topic:topic,time:new Date().toISOString()});localStorage.setItem("pa_fav",JSON.stringify(f.slice(0,200)));toast("已收藏到素材库 ⭐");}catch(e){toast("收藏失败");}
+}
+function saveHist(r){try{var h=JSON.parse(localStorage.getItem("pa_hist")||"[]");h.unshift({time:new Date().toISOString(),topic:r.topic,kind:r.kind,level:r.level,data:r});localStorage.setItem("pa_hist",JSON.stringify(h.slice(0,50)));}catch(e){}}
+function openMask(html){$("#modal").innerHTML=html;$("#mask").classList.add("on");var c=$("#modal .close");if(c)c.addEventListener("click",closeMask);}
+function closeMask(){$("#mask").classList.remove("on");}
+window.__closeMask=closeMask;
+
+// ---- 控件绑定 ----
+function init(){
+  var sel=$("#sel-topic");TOPICS.forEach(function(t){var o=document.createElement("option");o.value=t;o.textContent=t;sel.appendChild(o);});sel.value=state.topic;
+  sel.addEventListener("change",function(e){state.topic=e.target.value;});
+  $("#in-custom").addEventListener("input",function(e){if(e.target.value.trim())state.topic=e.target.value.trim();});
+  $("#seg-kind").addEventListener("click",function(e){var b=e.target.closest("button[data-k]");if(!b)return;$$("#seg-kind button").forEach(function(x){x.classList.remove("active");});b.classList.add("active");state.kind=b.dataset.k;});
+  $("#seg-level").addEventListener("click",function(e){var b=e.target.closest("button[data-l]");if(!b)return;$$("#seg-level button").forEach(function(x){x.classList.remove("active");});b.classList.add("active");state.level=b.dataset.l;$("#level-meta").textContent="当前："+state.level;});
+  $("#level-meta").textContent="当前："+state.level;
+  var ck=$("#ck-types");
+  MATERIAL_TYPES.forEach(function(t){var l=document.createElement("label");l.innerHTML='<input type="checkbox" value="'+t.id+'"><span class="ckd">'+t.icon+" "+t.name+"</span>";ck.appendChild(l);});
+  state.selectedTypes.forEach(function(id){var c=ck.querySelector('input[value="'+id+'"]');if(c)c.checked=true;});
+  ck.addEventListener("change",function(){var a=[];$$("#ck-types input:checked").forEach(function(c){a.push(c.value);});state.selectedTypes=a;});
+  $("#in-plan").addEventListener("input",function(e){state.plan=e.target.value;});
+  $("#in-ref").addEventListener("input",function(e){state.reference=e.target.value;});
+  $("#in-file").addEventListener("change",function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){state.reference=String(r.result).slice(0,4000);$("#in-ref").value=state.reference;toast("已载入参考材料 "+state.reference.length+" 字");};r.readAsText(f);});
+  // 主按钮
+  $("#btn-gen").addEventListener("click",function(){
+    if(!state.selectedTypes.length){toast("请至少选择一类素材");return;}
+    var r=generate(state.topic,state.kind,state.level,state.selectedTypes,state.plan,state.reference);
+    state.lastResult=r;
+    if(!r.ok){renderError(r);return;}
+    renderResult(r);saveHist(r);
+  });
+  $("#btn-copy").addEventListener("click",function(){var r=state.lastResult;if(!r||!r.ok){toast("请先生成素材");return;}var t=r.designIdea+"\n\n"+r.planAlign+"\n\n";r.materials.forEach(function(m){t+=m.pptNote+"\n"+m.content+"\n\n";});t+=r.banner;navigator.clipboard&&navigator.clipboard.writeText(t);toast("已复制全部素材");});
+  $("#btn-md").addEventListener("click",function(){
+    var r=state.lastResult;if(!r||!r.ok){toast("请先生成素材");return;}
+    var md="# "+r.topic+" 完整备课包\n\n## 一、教案\n- 课题："+r.topic+"\n- 课型："+r.kind+"\n- 学情："+r.level+"\n- 教案要点："+(state.plan||"（未提供）")+"\n\n"+r.planAlign+"\n\n## 二、课件脚本（PPT页规划）\n";
+    r.materials.forEach(function(m){md+="- "+m.pptPage+"："+m.name+"\n";});
+    md+="\n## 三、全部课堂素材\n\n";r.materials.forEach(function(m){md+="### "+m.icon+" "+m.name+"（"+m.pptPage+"）\n\n"+m.content+"\n\n---\n\n";});
+    md+="## 四、参考材料\n\n"+(state.reference||"（未上传）")+"\n\n> "+r.banner;
+    var blob=new Blob([md],{type:"text/markdown"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=r.topic+"_完整备课包.md";a.click();toast("已导出备课包");
+  });
+  $("#btn-print").addEventListener("click",function(){window.print();});
+  $("#btn-save-proj").addEventListener("click",function(){
+    var r=state.lastResult;if(!r||!r.ok){toast("请先生成素材再保存工程");return;}
+    try{var p=JSON.parse(localStorage.getItem("pa_proj")||"[]");p.unshift({name:r.topic+"_"+r.kind+"_"+new Date().toLocaleDateString(),time:new Date().toISOString(),state:{topic:state.topic,kind:state.kind,level:state.level,selectedTypes:state.selectedTypes,plan:state.plan,reference:state.reference},data:r});localStorage.setItem("pa_proj",JSON.stringify(p.slice(0,30)));toast("已保存备课工程");}catch(e){toast("保存失败");}
+  });
+  $("#btn-history").addEventListener("click",function(){
+    var hist=JSON.parse(localStorage.getItem("pa_hist")||"[]");
+    var proj=JSON.parse(localStorage.getItem("pa_proj")||"[]");
+    var favs=JSON.parse(localStorage.getItem("pa_fav")||"[]");
+    window.__hist=hist;window.__proj=proj;window.__favs=favs;
+    var h='<button class="close" type="button">×</button><h3>历史 / 工程 / 收藏</h3>';
+    h+='<div class="sec-t">📂 备课工程</div>';
+    if(!proj.length)h+='<div class="mut">暂无工程</div>';
+    proj.forEach(function(p,i){h+='<div class="hist-i"><div class="ht">'+esc(p.name)+'</div><div class="hm">'+new Date(p.time).toLocaleString()+' <button data-a="loadProj" data-i="'+i+'" type="button">加载</button> <button data-a="delProj" data-i="'+i+'" type="button">删除</button></div></div>';});
+    h+='<div class="sec-t">🕘 历史记录</div>';
+    if(!hist.length)h+='<div class="mut">暂无历史</div>';
+    hist.forEach(function(x,i){h+='<div class="hist-i"><div class="ht">'+esc(x.topic)+" · "+x.kind+" · "+x.level+'</div><div class="hm">'+new Date(x.time).toLocaleString()+' <button data-a="loadHist" data-i="'+i+'" type="button">加载</button></div></div>';});
+    h+='<div class="sec-t">⭐ 素材收藏库（'+favs.length+'）</div>';
+    if(!favs.length)h+='<div class="mut">暂无收藏，点击素材下方「收藏」按钮</div>';
+    favs.forEach(function(f,i){h+='<div class="hist-i"><div class="ht">'+esc(f.name)+'</div><div class="hm">'+esc(f.topic)+" · "+new Date(f.time).toLocaleString()+' <button data-a="copyFav" data-i="'+i+'" type="button">复制</button></div></div>';});
+    openMask(h);
+    $("#modal").addEventListener("click",modalActions);
+  });
+  $("#btn-prompts").addEventListener("click",function(){
+    var prompts=getPrompts();
+    var h='<button class="close" type="button">×</button><h3>⚙️ Agent 提示词后台</h3><div class="mut" style="margin-bottom:10px">占位符：{topic}{kind}{level}{plan}{reference}；改完点保存，立即生效。</div>';
+    prompts.forEach(function(p,i){h+='<div class="prompt-i"><label>'+p.name+"（"+p.id+"）"+'</label><textarea data-i="'+i+'" rows="3">'+esc(p.tpl)+"</textarea></div>";});
+    h+='<button class="btn primary" id="btn-save-prompts" type="button">💾 保存提示词</button> <button class="btn" id="btn-reset-prompts" type="button">恢复默认</button>';
+    openMask(h);
+    $("#btn-save-prompts").addEventListener("click",function(){var arr=[];$$("#modal textarea").forEach(function(t,i){arr.push({id:prompts[i].id,name:prompts[i].name,tpl:t.value});});localStorage.setItem("pa_prompts",JSON.stringify(arr));toast("提示词已保存并生效");closeMask();});
+    $("#btn-reset-prompts").addEventListener("click",function(){localStorage.removeItem("pa_prompts");toast("已恢复默认提示词");closeMask();});
+  });
+  $("#btn-help").addEventListener("click",function(){
+    openMask('<button class="close" type="button">×</button><h3>使用说明</h3><div class="help-li">1. 选课型/课题/学情 → 勾素材 → 可粘贴教案、上传教参 → 生成</div><div class="help-li">2. 每个素材：✏️在线编辑 / 📋单模块复制 / ⭐收藏</div><div class="help-li">3. 🗂 保存备课工程、查看历史与收藏</div><div class="help-li">4. ⚙️ 提示词后台可改 Agent 模板</div><div class="help-li">5. ⬇ 导出完整备课包（教案+课件脚本+素材）</div><div class="help-li">6. ⚠️ AI 生成异常时页面会给出兜底提示与重试</div><div class="help-li">⚠️ AI素材仅供辅助，请教师审核后使用</div>');
+  });
+  $("#mask").addEventListener("click",function(e){if(e.target.id==="mask")closeMask();});
+}
+function modalActions(e){
+  var b=e.target.closest("button[data-a]");if(!b)return;
+  var i=+b.dataset.i;
+  if(b.dataset.a==="loadHist"){var h=window.__hist[i];if(h){state.topic=h.topic;state.kind=h.kind;state.level=h.level;state.lastResult=h.data;closeMask();renderResult(h.data);toast("已加载历史素材");}}
+  else if(b.dataset.a==="loadProj"){var p=window.__proj[i];if(p){Object.assign(state,p.state);state.lastResult=p.data;closeMask();renderResult(p.data);toast("已加载备课工程");}}
+  else if(b.dataset.a==="delProj"){var pr=window.__proj;pr.splice(i,1);localStorage.setItem("pa_proj",JSON.stringify(pr));toast("已删除");$("#btn-history").click();}
+  else if(b.dataset.a==="copyFav"){var f=window.__favs[i];if(f){navigator.clipboard&&navigator.clipboard.writeText(f.content);toast("已复制收藏素材");}}
+}
+try{init();}catch(e){var o=document.querySelector("#output");if(o)o.innerHTML='<div class="err-card"><div class="err-t">页面初始化异常</div><div class="err-m">'+esc(e.message)+'</div><div class="err-h">已兜底捕获，请刷新重试。</div></div>';}
+window.addEventListener("error",function(){toast("页面异常，已兜底捕获");});
+})();
+</script>
 </body>
 </html>
