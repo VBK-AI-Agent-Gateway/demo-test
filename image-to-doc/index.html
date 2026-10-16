@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图片转文档 · Image to Document</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>📄 图片转文档</h1>
+  <p class="sub">上传图片 → 排版预览 → 打印/另存为 PDF 或下载 HTML 文档</p>
+</header>
+
+<main class="layout">
+  <!-- 控制面板 -->
+  <section class="panel controls" id="controls">
+    <h2>1. 上传图片</h2>
+    <label class="dropzone" id="dropzone" for="fileInput">
+      <span class="dz-icon">🖼️</span>
+      <span>点击选择或拖拽图片到此处</span>
+      <span class="dz-hint">支持 JPG / PNG / WebP / GIF / BMP，可多选</span>
+    </label>
+    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+
+    <h2>2. 文档设置</h2>
+    <div class="field">
+      <label for="docTitle">文档标题</label>
+      <input type="text" id="docTitle" value="我的图片文档" placeholder="输入标题">
+    </div>
+    <div class="field">
+      <label for="margin">页边距：<span id="marginVal">20</span>mm</label>
+      <input type="range" id="margin" min="5" max="40" value="20">
+    </div>
+    <div class="field">
+      <label for="imgWidth">图片宽度：<span id="imgWidthVal">100</span>%</label>
+      <input type="range" id="imgWidth" min="25" max="100" value="100">
+    </div>
+    <div class="field">
+      <label for="imgGap">图片间距：<span id="imgGapVal">8</span>mm</label>
+      <input type="range" id="imgGap" min="0" max="30" value="8">
+    </div>
+    <div class="field">
+      <label for="captionMode">每图下方显示</label>
+      <select id="captionMode">
+        <option value="none">不显示</option>
+        <option value="name">文件名</option>
+        <option value="index">序号</option>
+        <option value="both" selected>序号 + 文件名</option>
+      </select>
+    </div>
+    <div class="field checkbox">
+      <label><input type="checkbox" id="showDate" checked> 文档头部显示日期</label>
+    </div>
+
+    <h2>3. 导出</h2>
+    <div class="btn-row">
+      <button class="btn primary" id="btnPrint">🖨️ 打印 / 存为 PDF</button>
+      <button class="btn" id="btnHtml">⬇️ 下载 HTML 文档</button>
+      <button class="btn ghost" id="btnClear">清空</button>
+    </div>
+    <p class="tip">提示：在打印对话框中选择"另存为 PDF"即可得到 PDF 文件；所有处理都在浏览器本地完成，图片不会上传服务器。</p>
+  </section>
+
+  <!-- 预览区 -->
+  <section class="panel preview-wrap">
+    <div class="preview-toolbar">
+      <h2>预览 <span id="count" class="badge">0 张</span></h2>
+      <div class="hint" id="dragHint">拖拽图片卡片可调整顺序</div>
+    </div>
+
+    <div class="page" id="page">
+      <div class="doc-header" id="docHeader">
+        <h1 id="previewTitle">我的图片文档</h1>
+        <div id="previewDate" class="doc-date"></div>
+      </div>
+      <div id="items" class="doc-items">
+        <div class="empty" id="empty">
+          <p>还没有图片</p>
+          <p class="empty-sub">上传后这里会实时预览文档排版效果</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="thumb-tray" id="thumbTray"></div>
+  </section>
+</main>
+
+<footer class="foot">本地处理 · 不上传服务器 · 可打印为 PDF</footer>
+
+<!-- 打印专用文档容器 -->
+<div id="printRoot" class="print-root" aria-hidden="true"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
