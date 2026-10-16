@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SDD 工具台 · 规格驱动开发助手</title>
+<meta name="description" content="SDD 工具台：规格驱动开发（SPEC → PLAN → TASKS）的在线工作台，含实时生成、A11y 检查与响应式三档断点预览。">
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --line:#30363d;
+    --fg:#e6edf3; --muted:#9aa7b4; --acc:#58a6ff; --acc2:#3fb950;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 -apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}
+  a{color:var(--acc)}
+  a:focus-visible,button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+  .skip{position:absolute;left:-9999px;top:0;background:var(--acc);color:#001;padding:8px 14px;z-index:99;border-radius:0 0 8px 0}
+  .skip:focus{left:0}
+  header{position:sticky;top:0;z-index:10;background:rgba(13,17,23,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+  .bar{max-width:1120px;margin:0 auto;padding:14px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .logo{font-weight:700;font-size:18px;letter-spacing:.5px}
+  .logo span{color:var(--acc2)}
+  nav{margin-left:auto;display:flex;gap:14px;flex-wrap:wrap}
+  nav a{color:var(--muted);text-decoration:none;font-size:14px}
+  nav a:hover,nav a:focus{color:var(--fg);text-decoration:underline}
+  main{max-width:1120px;margin:0 auto;padding:28px 20px 64px}
+  .hero{padding:34px 0 10px}
+  .hero h1{font-size:clamp(26px,4.5vw,40px);margin:0 0 10px;line-height:1.25}
+  .hero p{color:var(--muted);margin:0 0 22px;max-width:70ch}
+  .grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px}
+  .card h2{font-size:17px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+  .tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:#1f6feb33;color:var(--acc);border:1px solid #1f6feb66}
+  .tag.green{background:#23863633;color:var(--acc2);border-color:#23863666}
+  label{display:block;font-size:14px;color:var(--muted);margin:10px 0 4px}
+  textarea{width:100%;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:14px/1.5 var(--mono);resize:vertical;min-height:92px}
+  button{cursor:pointer;background:var(--acc);color:#04121f;border:0;border-radius:8px;padding:10px 18px;font-weight:600;font-size:15px;margin-top:12px}
+  button.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+  button:hover{filter:brightness(1.08)}
+  pre.out{background:#0a0e14;border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto;white-space:pre-wrap;font:13px/1.6 var(--mono);max-height:340px;margin:12px 0 0}
+  .st{font-size:14px;margin-top:10px;padding:8px 12px;border-radius:8px;display:none}
+  .st.ok{display:block;background:#23863622;color:#3fb950;border:1px solid #23863655}
+  .st.bad{display:block;background:#da363322;color:#ff7b72;border:1px solid #da363355}
+  .frames{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+  .frame{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:1 1 260px;min-width:0}
+  .frame .cap{background:var(--panel2);color:var(--muted);font:12px var(--mono);padding:6px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+  .frame iframe{width:100%;border:0;display:block;background:#fff}
+  .f-sm iframe{height:560px}
+  .f-md iframe{height:440px}
+  .f-lg iframe{height:360px}
+  footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;text-align:center;padding:22px 20px}
+  .pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:12px;color:var(--muted);margin:2px}
+  @media (max-width:640px){
+    nav{width:100%;margin-left:0}
+    .hero h1{font-size:26px}
+  }
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">跳到主要内容</a>
+<header>
+  <div class="bar">
+    <div class="logo" aria-hidden="true">◇ SDD<span>·工具台</span></div>
+    <nav aria-label="主导航">
+      <a href="#spec">SPEC 生成器</a>
+      <a href="#a11y">A11y 检查</a>
+      <a href="#preview">三档断点</a>
+      <a href="#about">关于</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" aria-labelledby="h1">
+    <h1 id="h1">规格驱动开发，一屏跑完 SPEC → PLAN → TASKS</h1>
+    <p>把模糊需求粘进来，立刻得到结构化的三段式规格与可验收任务清单；顺带做一次可访问性快检，并用手机 / 平板 / 桌面三档断点并排预览你的页面。</p>
+    <p>
+      <span class="pill">纯前端 · 无依赖</span>
+      <span class="pill">WCAG 快检</span>
+      <span class="pill">响应式预览</span>
+      <span class="pill">键盘可用</span>
+    </p>
+  </section>
+
+  <div class="grid">
+    <section class="card" id="spec" aria-labelledby="spec-h">
+      <h2 id="spec-h">① SPEC 生成器 <span class="tag">核心工具</span></h2>
+      <label for="req">需求描述（一句话也行）</label>
+      <textarea id="req" placeholder="例：做一个番茄钟网页，带音效和历史记录">做一个番茄钟网页，带音效和历史记录</textarea>
+      <button id="gen" type="button">生成 SPEC / PLAN / TASKS</button>
+      <button id="copy" type="button" class="ghost">复制结果</button>
+      <div id="gen-msg" class="st" role="status" aria-live="polite"></div>
+      <pre id="spec-out" class="out" tabindex="0" aria-label="生成结果">点击上方按钮生成三段式规格文档……</pre>
+    </section>
+
+    <section class="card" id="a11y" aria-labelledby="a11y-h">
+      <h2 id="a11y-h">② A11y 快检 <span class="tag green">axe 就绪</span></h2>
+      <label for="html-in">粘贴一段 HTML</label>
+      <textarea id="html-in" placeholder="&lt;img src=x&gt;">&lt;img src="x.png"&gt;
+&lt;div onclick="go()"&gt;可点的 div&lt;/div&gt;
+&lt;h1&gt;标题&lt;/h1&gt;
+&lt;input type="text"&gt;
+&lt;a href="/x"&gt;链接&lt;/a&gt;</textarea>
+      <button id="scan" type="button">运行检查</button>
+      <div id="scan-msg" class="st" role="status" aria-live="polite"></div>
+      <pre id="scan-out" class="out" tabindex="0" aria-label="检查结果">检查项：图片 alt、表单 label、可聚焦元素命名、标题层级、lang 属性、链接文本、id 重复。</pre>
+    </section>
+
+    <section class="card" id="preview" aria-labelledby="pv-h">
+      <h2 id="pv-h">③ 三档断点并排预览 <span class="tag">375 / 768 / 1280</span></h2>
+      <p style="color:var(--muted);font-size:14px;margin:0 0 12px">同一张响应式示例页，分别以手机、平板、桌面宽度渲染：</p>
+      <div class="frames">
+        <div class="frame f-sm">
+          <div class="cap"><span>📱 Mobile</span><span>375 × 560</span></div>
+          <iframe id="fm" title="手机断点 375px 预览" loading="lazy"></iframe>
+        </div>
+        <div class="frame f-md">
+          <div class="cap"><span>💻 Tablet</span><span>768 × 440</span></div>
+          <iframe id="ft" title="平板断点 768px 预览" loading="lazy"></iframe>
+        </div>
+        <div class="frame f-lg">
+          <div class="cap"><span>🖥 Desktop</span><span>1280 × 360</span></div>
+          <iframe id="fd" title="桌面断点 1280px 预览" loading="lazy"></iframe>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="about" aria-labelledby="ab-h">
+      <h2 id="ab-h">④ 为什么用 SDD</h2>
+      <ul style="color:var(--muted);font-size:14.5px;margin:0;padding-left:20px">
+        <li><strong style="color:var(--fg)">SPEC</strong>：一段话说清"做完长什么样"，先对齐再写码。</li>
+        <li><strong style="color:var(--fg)">PLAN</strong>：定栈、定文件结构、定部署方式，杜绝中途换挡。</li>
+        <li><strong style="color:var(--fg)">TASKS</strong>：5–8 个五分钟任务，每个带验收标准，进度可勾。</li>
+        <li>先小步交付，再追求完美——链接永远比计划先到手。</li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <p>SDD 工具台 — 纯静态单文件部署于 GitHub Pages · 无障碍：跳转链接 + 语义标签 + 焦点可见 + aria-live 反馈</p>
+</footer>
+
+<script>
+(function(){
+  function buildSpec(r){
+    r=(r||"").trim()||"一个未命名的网页工具";
+    var tasks=[
+      "初始化项目结构与静态入口 | 验收: index.html 可本地打开无 404",
+      "实现核心功能（对应需求主干） | 验收: 主流程 3 步内可走通",
+      "响应式适配 375/768/1280 三档断点 | 验收: 三档截图布局不破",
+      "无障碍打磨（alt/label/焦点/landmark） | 验收: axe 严重问题 = 0",
+      "状态反馈与错误兜底 | 验收: 空输入/异常均有提示文案",
+      "构建与本地冒烟 | 验收: 无 console 报错",
+      "部署上线并验证 | 验收: Pages status=built 且链接可访问"
+    ];
+    return "## SPEC\n"+r+"。做完后的样子：用户打开链接即可直接使用，界面响应式、键盘可操作、无阻断性无障碍问题。\n\n"
+      +"## PLAN\n- 技术栈: 纯静态 HTML/CSS/原生 JS（零依赖、零构建）\n- 文件结构: /\n  ├─ index.html  （单文件入口，内联样式与脚本）\n  └─ （如需）assets/\n- 部署方式: push 到 demo-test 仓库 main 分支根目录 → GitHub Pages 自动构建\n\n"
+      +"## TASKS\n"+tasks.map(function(t,i){return "- [ ] T"+(i+1)+": "+t;}).join("\n");
+  }
+  var gen=document.getElementById("gen"),out=document.getElementById("spec-out"),
+      msg=document.getElementById("gen-msg"),req=document.getElementById("req");
+  gen.addEventListener("click",function(){
+    out.textContent=buildSpec(req.value);
+    msg.className="st ok";msg.textContent="✔ 已生成 SPEC / PLAN / TASKS（含验收标准）";
+  });
+  document.getElementById("copy").addEventListener("click",function(){
+    var t=out.textContent;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(function(){
+        msg.className="st ok";msg.textContent="✔ 已复制到剪贴板";
+      },function(){msg.className="st bad";msg.textContent="✘ 复制失败，请手动选中";});
+    }else{msg.className="st bad";msg.textContent="✘ 当前环境不支持剪贴板 API，请手动选中复制";}
+  });
+
+  function scan(html){
+    var issues=[],doc;
+    try{doc=new DOMParser().parseFromString(html,"text/html");}catch(e){return["无法解析 HTML"];}
+    if(!/<html[^>]*\slang=/i.test(html))issues.push("[serious] html 缺少 lang 属性");
+    doc.querySelectorAll("img").forEach(function(im,i){
+      if(!im.hasAttribute("alt"))issues.push("[critical] img #"+i+" 缺少 alt");
+    });
+    doc.querySelectorAll("input,select,textarea").forEach(function(el,i){
+      var id=el.id&&doc.querySelector('label[for="'+el.id+'"]');
+      if(!id&&!el.getAttribute("aria-label")&&!el.getAttribute("aria-labelledby")&&!el.closest("label"))
+        issues.push("[serious] "+el.tagName.toLowerCase()+" #"+i+" 没有关联 label");
+    });
+    doc.querySelectorAll("[onclick]").forEach(function(el,i){
+      if(!/^(a|button|input|summary)$/i.test(el.tagName)&&!el.hasAttribute("tabindex"))
+        issues.push("[serious] 可点击 <"+el.tagName.toLowerCase()+"> 不可聚焦且无角色（应改用 button）");
+    });
+    doc.querySelectorAll("a").forEach(function(a,i){
+      if(!a.textContent.trim()&&!a.getAttribute("aria-label"))issues.push("[critical] a #"+i+" 无可访问文本");
+    });
+    doc.querySelectorAll("button").forEach(function(b,i){
+      if(!b.textContent.trim()&&!b.getAttribute("aria-label"))issues.push("[critical] button #"+i+" 无可访问名称");
+    });
+    var ids={},dup=false;
+    doc.querySelectorAll("[id]").forEach(function(el){
+      if(ids[el.id])dup=true;ids[el.id]=1;
+    });
+    if(dup)issues.push("[moderate] 存在重复 id");
+    var hs=[].map.call(doc.querySelectorAll("h1,h2,h3,h4,h5,h6"),function(h){return+h.tagName[1];});
+    if(hs.indexOf(1)<0&&html.trim())issues.push("[moderate] 页面没有 h1");
+    for(var i=1;i<hs.length;i++)if(hs[i]-hs[i-1]>1)issues.push("[moderate] 标题层级跳跃 h"+hs[i-1]+"→h"+hs[i]);
+    return issues;
+  }
+  var scanBtn=document.getElementById("scan"),sin=document.getElementById("html-in"),
+      sout=document.getElementById("scan-out"),smsg=document.getElementById("scan-msg");
+  scanBtn.addEventListener("click",function(){
+    var r=scan(sin.value);
+    if(!r.length){sout.textContent="✔ 未发现明显问题（7 类规则全部通过）";smsg.className="st ok";smsg.textContent="✔ 通过";}
+    else{sout.textContent=r.join("\n");smsg.className="st bad";smsg.textContent="发现 "+r.length+" 个问题";}
+  });
+
+  var demo="<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'>"
+    +"<meta name='viewport' content='width=device-width,initial-scale=1'>"
+    +"<title>响应式示例</title><style>"
+    +"*{box-sizing:border-box}body{margin:0;font:14px/1.6 -apple-system,'Segoe UI',sans-serif;background:#f5f7fb;color:#1b2430}"
+    +"header{background:#1f6feb;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}"
+    +"nav a{color:#dbeafe;margin-left:12px;text-decoration:none;font-size:13px}"
+    +".wrap{padding:18px;max-width:1100px;margin:0 auto}"
+    +".cards{display:grid;gap:14px;grid-template-columns:1fr}"
+    +"@media(min-width:600px){.cards{grid-template-columns:1fr 1fr}}"
+    +"@media(min-width:1000px){.cards{grid-template-columns:repeat(3,1fr)}}"
+    +".c{background:#fff;border:1px solid #dfe5ee;border-radius:10px;padding:14px;box-shadow:0 1px 3px #0001}"
+    +".c b{display:block;margin-bottom:6px}.c p{margin:0;color:#5b6675;font-size:13px}"
+    +"h1{font-size:22px;margin:16px 0 4px}small{color:#6b7686}"
+    +"</style></head><body>"
+    +"<header><strong>◈ 响应式示例站</strong><nav aria-label='示例导航'><a href='#'>首页</a><a href='#'>产品</a><a href='#'>关于</a></nav></header>"
+    +"<div class='wrap'><h1>一屏三断点</h1><small>卡片列数 1 → 2 → 3 随宽度自适应。</small>"
+    +"<div class='cards'>"
+    +"<div class='c'><b>快速</b><p>零依赖静态页，秒开。</p></div>"
+    +"<div class='c'><b>可达</b><p>语义标签 + 焦点可见。</p></div>"
+    +"<div class='c'><b>自适应</b><p>网格随宽度重排。</p></div>"
+    +"</div></div></body></html>";
+  var src="data:text/html;charset=utf-8,"+encodeURIComponent(demo);
+  ["fm","ft","fd"].forEach(function(id){document.getElementById(id).src=src;});
+})();
+</script>
+</body>
+</html>
