@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>红色条/红字去除 · 处理前后对比</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --line:#2a2f3a; --fg:#e6e9ef; --sub:#9aa3b2; --ok:#31d07a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--fg); font:16px/1.6 -apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif; padding:32px 16px 64px; }
+  .wrap { max-width:960px; margin:0 auto; }
+  h1 { font-size:26px; margin-bottom:8px; }
+  .muted { color:var(--sub); margin-bottom:24px; }
+  .cards { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:768px){ .cards{ grid-template-columns:1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
+  .card h2 { font-size:17px; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .badge { font-size:12px; padding:2px 8px; border-radius:99px; background:#232836; color:var(--sub); }
+  .badge.ok { background:rgba(49,208,122,.15); color:var(--ok); }
+  .imgbox { background:#fff; border-radius:10px; overflow:hidden; display:flex; justify-content:center; padding:8px; }
+  .imgbox img { max-width:100%; height:auto; display:block; image-rendering:auto; }
+  .stats { margin-top:14px; font-size:13.5px; color:var(--sub); }
+  .stats b { color:var(--fg); font-variant-numeric:tabular-nums; }
+  .dl { display:flex; gap:12px; flex-wrap:wrap; margin-top:24px; }
+  .btn { display:inline-block; padding:11px 18px; border-radius:10px; text-decoration:none; font-weight:600; border:1px solid var(--line); color:var(--fg); background:#1d2230; }
+  .btn.primary { background:#3b6ef5; border-color:#3b6ef5; color:#fff; }
+  .btn:hover { filter:brightness(1.1); }
+  table { width:100%; border-collapse:collapse; margin-top:24px; font-size:14px; }
+  th,td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); }
+  th { color:var(--sub); font-weight:600; }
+  .pass { color:var(--ok); font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>红色条 / 红字去除工具</h1>
+  <p class="muted">HSV + YCbCr 红色检测 → 掩膜 → 最近邻背景填充（非红内容零改动）</p>
+
+  <div class="cards">
+    <div class="card">
+      <h2>处理前 <span class="badge">source.png</span></h2>
+      <div class="imgbox"><img src="source.png" alt="处理前原图，含红色条与红色文字"></div>
+      <div class="stats">红色像素占比：<b>6.1321%</b>（11,342 px）</div>
+    </div>
+    <div class="card">
+      <h2>处理后 <span class="badge ok">PASS</span></h2>
+      <div class="imgbox"><img src="clean.png" alt="处理后图，红色条与红色文字已移除"></div>
+      <div class="stats">红色像素占比：<b>0.0000%</b>（0 px）</div>
+    </div>
+  </div>
+
+  <div class="dl">
+    <a class="btn primary" href="clean.png" download>⬇ 下载处理后图片</a>
+    <a class="btn" href="source.png" download>下载原图</a>
+    <a class="btn" href="process.py">查看处理脚本</a>
+  </div>
+
+  <table>
+    <tr><th>指标</th><th>结果</th></tr>
+    <tr><td>图像尺寸</td><td>289 × 640（PNG / RGBA）</td></tr>
+    <tr><td>红色像素（前 → 后）</td><td>6.1321% → 0.0000%</td></tr>
+    <tr><td>非红区域最大差异</td><td>0（完全保留）</td></tr>
+    <tr><td>验收</td><td class="pass">PASS（红 &lt; 0.1%，非红 diff = 0）</td></tr>
+  </table>
+</div>
+</body>
+</html>
