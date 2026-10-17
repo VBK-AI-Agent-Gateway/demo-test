@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>两张图合成一张 - 免费在线图片拼接工具</title>
+<style>
+  :root{--bg:#0f1220;--card:#181c31;--accent:#6c8cff;--accent2:#ff7ac6;--text:#eef1ff;--muted:#9aa3c7}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;background:linear-gradient(160deg,#0f1220 0%,#161a33 60%,#1d1140 100%);color:var(--text);min-height:100vh;padding:32px 16px}
+  .wrap{max-width:960px;margin:0 auto}
+  h1{font-size:clamp(24px,5vw,38px);text-align:center;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{text-align:center;color:var(--muted);margin:10px 0 28px;font-size:15px}
+  .panel{background:var(--card);border:1px solid #262b4d;border-radius:16px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+  .slots{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:640px){.slots{grid-template-columns:1fr}}
+  .slot{border:2px dashed #3a4270;border-radius:12px;min-height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:.2s;padding:12px;position:relative;overflow:hidden}
+  .slot:hover,.slot.drag{border-color:var(--accent);background:#1c2140}
+  .slot img{max-width:100%;max-height:150px;object-fit:contain;border-radius:6px}
+  .slot .hint{color:var(--muted);font-size:14px;text-align:center}
+  .slot .badge{position:absolute;top:8px;left:8px;background:var(--accent);color:#fff;font-size:12px;padding:2px 8px;border-radius:999px}
+  .controls{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin-top:20px}
+  .controls label{color:var(--muted);font-size:14px;display:flex;align-items:center;gap:8px}
+  select,input[type=range]{accent-color:var(--accent)}
+  select{background:#232850;color:var(--text);border:1px solid #3a4270;border-radius:8px;padding:7px 10px}
+  .btn{border:none;border-radius:10px;padding:12px 22px;font-size:15px;cursor:pointer;font-weight:600;transition:.2s}
+  .btn.primary{background:linear-gradient(90deg,var(--accent),#8a6cff);color:#fff}
+  .btn.primary:hover{filter:brightness(1.12)}
+  .btn.ghost{background:#232850;color:var(--text);border:1px solid #3a4270}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .actions{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}
+  #resultBox{margin-top:24px;text-align:center;display:none}
+  #resultBox canvas{max-width:100%;border-radius:12px;border:1px solid #2f3560;background:
+    repeating-conic-gradient(#20243f 0 25%,#191d35 0 50%) 0 0/24px 24px}
+  .tip{margin-top:26px;color:var(--muted);font-size:13px;line-height:1.8}
+  .tip b{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>两张图合成一张</h1>
+  <p class="sub">免费在线图片拼接工具 · 支持左右 / 上下 / 叠加合成 · 本地处理不上传服务器</p>
+
+  <div class="panel">
+    <div class="slots">
+      <div class="slot" id="slot1"><span class="badge">图 1</span><div class="hint">点击或拖拽上传第一张图片</div></div>
+      <div class="slot" id="slot2"><span class="badge">图 2</span><div class="hint">点击或拖拽上传第二张图片</div></div>
+    </div>
+    <input type="file" id="file1" accept="image/*" hidden>
+    <input type="file" id="file2" accept="image/*" hidden>
+
+    <div class="controls">
+      <label>拼接方式
+        <select id="mode">
+          <option value="h">左右并排</option>
+          <option value="v">上下堆叠</option>
+          <option value="blend">图2叠加图1（居中）</option>
+        </select>
+      </label>
+      <label>间距 <input type="range" id="gap" min="0" max="80" value="0"> <span id="gapVal">0px</span></label>
+      <label>背景
+        <select id="bg">
+          <option value="#ffffff">白色</option>
+          <option value="#000000">黑色</option>
+          <option value="transparent">透明</option>
+          <option value="#f5f5f5">浅灰</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="fitH" checked> 自动缩放对齐</label>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" id="mergeBtn" disabled>合成图片</button>
+      <button class="btn ghost" id="resetBtn">清空重来</button>
+      <a class="btn ghost" id="dlBtn" download="merged.png" style="display:none;text-decoration:none">下载合成图</a>
+    </div>
+
+    <div id="resultBox">
+      <canvas id="out"></canvas>
+      <p style="color:var(--muted);margin-top:10px" id="sizeInfo"></p>
+    </div>
+  </div>
+
+  <div class="tip">
+    <b>怎么用：</b>① 分别点击两个上传框选择（或拖入）两张图片 → ② 选择拼接方式、间距和背景色 → ③ 点「合成图片」→ ④ 下载结果。<br>
+    <b>隐私说明：</b>所有处理都在你的浏览器本地完成，图片不会上传到任何服务器。
+  </div>
+</div>
+
+<script>
+const imgs=[null,null];
+const slots=[document.getElementById('slot1'),document.getElementById('slot2')];
+const files=[document.getElementById('file1'),document.getElementById('file2')];
+const mergeBtn=document.getElementById('mergeBtn');
+const dlBtn=document.getElementById('dlBtn');
+const out=document.getElementById('out');
+const resultBox=document.getElementById('resultBox');
+const gapInput=document.getElementById('gap');
+gapInput.oninput=()=>document.getElementById('gapVal').textContent=gapInput.value+'px';
+
+slots.forEach((s,i)=>{
+  s.onclick=()=>files[i].click();
+  s.ondragover=e=>{e.preventDefault();s.classList.add('drag')};
+  s.ondragleave=()=>s.classList.remove('drag');
+  s.ondrop=e=>{e.preventDefault();s.classList.remove('drag');if(e.dataTransfer.files[0])load(i,e.dataTransfer.files[0])};
+  files[i].onchange=()=>{if(files[i].files[0])load(i,files[i].files[0])};
+});
+
+function load(i,f){
+  if(!f.type.startsWith('image/')){alert('请选择图片文件');return}
+  const r=new FileReader();
+  r.onload=()=>{
+    const im=new Image();
+    im.onload=()=>{imgs[i]=im;render(i);check()};
+    im.src=r.result;
+  };
+  r.readAsDataURL(f);
+}
+function render(i){
+  slots[i].querySelector('.hint')?.remove();
+  let im=slots[i].querySelector('img');
+  if(!im){im=new Image();slots[i].appendChild(im)}
+  im.src=imgs[i].src;
+}
+function check(){mergeBtn.disabled=!(imgs[0]&&imgs[1])}
+
+document.getElementById('resetBtn').onclick=()=>{
+  imgs[0]=imgs[1]=null;
+  slots.forEach((s,i)=>{
+    s.querySelectorAll('img').forEach(x=>x.remove());
+    if(!s.querySelector('.hint')){const d=document.createElement('div');d.className='hint';d.textContent=i?'点击或拖拽上传第二张图片':'点击或拖拽上传第一张图片';s.appendChild(d)}
+  });
+  resultBox.style.display='none';dlBtn.style.display='none';check();
+};
+
+mergeBtn.onclick=()=>{
+  const mode=document.getElementById('mode').value;
+  const gap=+gapInput.value;
+  const bg=document.getElementById('bg').value;
+  const fit=document.getElementById('fitH').checked;
+  const a=imgs[0],b=imgs[1];
+  let w,h,draw;
+  if(mode==='blend'){
+    w=Math.max(a.width,b.width);h=Math.max(a.height,b.height);
+    draw=()=>{ctx.drawImage(a,(w-a.width)/2,(h-a.height)/2);ctx.globalAlpha=.92;ctx.drawImage(b,(w-b.width)/2,(h-b.height)/2);ctx.globalAlpha=1};
+  }else if(mode==='h'){
+    let ah=a.height,bh=b.height;
+    if(fit&&ah!==bh){const s=ah/bh;b.width=Math.round(b.width*s);b.height=ah}
+    h=Math.max(a.height,b.height);w=a.width+b.width+gap;
+    draw=()=>{ctx.drawImage(a,0,(h-a.height)/2);ctx.drawImage(b,a.width+gap,(h-b.height)/2)};
+  }else{
+    let aw=a.width,bw=b.width;
+    if(fit&&aw!==bw){const s=aw/bw;b.height=Math.round(b.height*s);b.width=aw}
+    w=Math.max(a.width,b.width);h=a.height+b.height+gap;
+    draw=()=>{ctx.drawImage(a,0,0);ctx.drawImage(b,0,a.height+gap)};
+  }
+  out.width=w;out.height=h;
+  const ctx=out.getContext('2d');
+  if(bg!=='transparent'){ctx.fillStyle=bg;ctx.fillRect(0,0,w,h)}
+  draw();
+  resultBox.style.display='block';
+  document.getElementById('sizeInfo').textContent=`输出尺寸：${w} × ${h} 像素`;
+  out.toBlob(bl=>{dlBtn.href=URL.createObjectURL(bl);dlBtn.style.display='inline-block'},'image/png');
+};
+</script>
+</body>
+</html>
