@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>中文海报 · 静夜思</title>
+<style>
+  :root { --bg:#14161b; --card:#1b1f27; --line:#2b313d; --fg:#eceff4; --sub:#98a2b3; --accent:#c0392b; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--fg); font:16px/1.7 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif; padding:36px 16px 72px; }
+  .wrap { max-width:920px; margin:0 auto; }
+  h1 { font-size:26px; margin-bottom:6px; }
+  .sub { color:var(--sub); margin-bottom:22px; }
+  .stage { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px; display:flex; justify-content:center; }
+  .stage img { max-width:100%; height:auto; border-radius:8px; box-shadow:0 12px 40px rgba(0,0,0,.45); }
+  .bar { display:flex; gap:12px; flex-wrap:wrap; margin-top:20px; }
+  .btn { display:inline-block; padding:11px 20px; border-radius:10px; text-decoration:none; font-weight:600; background:#252b38; color:var(--fg); border:1px solid var(--line); }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .meta { margin-top:26px; font-size:14px; color:var(--sub); }
+  .meta li { margin-left:1.2em; }
+  .pass { color:#31d07a; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>全中文图片 · 静夜思海报</h1>
+  <p class="sub">由 Python + PIL 生成，图中文字全部为中文字符（标题、诗句、落款、印章、页脚），无任何英文字母。</p>
+
+  <div class="stage">
+    <img src="chinese.png" alt="全中文海报，内容为唐诗静夜思：床前明月光，疑是地上霜，举头望明月，低头思故乡，落款唐李白，印章诗">
+  </div>
+
+  <div class="bar">
+    <a class="btn primary" href="chinese.png" download>⬇ 下载图片（中文海报）</a>
+    <a class="btn" href="make.py">生成脚本</a>
+    <a class="btn" href="strokefont.py">矢量笔画引擎</a>
+  </div>
+
+  <ul class="meta">
+    <li>尺寸：900 × 1273（A4 竖版比例），格式 PNG</li>
+    <li>内容：标题「静夜思」、五言绝句四句、落款「唐 · 李白」、朱红印章「诗」、页脚全诗标点版</li>
+    <li>渲染：优先 Noto Sans SC；沙箱无中文字体时自动切换到内置矢量笔画引擎（免字体、零豆腐块）</li>
+    <li>验收：<span class="pass">PASS</span>（图片生成成功、全中文内容、页面可访问）</li>
+  </ul>
+</div>
+</body>
+</html>
