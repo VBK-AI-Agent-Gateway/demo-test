@@ -1,0 +1,42 @@
+:root{
+  --bg:#0d1410; --panel:#16211a; --line:#2f4a38; --accent:#7ac142; --gold:#ffcc33;
+  --text:#d7e6cf;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:radial-gradient(circle at 50% 0%,#16241b 0%,var(--bg) 70%);
+  color:var(--text);
+  font-family:"Courier New",ui-monospace,monospace;
+  display:flex;align-items:center;justify-content:center;min-height:100%;
+}
+#wrap{width:min(960px,100vw);padding:12px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px}
+h1{font-size:clamp(16px,3vw,24px);color:var(--accent);letter-spacing:2px;text-shadow:0 0 8px rgba(122,193,66,.4)}
+#hud{display:flex;gap:14px;font-size:clamp(12px,2vw,15px);flex-wrap:wrap}
+#hud b{color:var(--gold)}
+#game{
+  width:100%;height:auto;display:block;border:3px solid var(--line);border-radius:8px;
+  background:#0a0f0b;box-shadow:0 0 24px rgba(0,0,0,.6),inset 0 0 40px rgba(0,0,0,.5);
+  image-rendering:pixelated;touch-action:none;
+}
+footer{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:12px;opacity:.85}
+kbd{background:#22331f;border:1px solid var(--line);border-bottom-width:3px;border-radius:4px;padding:1px 6px;color:var(--accent)}
+#tip{color:var(--gold)}
+/* 断点：小屏隐藏部分提示、加大触控目标由 JS 处理 */
+@media (max-width:640px){
+  footer span:first-child{display:none}
+  #wrap{padding:6px}
+}
+@media (min-width:1400px){
+  #wrap{width:1100px}
+}
+#touch{display:none;justify-content:space-between;margin-top:10px;gap:10px}
+#touch button{
+  flex:1;padding:16px 0;font-size:20px;border-radius:10px;border:2px solid var(--line);
+  background:var(--panel);color:var(--accent);font-family:inherit;
+}
+#touch button:active{background:var(--accent);color:#0d1410}
+@media (pointer:coarse){
+  #touch{display:flex}
+}
